@@ -1043,7 +1043,6 @@ const townBuildingPositions = []; // populated later during town generation
       gridAngle: Math.atan2(c.roadTanX, c.roadTanZ) + (Math.random() - 0.5) * 0.15,
     });
   }
-
   // Generate town names
   const townNameParts1 = ['Sector', 'Old', 'Rust', 'Iron', 'Ash', 'Dead', 'Grey', 'Red', 'Black', 'Lost'];
   const townNameParts2 = ['Haven', 'Valley', 'Creek', 'Ridge', 'Hollow', 'Gate', 'Post', 'Yard', 'Flats', 'Point'];
@@ -1514,9 +1513,9 @@ const lampPostPositions = [];
 
   const LP_COUNT = lampPostPositions.length;
   const POLE_H = 5;
-  // Pole InstancedMesh
-  const poleGeo = new THREE.CylinderGeometry(0.08, 0.1, POLE_H, 6);
-  const poleMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.7 });
+  // Pole InstancedMesh - weathered metal
+  const poleGeo = new THREE.CylinderGeometry(0.08, 0.12, POLE_H, 6);
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.7, metalness: 0.65 });
   const poleInst = new THREE.InstancedMesh(poleGeo, poleMat, LP_COUNT);
   poleInst.castShadow = true; poleInst.receiveShadow = true;
   // Arm InstancedMesh
@@ -1527,10 +1526,10 @@ const lampPostPositions = [];
   const lanternGeo = new THREE.BoxGeometry(0.3, 0.15, 0.3);
   var lanternMat = new THREE.MeshStandardMaterial({ color: 0xffeecc, emissive: 0xffaa44, emissiveIntensity: 0.8 });
   const lanternInst = new THREE.InstancedMesh(lanternGeo, lanternMat, LP_COUNT);
-  // Ground glow InstancedMesh
-  const glowGeo = new THREE.CircleGeometry(2.5, 16);
+  // Ground glow InstancedMesh - slightly larger pool for better visibility
+  const glowGeo = new THREE.CircleGeometry(3.0, 16);
   glowGeo.rotateX(-Math.PI / 2);
-  var glowMat = new THREE.MeshBasicMaterial({ color: 0xffcc66, transparent: true, opacity: 0.12, depthWrite: false });
+  var glowMat = new THREE.MeshBasicMaterial({ color: 0xffcc66, transparent: true, opacity: 0.15, depthWrite: false });
   const glowInst = new THREE.InstancedMesh(glowGeo, glowMat, LP_COUNT);
 
   const lpDummy = new THREE.Object3D();
@@ -1678,17 +1677,45 @@ window._wheelTrails = wheelTrails;
 // TREES
 // ═══════════════════════════════════════════════════════════════════════
 const TREE_COUNT = 180;
-const trunkGeo = new THREE.CylinderGeometry(0.12,0.22,2.8,6);
-const trunkMat = new THREE.MeshStandardMaterial({color:0x5c3a1e,roughness:0.9});
+const trunkGeo = new THREE.CylinderGeometry(0.1,0.25,2.8,6);
+const trunkMat = new THREE.MeshStandardMaterial({color:0x5c3a1e,roughness:0.92,metalness:0.0});
 const trunkInst = new THREE.InstancedMesh(trunkGeo, trunkMat, TREE_COUNT);
 trunkInst.castShadow=true; trunkInst.receiveShadow=true;
 
-const foliageDefs = [{r:2.2,h:3.2,y:3},{r:1.7,h:2.8,y:5.2},{r:1.1,h:2.2,y:7}];
-const foliageMat = new THREE.MeshStandardMaterial({color:0x2a6b1a,roughness:0.75});
-const foliageInsts = foliageDefs.map(d=>{
-  const m=new THREE.InstancedMesh(new THREE.ConeGeometry(d.r,d.h,7),foliageMat,TREE_COUNT);
+// Improved foliage: mix of shapes for more natural look
+const foliageDefs = [{r:2.0,h:2.8,y:3.2},{r:1.7,h:2.6,y:5.0},{r:1.1,h:2.2,y:6.8}];
+const foliageMat = new THREE.MeshStandardMaterial({color:0x2a6b1a,roughness:0.8,metalness:0.0});
+const foliageInsts = foliageDefs.map((d,i)=>{
+  let geo;
+  if (i === 0) {
+    // Bottom: flattened dodecahedron for organic bushy look
+    geo = new THREE.DodecahedronGeometry(d.r, 1);
+    // Flatten slightly for crown shape
+    const pos = geo.attributes.position;
+    for (let v = 0; v < pos.count; v++) {
+      const y = pos.getY(v);
+      if (y < -d.r * 0.3) pos.setY(v, -d.r * 0.3); // flatten bottom
+      pos.setY(v, pos.getY(v) * 0.7); // squish vertically
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+  } else if (i === 1) {
+    // Middle: slightly irregular cone
+    geo = new THREE.ConeGeometry(d.r, d.h, 7);
+  } else {
+    // Top: small cone tip
+    geo = new THREE.ConeGeometry(d.r, d.h, 6);
+  }
+  const m=new THREE.InstancedMesh(geo,foliageMat,TREE_COUNT);
   m.castShadow=true;m.receiveShadow=true;return m;
 });
+
+// Dead tree branch stubs (small cylinders sticking out)
+const deadBranchGeo = new THREE.CylinderGeometry(0.03, 0.06, 1.2, 4);
+const deadBranchMat = new THREE.MeshStandardMaterial({color:0x1a0e05, roughness:0.95, metalness:0.0});
+const deadBranchInst = new THREE.InstancedMesh(deadBranchGeo, deadBranchMat, TREE_COUNT * 2);
+deadBranchInst.castShadow = true;
+let deadBranchIdx = 0;
 
 const dummy = new THREE.Object3D();
 const treePositions = [];
@@ -1699,15 +1726,25 @@ for (let att=0;att<3000&&tIdx<TREE_COUNT;att++) {
   if(isOnRoad(x,z,4))continue;
   if(isInTown(x,z,5))continue;
   const h=getTerrainHeight(x,z);
-  if(Math.abs(getTerrainHeight(x+1,z)-h)+Math.abs(getTerrainHeight(x,z+1)-h)>2.5)continue;
+  // Slope check: skip trees on slopes steeper than ~35 degrees
+  const slopeDx = Math.abs(getTerrainHeight(x+1,z)-h);
+  const slopeDz = Math.abs(getTerrainHeight(x,z+1)-h);
+  const slopeAngle = Math.atan(Math.sqrt(slopeDx*slopeDx + slopeDz*slopeDz));
+  if(slopeAngle > 0.61)continue; // ~35 degrees in radians
+  if(slopeDx+slopeDz>2.5)continue;
   let skip=false; for(const tp of treePositions) if(Math.hypot(x-tp.x,z-tp.z)<6){skip=true;break;}
   if(skip)continue;
   const isDead = Math.random() < 0.3; // 30% dead trees
   const s=0.6+Math.random()*0.7;
-  dummy.position.set(x,h+1.4*s,z);dummy.scale.set(s,s,s);dummy.rotation.set(0,Math.random()*6.28,0);
+  // Dead trees: slightly thinner, taller, with slight lean
+  const deadLean = isDead ? (Math.random() - 0.5) * 0.15 : 0;
+  const trunkScale = isDead ? s * (0.7 + Math.random() * 0.3) : s;
+  dummy.position.set(x,h+1.4*trunkScale,z);
+  dummy.scale.set(trunkScale * (isDead ? 0.8 : 1), trunkScale * (isDead ? 1.15 : 1), trunkScale * (isDead ? 0.8 : 1));
+  dummy.rotation.set(deadLean, Math.random()*6.28, isDead ? (Math.random()-0.5)*0.1 : 0);
   dummy.updateMatrix();trunkInst.setMatrixAt(tIdx,dummy.matrix);
   trunkInst.setColorAt(tIdx, isDead
-    ? new THREE.Color().setHSL(0.05, 0.15, 0.1 + Math.random() * 0.05)
+    ? new THREE.Color().setHSL(0.0, 0.05 + Math.random() * 0.1, 0.04 + Math.random() * 0.04) // blackened/charred
     : new THREE.Color().setHSL(0.07,0.4+Math.random()*0.2,0.18+Math.random()*0.08));
   foliageDefs.forEach((d,li)=>{
     if (isDead) {
@@ -1717,16 +1754,42 @@ for (let att=0;att<3000&&tIdx<TREE_COUNT;att++) {
       dummy.updateMatrix(); foliageInsts[li].setMatrixAt(tIdx, dummy.matrix);
       foliageInsts[li].setColorAt(tIdx, new THREE.Color(0x1a1008));
     } else {
-    dummy.position.set(x,h+d.y*s,z);dummy.scale.set(s*(0.9+Math.random()*0.2),s,s*(0.9+Math.random()*0.2));
+    // Living trees: more organic shape variation
+    const scaleVar = 0.85 + Math.random() * 0.3;
+    dummy.position.set(x,h+d.y*s,z);
+    dummy.scale.set(s*scaleVar,s*(0.9+Math.random()*0.2),s*(0.85+Math.random()*0.3));
+    dummy.rotation.set(0, Math.random()*6.28, 0);
     dummy.updateMatrix();foliageInsts[li].setMatrixAt(tIdx,dummy.matrix);
-    foliageInsts[li].setColorAt(tIdx,new THREE.Color().setHSL(0.28+Math.random()*0.06,0.5+Math.random()*0.3,0.18+Math.random()*0.12));
+    foliageInsts[li].setColorAt(tIdx,new THREE.Color().setHSL(
+      0.25+Math.random()*0.1, // wider hue variation
+      0.4+Math.random()*0.35,
+      0.15+Math.random()*0.13
+    ));
     }
   });
+  // Dead tree: add branch stubs
+  if (isDead && deadBranchIdx < TREE_COUNT * 2 - 1) {
+    for (let bi = 0; bi < 2 && deadBranchIdx < TREE_COUNT * 2; bi++) {
+      const bAngle = Math.random() * Math.PI * 2;
+      const bHeight = h + 1.5 * s + Math.random() * 2.0 * s;
+      const bDist = 0.15 * s;
+      dummy.position.set(x + Math.cos(bAngle) * bDist, bHeight, z + Math.sin(bAngle) * bDist);
+      dummy.rotation.set(Math.random() * 0.3 - 0.15, bAngle, Math.PI/2 + (Math.random()-0.5)*0.4);
+      dummy.scale.set(s * 0.8, s * (0.5 + Math.random() * 0.5), s * 0.8);
+      dummy.updateMatrix();
+      deadBranchInst.setMatrixAt(deadBranchIdx, dummy.matrix);
+      deadBranchInst.setColorAt(deadBranchIdx, new THREE.Color().setHSL(0.02, 0.1, 0.04 + Math.random() * 0.04));
+      deadBranchIdx++;
+    }
+  }
   treePositions.push({x,z,s,isDead});tIdx++;
 }
 trunkInst.count=tIdx;trunkInst.instanceColor.needsUpdate=true;
 foliageInsts.forEach(m=>{m.count=tIdx;m.instanceColor.needsUpdate=true;});
+deadBranchInst.count = deadBranchIdx;
+if (deadBranchInst.instanceColor) deadBranchInst.instanceColor.needsUpdate = true;
 scene.add(trunkInst);foliageInsts.forEach(m=>scene.add(m));
+scene.add(deadBranchInst);
 
 // Tree collision
 const treeShape = new CANNON.Cylinder(0.3,0.35,5,6);
@@ -1943,9 +2006,11 @@ function getRoadPerp(tangent) {
 // ═══════════════════════════════════════════════════════════════════════
 {
   const guardrailSections = [];
-  const grPostGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.7, 4);
-  const grRailGeo = new THREE.BoxGeometry(0.02, 0.12, 3.0);
-  const grMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9, metalness: 0.3 });
+  const grPostGeo = new THREE.CylinderGeometry(0.05, 0.06, 0.75, 5);
+  const grRailGeo = new THREE.BoxGeometry(0.03, 0.14, 3.0);
+  const grPostMat = new THREE.MeshStandardMaterial({ color: 0x6b3a12, roughness: 0.92, metalness: 0.55 });
+  const grRailMat = new THREE.MeshStandardMaterial({ color: 0x7a4018, roughness: 0.9, metalness: 0.6 });
+  const grMat = grPostMat; // alias for backward compat
 
   // Detect sharp curves and steep drop-offs
   for (const road of allRoads) {
@@ -2020,10 +2085,10 @@ function getRoadPerp(tangent) {
   }
 
   if (totalPosts > 0) {
-    const postInst = new THREE.InstancedMesh(grPostGeo, grMat, totalPosts);
-    postInst.castShadow = true;
-    const railInst = new THREE.InstancedMesh(grRailGeo, grMat, totalRails);
-    railInst.castShadow = true;
+    const postInst = new THREE.InstancedMesh(grPostGeo, grPostMat, totalPosts);
+    postInst.castShadow = true; postInst.receiveShadow = true;
+    const railInst = new THREE.InstancedMesh(grRailGeo, grRailMat, totalRails);
+    railInst.castShadow = true; railInst.receiveShadow = true;
 
     let pIdx = 0, rIdx = 0;
     for (let s = 0; s < guardrailSections.length; s++) {
@@ -2032,11 +2097,22 @@ function getRoadPerp(tangent) {
 
       for (let p = 0; p < meta.postIndices.length; p++) {
         const pt = section[meta.postIndices[p]];
-        dummy.position.set(pt.x, pt.y + 0.35, pt.z);
-        dummy.rotation.set(0, 0, 0);
-        dummy.scale.set(1, 1, 1);
+        // Dented/displaced posts: 25% chance of lateral offset
+        const dentOffset = Math.random() < 0.25 ? (Math.random() - 0.5) * 0.4 : 0;
+        const dentLean = Math.random() < 0.2 ? (Math.random() - 0.5) * 0.15 : 0;
+        const perpX = pt.tan ? -pt.tan.z : 0;
+        const perpZ = pt.tan ? pt.tan.x : 0;
+        dummy.position.set(pt.x + perpX * dentOffset, pt.y + 0.35, pt.z + perpZ * dentOffset);
+        dummy.rotation.set(dentLean, 0, (Math.random() - 0.5) * 0.08);
+        dummy.scale.set(1, 0.9 + Math.random() * 0.2, 1);
         dummy.updateMatrix();
         postInst.setMatrixAt(pIdx, dummy.matrix);
+        // Rust color variation per post
+        postInst.setColorAt(pIdx, new THREE.Color().setHSL(
+          0.05 + Math.random() * 0.06, // hue: orange-brown range
+          0.5 + Math.random() * 0.3,
+          0.15 + Math.random() * 0.12
+        ));
         pIdx++;
       }
 
@@ -2048,11 +2124,20 @@ function getRoadPerp(tangent) {
         const dx = pt1.x - pt0.x, dz = pt1.z - pt0.z;
         const len = Math.hypot(dx, dz);
         const yaw = Math.atan2(dx, dz);
-        dummy.position.set(mx, my, mz);
-        dummy.rotation.set(0, yaw, 0);
+        // Bent/sagging rails: slight vertical dip and twist
+        const railSag = Math.random() < 0.35 ? -0.04 - Math.random() * 0.08 : 0;
+        const railTwist = (Math.random() - 0.5) * 0.1;
+        dummy.position.set(mx, my + railSag, mz);
+        dummy.rotation.set(railTwist, yaw, (Math.random() - 0.5) * 0.06);
         dummy.scale.set(1, 1, Math.max(0.5, len / 3.0));
         dummy.updateMatrix();
         railInst.setMatrixAt(rIdx, dummy.matrix);
+        // Rust color variation per rail section
+        railInst.setColorAt(rIdx, new THREE.Color().setHSL(
+          0.04 + Math.random() * 0.07,
+          0.45 + Math.random() * 0.35,
+          0.13 + Math.random() * 0.15
+        ));
         rIdx++;
       }
 
@@ -2070,6 +2155,8 @@ function getRoadPerp(tangent) {
 
     postInst.count = pIdx;
     railInst.count = rIdx;
+    if (postInst.instanceColor) postInst.instanceColor.needsUpdate = true;
+    if (railInst.instanceColor) railInst.instanceColor.needsUpdate = true;
     scene.add(postInst);
     scene.add(railInst);
     if (!window._guardrailInsts) window._guardrailInsts = [];
@@ -2081,9 +2168,9 @@ function getRoadPerp(tangent) {
 // FENCES
 // ═══════════════════════════════════════════════════════════════════════
 {
-  const fencePostGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.2, 4);
-  const fenceRailGeo = new THREE.BoxGeometry(0.04, 0.04, 4.0);
-  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x3a2510, roughness: 0.92, metalness: 0.02 });
+  const fencePostGeo = new THREE.CylinderGeometry(0.05, 0.08, 1.2, 5);
+  const fenceRailGeo = new THREE.BoxGeometry(0.05, 0.05, 4.0);
+  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x3a2510, roughness: 0.93, metalness: 0.02 });
 
   const fenceLines = [];
 
@@ -2132,23 +2219,44 @@ function getRoadPerp(tangent) {
 
   if (totalFPosts > 0) {
     const fPostInst = new THREE.InstancedMesh(fencePostGeo, fenceMat, totalFPosts);
-    fPostInst.castShadow = true;
+    fPostInst.castShadow = true; fPostInst.receiveShadow = true;
     const fRailInst = new THREE.InstancedMesh(fenceRailGeo, fenceMat, totalFRails);
-    fRailInst.castShadow = true;
+    fRailInst.castShadow = true; fRailInst.receiveShadow = true;
 
     let fpIdx = 0, frIdx = 0;
     for (const line of fenceLines) {
       for (let p = 0; p < line.length; p++) {
         const pt = line[p];
+        // Skip if terrain too steep (height diff > 2 across footprint)
+        const slopeCheck = Math.abs(getTerrainHeight(pt.x + 0.5, pt.z) - pt.y) + Math.abs(getTerrainHeight(pt.x, pt.z + 0.5) - pt.y);
+        if (slopeCheck > 2.0) {
+          // Place at zero scale to hide
+          dummy.position.set(pt.x, pt.y, pt.z);
+          dummy.scale.set(0.001, 0.001, 0.001);
+          dummy.updateMatrix();
+          fPostInst.setMatrixAt(fpIdx, dummy.matrix);
+          fpIdx++;
+          if (p < line.length - 1) { frIdx += 2; }
+          continue;
+        }
+        // Leaning posts: some lean more dramatically
+        const leanAmount = Math.random() < 0.3 ? (Math.random() - 0.5) * 0.25 : (Math.random() - 0.5) * 0.08;
+        const leanZ = Math.random() < 0.3 ? (Math.random() - 0.5) * 0.2 : (Math.random() - 0.5) * 0.06;
         dummy.position.set(pt.x, pt.y + 0.6, pt.z);
         dummy.rotation.set(
-          (Math.random() - 0.5) * 0.06,
+          leanAmount,
           Math.random() * Math.PI * 2,
-          (Math.random() - 0.5) * 0.06
+          leanZ
         );
-        dummy.scale.set(1, 1, 1);
+        dummy.scale.set(1, 0.85 + Math.random() * 0.3, 1);
         dummy.updateMatrix();
         fPostInst.setMatrixAt(fpIdx, dummy.matrix);
+        // Weathered wood color: darker at base (handled by vertex, but per-instance color variation)
+        fPostInst.setColorAt(fpIdx, new THREE.Color().setHSL(
+          0.06 + Math.random() * 0.04, // brown hue range
+          0.3 + Math.random() * 0.25,
+          0.1 + Math.random() * 0.1
+        ));
         fpIdx++;
 
         if (p < line.length - 1) {
@@ -2161,19 +2269,23 @@ function getRoadPerp(tangent) {
           const yaw = Math.atan2(dx, dz);
           const mx = (pt.x + pt1.x) / 2, mz = (pt.z + pt1.z) / 2;
           const my = (pt.y + pt1.y) / 2;
+          // Slight rail sag
+          const fRailSag = Math.random() < 0.25 ? -0.03 - Math.random() * 0.05 : 0;
 
-          dummy.position.set(mx, my + 0.4, mz);
-          dummy.rotation.set(0, yaw, 0);
+          dummy.position.set(mx, my + 0.4 + fRailSag, mz);
+          dummy.rotation.set((Math.random() - 0.5) * 0.08, yaw, 0);
           dummy.scale.set(1, 1, Math.max(0.5, dist / 4.0));
           dummy.updateMatrix();
           fRailInst.setMatrixAt(frIdx, dummy.matrix);
+          fRailInst.setColorAt(frIdx, new THREE.Color().setHSL(0.06 + Math.random() * 0.04, 0.25 + Math.random() * 0.2, 0.12 + Math.random() * 0.1));
           frIdx++;
 
-          dummy.position.set(mx, my + 0.9, mz);
-          dummy.rotation.set(0, yaw, 0);
+          dummy.position.set(mx, my + 0.9 + fRailSag * 0.7, mz);
+          dummy.rotation.set((Math.random() - 0.5) * 0.06, yaw, 0);
           dummy.scale.set(1, 1, Math.max(0.5, dist / 4.0));
           dummy.updateMatrix();
           fRailInst.setMatrixAt(frIdx, dummy.matrix);
+          fRailInst.setColorAt(frIdx, new THREE.Color().setHSL(0.06 + Math.random() * 0.04, 0.25 + Math.random() * 0.2, 0.12 + Math.random() * 0.1));
           frIdx++;
           }
         }
@@ -2189,6 +2301,8 @@ function getRoadPerp(tangent) {
 
     fPostInst.count = fpIdx;
     fRailInst.count = frIdx;
+    if (fPostInst.instanceColor) fPostInst.instanceColor.needsUpdate = true;
+    if (fRailInst.instanceColor) fRailInst.instanceColor.needsUpdate = true;
     scene.add(fPostInst);
     scene.add(fRailInst);
     if (!window._fenceInsts) window._fenceInsts = [];
@@ -2225,42 +2339,232 @@ const buildingPositions = [];
 
   function createBarn(pos) {
     const group = new THREE.Group();
-    const baseW = 6, baseH = 3, baseD = 8;
-    flattenTerrainUnder(pos.x, pos.z, baseW / 2, baseD / 2, 2);
+    const baseW = 8, baseH = 4, baseD = 12;
+    flattenTerrainUnder(pos.x, pos.z, baseW / 2 + 2, baseD / 2 + 2, 3);
     const h = getTerrainHeight(pos.x, pos.z);
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x5a3525, roughness: 0.9, metalness: 0.02 });
-    const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), wallMat);
-    wallMesh.position.set(0, baseH / 2, 0);
-    wallMesh.castShadow = true;
-    group.add(wallMesh);
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x4a3020, roughness: 0.9, metalness: 0.15 });
-    const roofGeo = new THREE.PlaneGeometry(4.5, 9);
-    const roofLeft = new THREE.Mesh(roofGeo, roofMat);
-    roofLeft.position.set(-1.5, baseH + 0.9, 0);
-    roofLeft.rotation.z = Math.PI / 2 - 0.65;
-    roofLeft.rotation.y = Math.PI / 2;
-    roofLeft.castShadow = true;
-    group.add(roofLeft);
-    const roofRight = new THREE.Mesh(roofGeo, roofMat);
-    roofRight.position.set(1.5, baseH + 0.9, 0);
-    roofRight.rotation.z = -(Math.PI / 2 - 0.65);
-    roofRight.rotation.y = Math.PI / 2;
-    roofRight.castShadow = true;
-    group.add(roofRight);
-    const doorMat = new THREE.MeshStandardMaterial({ color: 0x3d1f0f, roughness: 0.9, metalness: 0.0 });
-    const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 0.1), doorMat);
-    doorMesh.position.set(0, 1.25, -baseD / 2 - 0.05);
-    doorMesh.castShadow = true;
-    group.add(doorMesh);
-    const winMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8, metalness: 0.1 });
-    const winMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, 0.8), winMat);
-    winMesh.position.set(baseW / 2 + 0.05, 1.8, 0);
-    group.add(winMesh);
+    const bright = 1.0 + Math.random() * 0.3;
+    // Classic barn red with variation
+    const barnColorVariant = Math.random();
+    const barnR = Math.floor((barnColorVariant < 0.5 ? 0x7a : 0x6a) * bright);
+    const barnG = Math.floor((barnColorVariant < 0.5 ? 0x2e : 0x38) * bright);
+    const barnB = Math.floor((barnColorVariant < 0.5 ? 0x1e : 0x28) * bright);
+
+    // --- Foundation / base slab ---
+    const foundMat = new THREE.MeshStandardMaterial({ color: 0x555550, roughness: 0.95, metalness: 0.02 });
+    const found = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.6, 0.3, baseD + 0.6), foundMat);
+    found.position.set(0, 0.15, 0); found.castShadow = true; found.receiveShadow = true; group.add(found);
+
+    // --- Main walls with vertex color weathering ---
+    const wallGeo = new THREE.BoxGeometry(baseW, baseH, baseD, 4, 4, 4);
+    const wallColors = []; const wallPos = wallGeo.attributes.position;
+    for (let i = 0; i < wallPos.count; i++) {
+      const py = wallPos.getY(i); const normY = (py + baseH/2) / baseH;
+      const baseShade = 0.7 + normY * 0.3;
+      const waterStain = normY < 0.2 ? (0.2 - normY) * 1.5 : 0;
+      const peel = Math.random() * 0.15;
+      const r = Math.min(1, (barnR/255) * (baseShade - waterStain * 0.2 + peel));
+      const g = Math.min(1, (barnG/255) * (baseShade - waterStain * 0.3 + peel * 0.4));
+      const b = Math.min(1, (barnB/255) * (baseShade - waterStain * 0.15 + peel * 0.2));
+      wallColors.push(r, g, b);
+    }
+    wallGeo.setAttribute('color', new THREE.Float32BufferAttribute(wallColors, 3));
+    const wallMat = new THREE.MeshStandardMaterial({ color: (barnR << 16) | (barnG << 8) | barnB, roughness: 0.92, metalness: 0.02, vertexColors: true });
+    const wallMesh = new THREE.Mesh(wallGeo, wallMat);
+    wallMesh.position.set(0, baseH / 2 + 0.3, 0);
+    wallMesh.castShadow = true; wallMesh.receiveShadow = true; group.add(wallMesh);
+
+    // --- Horizontal plank lines (trim boards) ---
+    const plankMat = new THREE.MeshStandardMaterial({ color: 0x4a2a18, roughness: 0.95, metalness: 0.0 });
+    for (let py = 1; py <= baseH; py += 1.0) {
+      for (const side of [-1, 1]) {
+        const plank = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, baseD + 0.1), plankMat);
+        plank.position.set(side * (baseW/2 + 0.03), py + 0.3, 0);
+        plank.castShadow = true; group.add(plank);
+      }
+      // Front/back planks
+      const plankF = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.1, 0.06, 0.06), plankMat);
+      plankF.position.set(0, py + 0.3, -baseD/2 - 0.03); plankF.castShadow = true; group.add(plankF);
+      const plankB = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.1, 0.06, 0.06), plankMat);
+      plankB.position.set(0, py + 0.3, baseD/2 + 0.03); plankB.castShadow = true; group.add(plankB);
+    }
+
+    // --- Peaked roof with sag ---
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x4a3520, roughness: 0.93, metalness: 0.2, side: THREE.DoubleSide });
+    const roofSlope = 0.55;
+    const roofOverhangW = 1.0, roofOverhangD = 1.2;
+    const roofW = baseW / 2 + roofOverhangW;
+    const roofD = baseD + roofOverhangD * 2;
+    const roofH = baseW / 2 * roofSlope;
+    // Left roof panel with sag
+    const roofGeoL = new THREE.PlaneGeometry(Math.sqrt(roofW*roofW + roofH*roofH), roofD, 6, 1);
+    const rpL = roofGeoL.attributes.position;
+    for (let i = 0; i < rpL.count; i++) {
+      const u = (rpL.getX(i) / (Math.sqrt(roofW*roofW + roofH*roofH))) + 0.5;
+      const sagAmount = Math.sin(u * Math.PI) * 0.15 + Math.sin(((rpL.getY(i) / roofD) + 0.5) * Math.PI) * 0.08;
+      rpL.setZ(i, rpL.getZ(i) - sagAmount);
+    }
+    roofGeoL.computeVertexNormals();
+    const roofLeft = new THREE.Mesh(roofGeoL, roofMat);
+    const roofAngle = Math.atan2(roofH, roofW);
+    roofLeft.position.set(-roofW/2 * 0.5, baseH + 0.3 + roofH * 0.55, 0);
+    roofLeft.rotation.set(0, Math.PI/2, Math.PI/2 - roofAngle);
+    roofLeft.castShadow = true; roofLeft.receiveShadow = true; group.add(roofLeft);
+    // Right roof panel
+    const roofGeoR = new THREE.PlaneGeometry(Math.sqrt(roofW*roofW + roofH*roofH), roofD, 6, 1);
+    const rpR = roofGeoR.attributes.position;
+    for (let i = 0; i < rpR.count; i++) {
+      const u = (rpR.getX(i) / (Math.sqrt(roofW*roofW + roofH*roofH))) + 0.5;
+      rpR.setZ(i, rpR.getZ(i) - Math.sin(u * Math.PI) * 0.1);
+    }
+    roofGeoR.computeVertexNormals();
+    const roofRight = new THREE.Mesh(roofGeoR, roofMat);
+    roofRight.position.set(roofW/2 * 0.5, baseH + 0.3 + roofH * 0.55, 0);
+    roofRight.rotation.set(0, Math.PI/2, -(Math.PI/2 - roofAngle));
+    roofRight.castShadow = true; roofRight.receiveShadow = true; group.add(roofRight);
+
+    // --- Roof ridge beam ---
+    const ridgeMat = new THREE.MeshStandardMaterial({ color: 0x3d2010, roughness: 0.95, metalness: 0.05 });
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, roofD), ridgeMat);
+    ridge.position.set(0, baseH + 0.3 + roofH, 0); ridge.castShadow = true; group.add(ridge);
+
+    // --- Gable triangles (front and back) ---
+    const gableGeo = new THREE.BufferGeometry();
+    const hw = baseW / 2;
+    const gableVerts = new Float32Array([
+      -hw, baseH + 0.3, 0,   hw, baseH + 0.3, 0,   0, baseH + 0.3 + roofH, 0
+    ]);
+    gableGeo.setAttribute('position', new THREE.BufferAttribute(gableVerts, 3));
+    gableGeo.computeVertexNormals();
+    const gableMat = new THREE.MeshStandardMaterial({ color: (barnR << 16) | (barnG << 8) | barnB, roughness: 0.92, metalness: 0.02, side: THREE.DoubleSide });
+    const gableFront = new THREE.Mesh(gableGeo.clone(), gableMat);
+    gableFront.position.set(0, 0, -baseD / 2); gableFront.castShadow = true; group.add(gableFront);
+    const gableBack = new THREE.Mesh(gableGeo.clone(), gableMat);
+    gableBack.position.set(0, 0, baseD / 2); gableBack.castShadow = true; group.add(gableBack);
+
+    // --- Missing roof section (hole) ---
+    if (Math.random() > 0.3) {
+      const holeMat = new THREE.MeshStandardMaterial({ color: 0x1a1208, roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide });
+      const holeW = 1.5 + Math.random() * 1.5, holeD = 1.5 + Math.random() * 2;
+      const holeZ = (Math.random() - 0.5) * (baseD * 0.5);
+      const holeSide = Math.random() < 0.5 ? -1 : 1;
+      const holeX = holeSide * (roofW * 0.3);
+      const holeY = baseH + 0.3 + roofH * 0.5;
+      const hole = new THREE.Mesh(new THREE.PlaneGeometry(holeW, holeD), holeMat);
+      hole.position.set(holeX, holeY, holeZ);
+      hole.rotation.set(0, Math.PI/2, holeSide * (Math.PI/2 - roofAngle));
+      group.add(hole);
+    }
+
+    // --- Exposed rafters ---
+    const rafterMat = new THREE.MeshStandardMaterial({ color: 0x5a3a20, roughness: 0.95, metalness: 0.0 });
+    for (let rz = -baseD/2 + 1; rz <= baseD/2 - 1; rz += 2.5) {
+      const rafter = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.4, 0.12, 0.12), rafterMat);
+      rafter.position.set(0, baseH + 0.2, rz); rafter.castShadow = true; group.add(rafter);
+    }
+
+    // --- Large barn door (front, partially open) ---
+    const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x3d1f0f, roughness: 0.93, metalness: 0.0 });
+    // Door opening (dark void)
+    const doorVoid = new THREE.Mesh(new THREE.BoxGeometry(2.2, 3.0, 0.3), new THREE.MeshStandardMaterial({ color: 0x0a0806, roughness: 1, metalness: 0 }));
+    doorVoid.position.set(0, 1.8, -baseD / 2); doorVoid.castShadow = false; group.add(doorVoid);
+    // Door frame
+    const frameTop = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.15, 0.2), doorFrameMat);
+    frameTop.position.set(0, 3.35, -baseD / 2 - 0.05); frameTop.castShadow = true; group.add(frameTop);
+    const frameL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.0, 0.2), doorFrameMat);
+    frameL.position.set(-1.15, 1.8, -baseD / 2 - 0.05); frameL.castShadow = true; group.add(frameL);
+    const frameR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.0, 0.2), doorFrameMat);
+    frameR.position.set(1.15, 1.8, -baseD / 2 - 0.05); frameR.castShadow = true; group.add(frameR);
+    // One door panel, partially open (rotated)
+    const doorPanel = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.8, 0.08), doorFrameMat);
+    doorPanel.position.set(-1.1 - 0.3, 1.75, -baseD / 2 - 0.5);
+    doorPanel.rotation.y = 0.6 + Math.random() * 0.4; // swung open
+    doorPanel.castShadow = true; group.add(doorPanel);
+    // Second door panel, hanging or closed
+    const doorPanel2 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.8, 0.08), doorFrameMat);
+    doorPanel2.position.set(0.5, 1.75, -baseD / 2 - 0.08);
+    doorPanel2.rotation.z = Math.random() * 0.05; // slightly askew
+    doorPanel2.castShadow = true; group.add(doorPanel2);
+
+    // --- Windows (with frames and dark glass, some broken) ---
+    const winFrameMat = new THREE.MeshStandardMaterial({ color: 0x4a3020, roughness: 0.9, metalness: 0.05 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x1a2a30, roughness: 0.3, metalness: 0.15, transparent: true, opacity: 0.6 });
+    const brokenMat = new THREE.MeshStandardMaterial({ color: 0x0a0806, roughness: 1, metalness: 0 });
+    const winPositions = [
+      { x: baseW / 2 + 0.06, y: 2.5, z: -2, rx: 0, ry: Math.PI/2, rz: 0 },
+      { x: baseW / 2 + 0.06, y: 2.5, z: 2, rx: 0, ry: Math.PI/2, rz: 0 },
+      { x: -baseW / 2 - 0.06, y: 2.5, z: 0, rx: 0, ry: Math.PI/2, rz: 0 },
+      { x: 1.5, y: baseH + 0.3 + roofH * 0.35, z: -baseD / 2 - 0.06, rx: 0, ry: 0, rz: 0 }, // gable window
+    ];
+    winPositions.forEach((wp, wi) => {
+      const isBroken = Math.random() < 0.4;
+      // Frame
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.9, 0.7), winFrameMat);
+      frame.position.set(wp.x, wp.y, wp.z); frame.rotation.set(wp.rx, wp.ry, wp.rz);
+      frame.castShadow = true; group.add(frame);
+      // Glass or hole
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.7), isBroken ? brokenMat : glassMat);
+      glass.position.set(wp.x, wp.y, wp.z); glass.rotation.set(wp.rx, wp.ry, wp.rz);
+      group.add(glass);
+      // Cross mullion
+      const mullionH = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.65), winFrameMat);
+      mullionH.position.set(wp.x, wp.y, wp.z); mullionH.rotation.set(wp.rx, wp.ry, wp.rz); group.add(mullionH);
+      const mullionV = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.8, 0.03), winFrameMat);
+      mullionV.position.set(wp.x, wp.y, wp.z); mullionV.rotation.set(wp.rx, wp.ry, wp.rz); group.add(mullionV);
+    });
+
+    // --- Collapsed wall section ---
+    if (Math.random() > 0.4) {
+      const collapseSide = Math.random() < 0.5 ? 1 : -1;
+      const collapseZ = (Math.random() - 0.5) * baseD * 0.4;
+      // Missing wall chunk (dark hole)
+      const wallHole = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.5, 2.0),
+        new THREE.MeshStandardMaterial({ color: 0x0a0806, roughness: 1, metalness: 0 }));
+      wallHole.position.set(collapseSide * (baseW / 2), 1.0, collapseZ);
+      group.add(wallHole);
+      // Debris pile at base
+      for (let d = 0; d < 5; d++) {
+        const ds = 0.15 + Math.random() * 0.4;
+        const deb = new THREE.Mesh(new THREE.BoxGeometry(ds, ds * 0.4, ds * 0.7),
+          Math.random() < 0.5 ? wallMat : plankMat);
+        deb.position.set(
+          collapseSide * (baseW / 2 + 0.3 + Math.random() * 1.2),
+          ds * 0.2,
+          collapseZ + (Math.random() - 0.5) * 2.5
+        );
+        deb.rotation.set(Math.random() * 0.8, Math.random() * 6.28, Math.random() * 0.5);
+        deb.castShadow = true; group.add(deb);
+      }
+    }
+
+    // --- Rust streaks (thin vertical dark patches on walls) ---
+    const streakMat = new THREE.MeshStandardMaterial({ color: 0x3a1a08, roughness: 0.95, metalness: 0.1, transparent: true, opacity: 0.5 });
+    for (let s = 0; s < 4; s++) {
+      const streak = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 1.5 + Math.random()), streakMat);
+      const side = Math.random() < 0.5 ? 1 : -1;
+      streak.position.set(
+        side * (baseW / 2 + 0.07),
+        1.5 + Math.random() * 1.5,
+        (Math.random() - 0.5) * baseD * 0.8
+      );
+      streak.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
+      group.add(streak);
+    }
+
+    // --- Ground debris around barn ---
+    for (let d = 0; d < 8; d++) {
+      const ds = 0.1 + Math.random() * 0.35;
+      const deb = new THREE.Mesh(new THREE.BoxGeometry(ds, ds * 0.3, ds * 0.6),
+        Math.random() < 0.3 ? foundMat : plankMat);
+      deb.position.set((Math.random() - 0.5) * (baseW + 4), ds * 0.15, (Math.random() - 0.5) * (baseD + 3));
+      deb.rotation.set(Math.random() * 0.3, Math.random() * 6.28, Math.random() * 0.3);
+      deb.castShadow = true; group.add(deb);
+    }
+
     group.position.set(pos.x, h, pos.z);
     group.rotation.y = Math.random() * Math.PI * 2;
     scene.add(group);
     const bBody = new CANNON.Body({ mass: 0 });
-    bBody.addShape(new CANNON.Box(new CANNON.Vec3(baseW / 2, baseH / 2 + 1, baseD / 2)));
+    bBody.addShape(new CANNON.Box(new CANNON.Vec3(baseW / 2, baseH / 2 + 1.5, baseD / 2)));
     bBody.position.set(pos.x, h + baseH / 2, pos.z);
     bBody.quaternion.setFromEuler(0, group.rotation.y, 0);
     world.addBody(bBody);
@@ -2269,42 +2573,211 @@ const buildingPositions = [];
 
   function createHouse(pos) {
     const group = new THREE.Group();
-    const baseW = 4, baseH = 2.5, baseD = 5;
-    flattenTerrainUnder(pos.x, pos.z, baseW / 2, baseD / 2, 2);
+    const baseW = 5, baseH = 3, baseD = 6;
+    flattenTerrainUnder(pos.x, pos.z, baseW / 2 + 2, baseD / 2 + 2, 3);
     const h = getTerrainHeight(pos.x, pos.z);
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x6a6050, roughness: 0.9, metalness: 0.02 });
-    const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), wallMat);
-    wallMesh.position.set(0, baseH / 2, 0);
-    wallMesh.castShadow = true;
-    group.add(wallMesh);
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x3a3030, roughness: 0.9, metalness: 0.1 });
-    const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW + 1, 0.15, baseD + 1), roofMat);
-    roofMesh.position.set(0, baseH + 0.1, 0);
-    roofMesh.rotation.z = 0.08;
-    roofMesh.castShadow = true;
-    group.add(roofMesh);
-    const chimMat = new THREE.MeshStandardMaterial({ color: 0x3a2a20, roughness: 0.95, metalness: 0.02 });
-    const chimMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.5, 0.4), chimMat);
-    chimMesh.position.set(1.2, baseH + 0.7, -1);
-    chimMesh.castShadow = true;
-    group.add(chimMesh);
-    const doorMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1a, roughness: 0.9, metalness: 0.0 });
-    const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.0, 0.1), doorMat);
-    doorMesh.position.set(0, 1.0, -baseD / 2 - 0.05);
-    doorMesh.castShadow = true;
-    group.add(doorMesh);
-    const winMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8, metalness: 0.1 });
-    const win1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.6), winMat);
-    win1.position.set(baseW / 2 + 0.05, 1.6, 0.5);
-    group.add(win1);
-    const win2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.6), winMat);
-    win2.position.set(-baseW / 2 - 0.05, 1.6, -0.3);
-    group.add(win2);
+    const bright = 0.8 + Math.random() * 0.35;
+    const houseColors = [0x8a7a68, 0x9a8a72, 0x7a7060, 0xa09080, 0x887860];
+    const baseColor = houseColors[Math.floor(Math.random() * houseColors.length)];
+    const cr = Math.min(1, ((baseColor >> 16) & 0xff) / 255 * bright);
+    const cg = Math.min(1, ((baseColor >> 8) & 0xff) / 255 * bright);
+    const cb = Math.min(1, (baseColor & 0xff) / 255 * bright);
+
+    // --- Foundation ---
+    const foundMat = new THREE.MeshStandardMaterial({ color: 0x555550, roughness: 0.95, metalness: 0.02 });
+    const found = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.4, 0.35, baseD + 0.4), foundMat);
+    found.position.set(0, 0.175, 0); found.castShadow = true; found.receiveShadow = true; group.add(found);
+
+    // --- Walls with vertex color weathering ---
+    const wallGeo = new THREE.BoxGeometry(baseW, baseH, baseD, 4, 4, 4);
+    const wColors = []; const wPos = wallGeo.attributes.position;
+    for (let i = 0; i < wPos.count; i++) {
+      const py = wPos.getY(i); const normY = (py + baseH/2) / baseH;
+      const waterStain = normY < 0.15 ? (0.15 - normY) * 3.0 : 0;
+      const peel = Math.random() * 0.08;
+      const moss = (normY < 0.3 && Math.random() < 0.2) ? 0.12 : 0;
+      wColors.push(
+        Math.min(1, cr * (0.6 + normY * 0.4 - waterStain * 0.3 + peel) - moss * 0.3),
+        Math.min(1, cg * (0.6 + normY * 0.4 - waterStain * 0.2 + peel * 0.3) + moss * 0.4),
+        Math.min(1, cb * (0.6 + normY * 0.4 - waterStain * 0.15 + peel * 0.2) - moss * 0.2)
+      );
+    }
+    wallGeo.setAttribute('color', new THREE.Float32BufferAttribute(wColors, 3));
+    const wallMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0.02 });
+    const wallMesh = new THREE.Mesh(wallGeo, wallMat);
+    wallMesh.position.set(0, baseH / 2 + 0.35, 0);
+    wallMesh.castShadow = true; wallMesh.receiveShadow = true; group.add(wallMesh);
+
+    // --- Pitched roof (two angled planes meeting at ridge) ---
+    const roofH = baseW / 2 * 0.6;
+    const roofOverW = 0.7, roofOverD = 0.8;
+    const roofSlopeLen = Math.sqrt((baseW/2 + roofOverW) * (baseW/2 + roofOverW) + roofH * roofH);
+    const roofAngle = Math.atan2(roofH, baseW/2 + roofOverW);
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x3a2828, roughness: 0.92, metalness: 0.12, side: THREE.DoubleSide });
+
+    // Left roof slope
+    const roofGeoL = new THREE.PlaneGeometry(roofSlopeLen, baseD + roofOverD * 2, 5, 1);
+    const rpL = roofGeoL.attributes.position;
+    for (let i = 0; i < rpL.count; i++) {
+      rpL.setZ(i, rpL.getZ(i) - Math.sin(((rpL.getX(i)/roofSlopeLen)+0.5) * Math.PI) * 0.1);
+    }
+    roofGeoL.computeVertexNormals();
+    const roofLeft = new THREE.Mesh(roofGeoL, roofMat);
+    roofLeft.position.set(-(baseW/4 + roofOverW/2) * 0.52, baseH + 0.35 + roofH * 0.55, 0);
+    roofLeft.rotation.set(0, Math.PI/2, Math.PI/2 - roofAngle);
+    roofLeft.castShadow = true; roofLeft.receiveShadow = true; group.add(roofLeft);
+    // Right roof slope
+    const roofGeoR = roofGeoL.clone();
+    const roofRight = new THREE.Mesh(roofGeoR, roofMat);
+    roofRight.position.set((baseW/4 + roofOverW/2) * 0.52, baseH + 0.35 + roofH * 0.55, 0);
+    roofRight.rotation.set(0, Math.PI/2, -(Math.PI/2 - roofAngle));
+    roofRight.castShadow = true; roofRight.receiveShadow = true; group.add(roofRight);
+
+    // Ridge beam
+    const ridgeMat = new THREE.MeshStandardMaterial({ color: 0x3d2218, roughness: 0.95, metalness: 0.0 });
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, baseD + roofOverD * 2), ridgeMat);
+    ridge.position.set(0, baseH + 0.35 + roofH, 0); ridge.castShadow = true; group.add(ridge);
+
+    // Gable triangles
+    const gableGeo = new THREE.BufferGeometry();
+    const ghw = baseW / 2;
+    const gableVerts = new Float32Array([
+      -ghw, baseH + 0.35, 0,  ghw, baseH + 0.35, 0,  0, baseH + 0.35 + roofH, 0
+    ]);
+    gableGeo.setAttribute('position', new THREE.BufferAttribute(gableVerts, 3));
+    gableGeo.computeVertexNormals();
+    const gableMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.92, metalness: 0.02, side: THREE.DoubleSide });
+    const gF = new THREE.Mesh(gableGeo.clone(), gableMat); gF.position.z = -baseD/2; gF.castShadow = true; group.add(gF);
+    const gB = new THREE.Mesh(gableGeo.clone(), gableMat); gB.position.z = baseD/2; gB.castShadow = true; group.add(gB);
+
+    // --- Partially collapsed roof section ---
+    if (Math.random() > 0.5) {
+      const collapseW = 1.0 + Math.random() * 1.5;
+      const collapseD = 1.5 + Math.random() * 1.5;
+      const fallPiece = new THREE.Mesh(new THREE.BoxGeometry(collapseW, 0.1, collapseD),
+        new THREE.MeshStandardMaterial({ color: 0x3a2828, roughness: 0.92, metalness: 0.12 }));
+      fallPiece.position.set((Math.random()-0.5) * 2, 0.6, (Math.random()-0.5) * baseD * 0.3);
+      fallPiece.rotation.set(0.3 + Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.4);
+      fallPiece.castShadow = true; group.add(fallPiece);
+    }
+
+    // --- Chimney (crumbling, partially fallen) ---
+    const chimMat = new THREE.MeshStandardMaterial({ color: 0x4a3a30, roughness: 0.95, metalness: 0.02 });
+    const chimH = 1.2 + Math.random() * 0.8;
+    const chimX = (Math.random() < 0.5 ? 1 : -1) * (baseW / 2 - 0.4);
+    const chimZ = -baseD / 4;
+    const chim = new THREE.Mesh(new THREE.BoxGeometry(0.5, chimH, 0.5), chimMat);
+    chim.position.set(chimX, baseH + 0.35 + chimH / 2, chimZ);
+    chim.rotation.x = (Math.random() - 0.5) * 0.08;
+    chim.rotation.z = (Math.random() - 0.5) * 0.12;
+    chim.castShadow = true; group.add(chim);
+    // Chimney cap
+    const chimCap = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 0.6), chimMat);
+    chimCap.position.set(chimX, baseH + 0.35 + chimH + 0.04, chimZ); group.add(chimCap);
+    // Fallen chimney bricks
+    if (Math.random() > 0.5) {
+      for (let b = 0; b < 3; b++) {
+        const brick = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.15), chimMat);
+        brick.position.set(chimX + (Math.random()-0.5)*1.5, 0.04, chimZ + (Math.random()-0.5)*1.5);
+        brick.rotation.y = Math.random() * 6.28; group.add(brick);
+      }
+    }
+
+    // --- Porch (front overhang + supports) ---
+    const porchMat = new THREE.MeshStandardMaterial({ color: 0x5a4a38, roughness: 0.93, metalness: 0.02 });
+    const porchD = 1.5, porchW = baseW + 0.4;
+    // Porch roof
+    const porchRoof = new THREE.Mesh(new THREE.BoxGeometry(porchW, 0.1, porchD), roofMat);
+    porchRoof.position.set(0, baseH + 0.1, -baseD / 2 - porchD / 2);
+    porchRoof.rotation.x = 0.06; // slight forward tilt
+    porchRoof.castShadow = true; group.add(porchRoof);
+    // Porch posts
+    for (const px of [-porchW/2 + 0.15, porchW/2 - 0.15]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, baseH, 0.1), porchMat);
+      post.position.set(px, baseH / 2 + 0.35, -baseD / 2 - porchD + 0.15);
+      post.rotation.z = (Math.random() - 0.5) * 0.06;
+      post.castShadow = true; group.add(post);
+    }
+    // Porch floor
+    const porchFloor = new THREE.Mesh(new THREE.BoxGeometry(porchW, 0.08, porchD), porchMat);
+    porchFloor.position.set(0, 0.39, -baseD / 2 - porchD / 2);
+    porchFloor.castShadow = true; porchFloor.receiveShadow = true; group.add(porchFloor);
+    // Step
+    const step = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 0.4), foundMat);
+    step.position.set(0, 0.25, -baseD / 2 - porchD - 0.2); group.add(step);
+
+    // --- Door (dark opening with frame) ---
+    const doorVoid = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 2.2),
+      new THREE.MeshStandardMaterial({ color: 0x0a0806, roughness: 1, metalness: 0, side: THREE.DoubleSide }));
+    doorVoid.position.set(0, 1.45, -baseD / 2 - 0.01); group.add(doorVoid);
+    const doorFrame = new THREE.MeshStandardMaterial({ color: 0x3d2b1a, roughness: 0.93, metalness: 0 });
+    const dfT = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 0.12), doorFrame);
+    dfT.position.set(0, 2.56, -baseD / 2 - 0.03); group.add(dfT);
+    const dfL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.2, 0.12), doorFrame);
+    dfL.position.set(-0.5, 1.45, -baseD / 2 - 0.03); group.add(dfL);
+    const dfR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.2, 0.12), doorFrame);
+    dfR.position.set(0.5, 1.45, -baseD / 2 - 0.03); group.add(dfR);
+
+    // --- Windows with frames and glass/holes ---
+    const winFrameMat = new THREE.MeshStandardMaterial({ color: 0x4a3828, roughness: 0.9, metalness: 0.05 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x1a2530, roughness: 0.3, metalness: 0.15, transparent: true, opacity: 0.5 });
+    const brokenMat = new THREE.MeshStandardMaterial({ color: 0x080604, roughness: 1, metalness: 0 });
+    const houseWins = [
+      { x: baseW/2 + 0.06, y: 2.0, z: -1.0, hor: false },
+      { x: baseW/2 + 0.06, y: 2.0, z: 1.5, hor: false },
+      { x: -baseW/2 - 0.06, y: 2.0, z: 0, hor: false },
+      { x: -baseW/2 - 0.06, y: 2.0, z: -1.8, hor: false },
+      { x: -1.2, y: 2.0, z: baseD/2 + 0.06, hor: true },
+      { x: 1.2, y: 2.0, z: baseD/2 + 0.06, hor: true },
+    ];
+    houseWins.forEach(wp => {
+      const isBroken = Math.random() < 0.35;
+      const fW = wp.hor ? 0.7 : 0.08, fH = 0.75, fD = wp.hor ? 0.08 : 0.55;
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(fW, fH, fD), winFrameMat);
+      frame.position.set(wp.x, wp.y, wp.z); frame.castShadow = true; group.add(frame);
+      // Glass
+      const gW = wp.hor ? 0.55 : 0.01, gH = 0.6, gD = wp.hor ? 0.01 : 0.4;
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(gW, gH, gD), isBroken ? brokenMat : glassMat);
+      glass.position.set(wp.x, wp.y, wp.z); group.add(glass);
+      // Mullion cross
+      const mW = wp.hor ? 0.55 : 0.02, mH = 0.02, mD = wp.hor ? 0.02 : 0.4;
+      const mH2W = wp.hor ? 0.02 : 0.02, mH2H = 0.6, mH2D = wp.hor ? 0.02 : 0.02;
+      const m1 = new THREE.Mesh(new THREE.BoxGeometry(mW, mH, mD), winFrameMat);
+      m1.position.set(wp.x, wp.y, wp.z); group.add(m1);
+      const m2 = new THREE.Mesh(new THREE.BoxGeometry(mH2W, mH2H, mH2D), winFrameMat);
+      m2.position.set(wp.x, wp.y, wp.z); group.add(m2);
+    });
+
+    // --- Vegetation patches (green tint on walls) ---
+    const vegMat = new THREE.MeshStandardMaterial({ color: 0x2a4a1a, roughness: 0.95, metalness: 0.0, transparent: true, opacity: 0.45 });
+    for (let v = 0; v < 3; v++) {
+      const vw = 0.5 + Math.random() * 1.0, vh = 0.5 + Math.random() * 0.8;
+      const side = Math.random() < 0.5 ? 1 : -1;
+      const veg = new THREE.Mesh(new THREE.PlaneGeometry(vw, vh), vegMat);
+      veg.position.set(
+        side * (baseW / 2 + 0.07),
+        0.6 + Math.random() * 0.5,
+        (Math.random() - 0.5) * baseD * 0.7
+      );
+      veg.rotation.y = side > 0 ? Math.PI/2 : -Math.PI/2;
+      group.add(veg);
+    }
+
+    // --- Debris ---
+    for (let d = 0; d < 5; d++) {
+      const ds = 0.08 + Math.random() * 0.25;
+      const deb = new THREE.Mesh(new THREE.BoxGeometry(ds, ds * 0.4, ds * 0.6),
+        Math.random() < 0.3 ? foundMat : porchMat);
+      deb.position.set((Math.random()-0.5) * (baseW + 3), ds * 0.15, (Math.random()-0.5) * (baseD + 4));
+      deb.rotation.set(Math.random() * 0.3, Math.random() * 6.28, Math.random() * 0.3);
+      deb.castShadow = true; group.add(deb);
+    }
+
     group.position.set(pos.x, h, pos.z);
     group.rotation.y = Math.random() * Math.PI * 2;
     scene.add(group);
     const bBody = new CANNON.Body({ mass: 0 });
-    bBody.addShape(new CANNON.Box(new CANNON.Vec3(baseW / 2, baseH / 2 + 0.5, baseD / 2)));
+    bBody.addShape(new CANNON.Box(new CANNON.Vec3(baseW / 2 + 0.5, baseH / 2 + 1, baseD / 2 + 1)));
     bBody.position.set(pos.x, h + baseH / 2, pos.z);
     bBody.quaternion.setFromEuler(0, group.rotation.y, 0);
     world.addBody(bBody);
@@ -2313,72 +2786,187 @@ const buildingPositions = [];
 
   function createWaterTower(pos) {
     const group = new THREE.Group();
-    const legH = 4;
-    flattenTerrainUnder(pos.x, pos.z, 2, 2, 2);
+    const legH = 8;
+    const legSpread = 1.8;
+    const tankRadius = 2.0, tankH = 2.5;
+    flattenTerrainUnder(pos.x, pos.z, legSpread + 1, legSpread + 1, 3);
     const h = getTerrainHeight(pos.x, pos.z);
-    const metalMat = new THREE.MeshStandardMaterial({ color: 0x5a5a5a, roughness: 0.7, metalness: 0.5 });
-    const rustMat = new THREE.MeshStandardMaterial({ color: 0x6a3a1a, roughness: 0.95, metalness: 0.15 });
-    const legGeo = new THREE.CylinderGeometry(0.08, 0.1, legH, 4);
-    const legPositions = [[-0.8, 0, -0.8], [0.8, 0, -0.8], [-0.8, 0, 0.8], [0.8, 0, 0.8]];
-    for (const lp of legPositions) {
+
+    // Materials with heavy rust variation
+    const rustBright = 0.8 + Math.random() * 0.4;
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x5a5a58, roughness: 0.78, metalness: 0.5 });
+    const rustMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(
+      0.5 * rustBright, 0.25 * rustBright, 0.1 * rustBright
+    ), roughness: 0.95, metalness: 0.22 });
+    const darkRustMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(
+      0.28 * rustBright, 0.12 * rustBright, 0.04 * rustBright
+    ), roughness: 0.98, metalness: 0.15 });
+
+    // --- 4 Legs (tapered, thicker) ---
+    const legPositions = [
+      [-legSpread, 0, -legSpread], [legSpread, 0, -legSpread],
+      [-legSpread, 0, legSpread], [legSpread, 0, legSpread]
+    ];
+    const legGeo = new THREE.CylinderGeometry(0.12, 0.18, legH, 6);
+    legPositions.forEach((lp, li) => {
       const leg = new THREE.Mesh(legGeo, metalMat);
       leg.position.set(lp[0], legH / 2, lp[2]);
-      leg.castShadow = true;
-      group.add(leg);
+      // Slight inward lean
+      const leanX = -lp[0] * 0.02, leanZ = -lp[2] * 0.02;
+      leg.rotation.x = leanZ; leg.rotation.z = -leanX;
+      leg.castShadow = true; leg.receiveShadow = true; group.add(leg);
+    });
+
+    // --- Horizontal braces + X-cross braces ---
+    const braceThick = 0.06;
+    for (let bh = 1.5; bh < legH; bh += 2.2) {
+      // Horizontal braces on all 4 sides
+      const hBraceLen = legSpread * 2;
+      const sides = [
+        { x: 0, z: -legSpread, ry: 0 },
+        { x: 0, z: legSpread, ry: 0 },
+        { x: -legSpread, z: 0, ry: Math.PI/2 },
+        { x: legSpread, z: 0, ry: Math.PI/2 }
+      ];
+      sides.forEach(s => {
+        const brace = new THREE.Mesh(new THREE.BoxGeometry(braceThick, braceThick, hBraceLen + 0.2), metalMat);
+        brace.position.set(s.x, bh, s.z); brace.rotation.y = s.ry;
+        brace.castShadow = true; group.add(brace);
+      });
+
+      // X-cross braces on two faces
+      if (bh + 2.2 < legH) {
+        const crossLen = Math.sqrt(hBraceLen * hBraceLen + 2.2 * 2.2);
+        const crossAngle = Math.atan2(2.2, hBraceLen);
+        // Front face
+        const xb1 = new THREE.Mesh(new THREE.BoxGeometry(braceThick * 0.8, braceThick * 0.8, crossLen), metalMat);
+        xb1.position.set(0, bh + 1.1, -legSpread);
+        xb1.rotation.set(crossAngle, 0, 0); xb1.castShadow = true; group.add(xb1);
+        const xb2 = new THREE.Mesh(new THREE.BoxGeometry(braceThick * 0.8, braceThick * 0.8, crossLen), metalMat);
+        xb2.position.set(0, bh + 1.1, -legSpread);
+        xb2.rotation.set(-crossAngle, 0, 0); xb2.castShadow = true; group.add(xb2);
+        // Right face
+        const xb3 = new THREE.Mesh(new THREE.BoxGeometry(crossLen, braceThick * 0.8, braceThick * 0.8), metalMat);
+        xb3.position.set(legSpread, bh + 1.1, 0);
+        xb3.rotation.set(0, 0, crossAngle); xb3.castShadow = true; group.add(xb3);
+        const xb4 = new THREE.Mesh(new THREE.BoxGeometry(crossLen, braceThick * 0.8, braceThick * 0.8), metalMat);
+        xb4.position.set(legSpread, bh + 1.1, 0);
+        xb4.rotation.set(0, 0, -crossAngle); xb4.castShadow = true; group.add(xb4);
+      }
     }
-    const braceGeo = new THREE.BoxGeometry(0.04, 0.04, 2.4);
-    for (let bh = 1.5; bh < legH; bh += 2) {
-      const brace1 = new THREE.Mesh(braceGeo, metalMat);
-      brace1.position.set(0, bh, -0.8);
-      brace1.rotation.y = 0;
-      brace1.castShadow = true;
-      group.add(brace1);
-      const brace2 = new THREE.Mesh(braceGeo, metalMat);
-      brace2.position.set(0, bh, 0.8);
-      brace2.castShadow = true;
-      group.add(brace2);
-      const brace3 = new THREE.Mesh(braceGeo, metalMat);
-      brace3.position.set(-0.8, bh, 0);
-      brace3.rotation.y = Math.PI / 2;
-      brace3.castShadow = true;
-      group.add(brace3);
-      const brace4 = new THREE.Mesh(braceGeo, metalMat);
-      brace4.position.set(0.8, bh, 0);
-      brace4.rotation.y = Math.PI / 2;
-      brace4.castShadow = true;
-      group.add(brace4);
+
+    // --- Tank (with vertex color rust variation) ---
+    const tankGeo = new THREE.CylinderGeometry(tankRadius, tankRadius * 0.95, tankH, 16, 4);
+    const tankColors = []; const tPos = tankGeo.attributes.position;
+    for (let i = 0; i < tPos.count; i++) {
+      const py = tPos.getY(i); const normY = (py + tankH/2) / tankH;
+      const angle = Math.atan2(tPos.getX(i), tPos.getZ(i));
+      const rustNoise = Math.sin(angle * 3) * 0.15 + Math.sin(angle * 7 + 1.3) * 0.1;
+      const bottomRust = normY < 0.2 ? (0.2 - normY) * 2.0 : 0;
+      const r = Math.min(1, 0.42 * rustBright + rustNoise * 0.4 + bottomRust * 0.2);
+      const g = Math.min(1, 0.22 * rustBright + rustNoise * 0.15 - bottomRust * 0.08);
+      const b = Math.min(1, 0.08 * rustBright + rustNoise * 0.05 - bottomRust * 0.05);
+      tankColors.push(r, g, b);
     }
-    const tankGeo = new THREE.CylinderGeometry(1.2, 1.2, 1.5, 8);
-    const tank = new THREE.Mesh(tankGeo, rustMat);
-    tank.position.set(0, legH + 0.75, 0);
-    tank.castShadow = true;
-    group.add(tank);
+    tankGeo.setAttribute('color', new THREE.Float32BufferAttribute(tankColors, 3));
+    const tankMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0.25 });
+    const tank = new THREE.Mesh(tankGeo, tankMat);
+    tank.position.set(0, legH + tankH / 2, 0);
+    tank.castShadow = true; tank.receiveShadow = true; group.add(tank);
+
+    // Tank lid / top cap
+    const capGeo = new THREE.CylinderGeometry(tankRadius * 0.3, tankRadius * 0.95, 0.6, 16);
+    const cap = new THREE.Mesh(capGeo, darkRustMat);
+    cap.position.set(0, legH + tankH + 0.3, 0);
+    cap.castShadow = true; group.add(cap);
+
+    // Tank bottom plate
+    const botPlate = new THREE.Mesh(new THREE.CylinderGeometry(tankRadius * 0.95, tankRadius * 0.6, 0.3, 16), darkRustMat);
+    botPlate.position.set(0, legH - 0.15, 0); botPlate.castShadow = true; group.add(botPlate);
+
+    // --- Tank bands / rings ---
+    for (let ring = 0; ring < 3; ring++) {
+      const ry = legH + 0.4 + ring * (tankH / 3);
+      const band = new THREE.Mesh(new THREE.TorusGeometry(tankRadius + 0.02, 0.04, 4, 16), darkRustMat);
+      band.position.set(0, ry, 0); band.rotation.x = Math.PI / 2;
+      band.castShadow = true; group.add(band);
+    }
+
+    // --- Ladder running up one leg ---
+    const ladderLeg = legPositions[0];
+    const ladderMat = metalMat;
+    // Ladder rails
+    for (const offset of [-0.12, 0.12]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.03, legH + tankH + 0.5, 0.03), ladderMat);
+      rail.position.set(ladderLeg[0] + offset, (legH + tankH) / 2, ladderLeg[2] - 0.2);
+      rail.castShadow = true; group.add(rail);
+    }
+    // Ladder rungs
+    for (let ry = 0.5; ry < legH + tankH; ry += 0.5) {
+      const rung = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.025, 0.025), ladderMat);
+      rung.position.set(ladderLeg[0], ry, ladderLeg[2] - 0.2);
+      group.add(rung);
+    }
+
+    // --- Platform / walkway ring around tank ---
+    const platformGeo = new THREE.TorusGeometry(tankRadius + 0.4, 0.15, 4, 20);
+    const platform = new THREE.Mesh(platformGeo, metalMat);
+    platform.position.set(0, legH + 0.1, 0); platform.rotation.x = Math.PI / 2;
+    platform.castShadow = true; group.add(platform);
+    // Railing posts around platform
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 5) {
+      const rpx = Math.cos(a) * (tankRadius + 0.4);
+      const rpz = Math.sin(a) * (tankRadius + 0.4);
+      const rPost = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.6, 0.03), metalMat);
+      rPost.position.set(rpx, legH + 0.4, rpz); rPost.castShadow = true; group.add(rPost);
+    }
+    // Railing ring
+    const railRing = new THREE.Mesh(new THREE.TorusGeometry(tankRadius + 0.4, 0.02, 4, 20), metalMat);
+    railRing.position.set(0, legH + 0.65, 0); railRing.rotation.x = Math.PI / 2; group.add(railRing);
+
+    // --- Pipe coming down from tank ---
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, legH + 1, 6), darkRustMat);
+    pipe.position.set(legSpread * 0.6, legH / 2, legSpread * 0.6);
+    pipe.castShadow = true; group.add(pipe);
+
+    // --- Ground debris ---
+    for (let d = 0; d < 4; d++) {
+      const ds = 0.08 + Math.random() * 0.2;
+      const deb = new THREE.Mesh(new THREE.BoxGeometry(ds, ds * 0.3, ds * 0.5), darkRustMat);
+      deb.position.set((Math.random()-0.5) * 4, ds * 0.15, (Math.random()-0.5) * 4);
+      deb.rotation.set(Math.random() * 0.4, Math.random() * 6.28, Math.random() * 0.3);
+      deb.castShadow = true; group.add(deb);
+    }
+
     group.position.set(pos.x, h, pos.z);
     group.rotation.y = Math.random() * Math.PI * 2;
-    // Post-apocalyptic lean
+    // Post-apocalyptic dramatic lean (5-10 degrees)
     const tiltAxis = Math.random() < 0.5 ? 'x' : 'z';
-    const tiltAngle = (2 + Math.random() * 3) * Math.PI / 180 * (Math.random() < 0.5 ? 1 : -1);
+    const tiltAngle = (5 + Math.random() * 5) * Math.PI / 180 * (Math.random() < 0.5 ? 1 : -1);
     if (tiltAxis === 'x') group.rotation.x = tiltAngle;
     else group.rotation.z = tiltAngle;
     scene.add(group);
     const bBody = new CANNON.Body({ mass: 0 });
-    bBody.addShape(new CANNON.Box(new CANNON.Vec3(1.5, (legH + 1.5) / 2, 1.5)));
-    bBody.position.set(pos.x, h + (legH + 1.5) / 2, pos.z);
+    bBody.addShape(new CANNON.Box(new CANNON.Vec3(legSpread + 0.5, (legH + tankH) / 2, legSpread + 0.5)));
+    bBody.position.set(pos.x, h + (legH + tankH) / 2, pos.z);
     world.addBody(bBody);
     buildingPositions.push(pos);
   }
 
-  for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
-    const spot = findBuildingSpot(0, 15, 30);
+  for (let i = 0; i < 3 + Math.floor(Math.random() * 3); i++) {
+    const roadIdx = Math.floor(Math.random() * allRoads.length);
+    const spot = findBuildingSpot(roadIdx, 15, 40);
     if (spot) createBarn(spot);
   }
-  for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
-    const roadIdx = i === 0 ? 0 : 1 + Math.floor(Math.random() * (allRoads.length - 1));
-    const spot = findBuildingSpot(roadIdx, 15, 30);
+  for (let i = 0; i < 4 + Math.floor(Math.random() * 3); i++) {
+    const roadIdx = Math.floor(Math.random() * allRoads.length);
+    const spot = findBuildingSpot(roadIdx, 12, 35);
     if (spot) createHouse(spot);
   }
-  if (Math.random() > 0.3) {
-    const spot = findBuildingSpot(0, 20, 40);
+  // Always place 1-2 water towers
+  for (let i = 0; i < 1 + Math.floor(Math.random() * 2); i++) {
+    const roadIdx = Math.floor(Math.random() * allRoads.length);
+    const spot = findBuildingSpot(roadIdx, 20, 45);
     if (spot) createWaterTower(spot);
   }
 
@@ -2570,7 +3158,7 @@ const buildingPositions = [];
       const groundGeo = new THREE.CircleGeometry(tc.radius, 32);
       groundGeo.rotateX(-Math.PI / 2);
       const groundMat = new THREE.MeshStandardMaterial({
-        color: 0x5a5a5c, roughness: 0.85, metalness: 0.02,
+        color: 0x686870, roughness: 0.85, metalness: 0.02,
         polygonOffset: true, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5,
       });
       const groundMesh = new THREE.Mesh(groundGeo, groundMat);
@@ -2579,20 +3167,65 @@ const buildingPositions = [];
       scene.add(groundMesh);
     }
 
-    // ── 5. Building Generation with InstancedMesh ──
-    // Materials
-    const concreteMat = new THREE.MeshStandardMaterial({ color: 0x909090, roughness: 0.9, metalness: 0.02 });
-    const windowMat = new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.3, metalness: 0.4 });
-    const rustMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.85, metalness: 0.15 });
-    const roofMat2 = new THREE.MeshStandardMaterial({ color: 0x4a4a4c, roughness: 0.88, metalness: 0.1 });
+    // ── 4b. Sidewalk curbs along street edges ──
+    {
+      const curbGeo = new THREE.BoxGeometry(1, 1, 1);
+      const curbMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.85, metalness: 0.02 });
+      const MAX_CURBS = 400;
+      const curbInst = new THREE.InstancedMesh(curbGeo, curbMat, MAX_CURBS);
+      curbInst.castShadow = true; curbInst.receiveShadow = true;
+      let curbIdx = 0;
+      const cDummy = new THREE.Object3D();
+      const _cUp = new THREE.Vector3(0, 1, 0);
+      const _cTan = new THREE.Vector3(), _cPrp = new THREE.Vector3();
 
-    // Count total buildings to allocate InstancedMesh sizes
-    // Each building type contributes walls, windows, roofs
-    // We use merged geometry groups for efficiency
-    const MAX_WALLS = 400;
-    const MAX_WINDOWS = 300;
-    const MAX_ROOFS = 100;
-    const MAX_DETAILS = 200;
+      for (const tc of townCenters) {
+        for (const street of tc.streets) {
+          if (street.length < 3) continue;
+          // Place curb segments every 3 points
+          for (let i = 0; i < street.length; i += 3) {
+            if (curbIdx >= MAX_CURBS - 2) break;
+            const pt = street[i];
+            // Compute tangent
+            let ni = Math.min(i + 1, street.length - 1);
+            let pi = Math.max(i - 1, 0);
+            _cTan.set(street[ni].x - street[pi].x, 0, street[ni].z - street[pi].z).normalize();
+            _cPrp.crossVectors(_cTan, _cUp).normalize();
+            const segLen = 2.5;
+            const rot = Math.atan2(_cTan.x, _cTan.z);
+            // Left curb
+            cDummy.position.set(
+              pt.x + _cPrp.x * 2.8, tc.groundY + 0.12, pt.z + _cPrp.z * 2.8
+            );
+            cDummy.scale.set(0.2, 0.18, segLen);
+            cDummy.rotation.set(0, rot, 0);
+            cDummy.updateMatrix();
+            curbInst.setMatrixAt(curbIdx++, cDummy.matrix);
+            // Right curb
+            cDummy.position.set(
+              pt.x - _cPrp.x * 2.8, tc.groundY + 0.12, pt.z - _cPrp.z * 2.8
+            );
+            cDummy.updateMatrix();
+            curbInst.setMatrixAt(curbIdx++, cDummy.matrix);
+          }
+        }
+      }
+      curbInst.count = curbIdx;
+      if (curbIdx > 0) scene.add(curbInst);
+    }
+
+    // ── 5. Building Generation with InstancedMesh ──
+    // Materials - enhanced for post-apocalyptic look
+    const concreteMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, roughness: 0.88, metalness: 0.02, emissive: 0x080808, emissiveIntensity: 0.3 });
+    const windowMat = new THREE.MeshStandardMaterial({ color: 0x889099, roughness: 0.08, metalness: 0.7, transparent: true, opacity: 0.88, envMapIntensity: 1.5 });
+    const rustMat = new THREE.MeshStandardMaterial({ color: 0xb06838, roughness: 0.82, metalness: 0.18, emissive: 0x060402, emissiveIntensity: 0.2 });
+    const roofMat2 = new THREE.MeshStandardMaterial({ color: 0x606065, roughness: 0.88, metalness: 0.1, emissive: 0x050505, emissiveIntensity: 0.2 });
+
+    // Increased instance limits for richer detail
+    const MAX_WALLS = 800;
+    const MAX_WINDOWS = 600;
+    const MAX_ROOFS = 200;
+    const MAX_DETAILS = 500;
 
     const wallGeo = new THREE.BoxGeometry(1, 1, 1);
     const wallInst = new THREE.InstancedMesh(wallGeo, concreteMat, MAX_WALLS);
@@ -2601,6 +3234,7 @@ const buildingPositions = [];
 
     const winGeo = new THREE.BoxGeometry(1, 1, 0.1);
     const winInst = new THREE.InstancedMesh(winGeo, windowMat, MAX_WINDOWS);
+    winInst.castShadow = false; winInst.receiveShadow = true;
     let winIdx = 0;
 
     const roofGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -2610,7 +3244,7 @@ const buildingPositions = [];
 
     const detailGeo = new THREE.BoxGeometry(1, 1, 1);
     const detailInst = new THREE.InstancedMesh(detailGeo, rustMat, MAX_DETAILS);
-    detailInst.castShadow = true;
+    detailInst.castShadow = true; detailInst.receiveShadow = true;
     let detailIdx = 0;
 
     const bDummy = new THREE.Object3D();
@@ -2625,6 +3259,27 @@ const buildingPositions = [];
       );
     }
 
+    // Post-apocalyptic color palette helpers
+    function scorchColor(base) {
+      // Random scorch/soot darkening
+      const c = base.clone();
+      if (Math.random() < 0.25) {
+        const f = 0.4 + Math.random() * 0.3;
+        c.r *= f; c.g *= f; c.b *= f;
+      }
+      return c;
+    }
+    function vegetationTint(c) {
+      if (Math.random() < 0.12) {
+        // Subtle moss/vine streaks - not entire wall
+        const t = 0.15 + Math.random() * 0.15; // 15-30% tint
+        c.r = c.r * (1 - t) + 0.15 * t;
+        c.g = c.g * (1 - t * 0.5) + 0.25 * t;
+        c.b = c.b * (1 - t);
+      }
+      return c;
+    }
+
     // Building type generators — each returns collider info
     // All operate in world space at position (bx, bz) with rotation bRot
 
@@ -2635,243 +3290,795 @@ const buildingPositions = [];
       bDummy.rotation.set(0, rot, 0);
       bDummy.updateMatrix();
       wallInst.setMatrixAt(wallIdx, bDummy.matrix);
-      const c = colorVar || varyColor(0.55, 0.55, 0.56, 0.2);
-      // Add vegetation overgrowth on some walls (green tint)
-      if (Math.random() < 0.15) {
-        c.r = c.r * 0.7 + 0.1;
-        c.g = c.g * 0.8 + 0.15;
-        c.b = c.b * 0.6;
-      }
+      let c = colorVar || varyColor(0.75, 0.73, 0.72, 0.2);
+      c = vegetationTint(scorchColor(c));
       wallInst.setColorAt(wallIdx, c);
       wallIdx++;
     }
 
-    function addWindow(x, y, z, w, h, rot) {
+    function addWindow(x, y, z, w, h, rot, colorOverride) {
       if (winIdx >= MAX_WINDOWS) return;
       bDummy.position.set(x, y, z);
-      bDummy.scale.set(w, h, 0.1);
+      bDummy.scale.set(w, h, 0.15);
       bDummy.rotation.set(0, rot, 0);
       bDummy.updateMatrix();
       winInst.setMatrixAt(winIdx, bDummy.matrix);
+      // Window color: mostly dark with occasional variation
+      if (!winInst.instanceColor) {
+        winInst.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_WINDOWS * 3), 3);
+      }
+      // Varied window tones: most dark, some blueish, some show interior light
+      let wc;
+      if (colorOverride) {
+        wc = colorOverride;
+      } else {
+        const r = Math.random();
+        if (r < 0.6) {
+          // Standard dark window
+          wc = varyColor(0.08, 0.08, 0.14, 0.5);
+        } else if (r < 0.8) {
+          // Blue-tinted reflective window
+          wc = varyColor(0.1, 0.12, 0.22, 0.4);
+        } else if (r < 0.92) {
+          // Slightly amber/warm (interior light visible)
+          wc = varyColor(0.18, 0.14, 0.06, 0.5);
+        } else {
+          // Broken/missing - very dark void
+          wc = new THREE.Color(0.02, 0.02, 0.02);
+        }
+      }
+      winInst.setColorAt(winIdx, wc);
       winIdx++;
     }
 
-    function addRoof(x, y, z, w, h, d, rx, ry, rz) {
+    function addRoof(x, y, z, w, h, d, rx, ry, rz, colorOverride) {
       if (roofIdx >= MAX_ROOFS) return;
       bDummy.position.set(x, y, z);
       bDummy.scale.set(w, h, d);
       bDummy.rotation.set(rx || 0, ry || 0, rz || 0);
       bDummy.updateMatrix();
       roofInst.setMatrixAt(roofIdx, bDummy.matrix);
-      roofInst.setColorAt(roofIdx, varyColor(0.3, 0.3, 0.3, 0.2));
+      roofInst.setColorAt(roofIdx, colorOverride || varyColor(0.28, 0.27, 0.26, 0.25));
       roofIdx++;
     }
 
-    function addDetail(x, y, z, w, h, d, rot) {
+    function addDetail(x, y, z, w, h, d, rot, colorOverride) {
       if (detailIdx >= MAX_DETAILS) return;
       bDummy.position.set(x, y, z);
       bDummy.scale.set(w, h, d);
       bDummy.rotation.set((Math.random() - 0.5) * 0.1, rot || 0, (Math.random() - 0.5) * 0.1);
       bDummy.updateMatrix();
       detailInst.setMatrixAt(detailIdx, bDummy.matrix);
-      detailInst.setColorAt(detailIdx, varyColor(0.45, 0.25, 0.1, 0.3));
+      detailInst.setColorAt(detailIdx, colorOverride || varyColor(0.45, 0.25, 0.1, 0.3));
       detailIdx++;
     }
 
-    // Building type: Apartment Block (2-4 stories)
+    // Helper: place a point at local offset rotated by building rotation
+    function rotPt(bx, bz, lx, lz, cosR, sinR) {
+      return { x: bx + cosR * lx - sinR * lz, z: bz + sinR * lx + cosR * lz };
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Building type: Apartment Block (2-4 stories) — ENHANCED
+    // ═══════════════════════════════════════════════════
     function buildApartment(bx, bz, bRot, groundY) {
       const w = 8 + Math.random() * 4;
       const stories = 2 + Math.floor(Math.random() * 3);
-      const floorH = 3;
+      const floorH = 3.2;
       const d = 6 + Math.random() * 4;
-      const collapsed = Math.random() < 0.3; // top floor missing
-      const actualStories = collapsed ? stories - 1 : stories;
+      const collapsed = Math.random() < 0.3;
+      const actualStories = collapsed ? Math.max(1, stories - 1) : stories;
       const h = actualStories * floorH;
       const cosR = Math.cos(bRot), sinR = Math.sin(bRot);
 
-      // Base color for this building
-      const bColor = varyColor(0.55, 0.53, 0.52, 0.2);
+      // Base building color palette (concrete tones - bright enough for good visibility)
+      const palettes = [
+        [0.82, 0.78, 0.74], [0.75, 0.72, 0.76], [0.85, 0.80, 0.74],
+        [0.70, 0.73, 0.78], [0.78, 0.72, 0.68], [0.72, 0.70, 0.72]
+      ];
+      const pal = palettes[Math.floor(Math.random() * palettes.length)];
+      const bColor = varyColor(pal[0], pal[1], pal[2], 0.15);
 
-      // Main body
+      // Main body wall
       addWall(bx, groundY + h / 2, bz, w, h, d, bRot, bColor.clone());
 
-      // Windows on each visible face (2 per floor per face)
+      // Foundation/base strip (darker, slightly wider)
+      const baseH = 0.6;
+      addWall(bx, groundY + baseH / 2, bz, w + 0.3, baseH, d + 0.3, bRot, bColor.clone().multiplyScalar(0.6));
+
+      // Floor separator bands (horizontal lines on facade) — thin wall strips
+      for (let f = 1; f < actualStories; f++) {
+        const bandY = groundY + f * floorH;
+        // Front face band
+        const fp = rotPt(bx, bz, 0, -d / 2 - 0.08, cosR, sinR);
+        addWall(fp.x, bandY, fp.z, w - 0.2, 0.15, 0.2, bRot, bColor.clone().multiplyScalar(0.75));
+        // Back face band
+        const bp = rotPt(bx, bz, 0, d / 2 + 0.08, cosR, sinR);
+        addWall(bp.x, bandY, bp.z, w - 0.2, 0.15, 0.2, bRot, bColor.clone().multiplyScalar(0.75));
+      }
+
+      // Windows on front, back, and both sides (with random missing = broken)
       for (let f = 0; f < actualStories; f++) {
-        const wy = groundY + f * floorH + floorH * 0.6;
-        // Front face
-        for (let wx = -1; wx <= 1; wx += 2) {
-          const winX = bx + cosR * (wx * w * 0.25) - sinR * (-d / 2 - 0.06);
-          const winZ = bz + sinR * (wx * w * 0.25) + cosR * (-d / 2 - 0.06);
-          addWindow(winX, wy, winZ, 1.2, 1.5, bRot);
+        const wy = groundY + f * floorH + floorH * 0.55;
+        const numWinPerFace = Math.max(2, Math.floor(w / 2.5));
+        // Front face windows
+        for (let wi = 0; wi < numWinPerFace; wi++) {
+          if (Math.random() < 0.15) continue; // missing/broken window
+          const lx = -w / 2 + w / (numWinPerFace + 1) * (wi + 1);
+          const p = rotPt(bx, bz, lx, -d / 2 - 0.07, cosR, sinR);
+          // Window frame (slightly lighter wall inset)
+          addWall(p.x, wy, p.z, 1.4, 1.6, 0.12, bRot, bColor.clone().multiplyScalar(0.65));
+          // Dark glass
+          addWindow(p.x, wy, p.z, 1.1, 1.3, bRot);
         }
-        // Side faces
-        const sideX = bx + cosR * (w / 2 + 0.06);
-        const sideZ = bz + sinR * (w / 2 + 0.06);
-        addWindow(sideX, wy, sideZ, 1.0, 1.3, bRot + Math.PI / 2);
+        // Back face windows
+        for (let wi = 0; wi < numWinPerFace; wi++) {
+          if (Math.random() < 0.2) continue;
+          const lx = -w / 2 + w / (numWinPerFace + 1) * (wi + 1);
+          const p = rotPt(bx, bz, lx, d / 2 + 0.07, cosR, sinR);
+          addWall(p.x, wy, p.z, 1.4, 1.6, 0.12, bRot, bColor.clone().multiplyScalar(0.65));
+          addWindow(p.x, wy, p.z, 1.1, 1.3, bRot);
+        }
+        // Side face windows (1-2 per side)
+        for (let side = -1; side <= 1; side += 2) {
+          if (Math.random() < 0.2) continue;
+          const p = rotPt(bx, bz, side * (w / 2 + 0.07), 0, cosR, sinR);
+          addWall(p.x, wy, p.z, 0.12, 1.4, 1.2, bRot, bColor.clone().multiplyScalar(0.65));
+          addWindow(p.x, wy, p.z, 1.0, 1.1, bRot + Math.PI / 2);
+        }
       }
 
-      // Collapsed rubble on top if damaged
+      // Flat roof with ledge
+      addRoof(bx, groundY + h + 0.08, bz, w + 0.4, 0.2, d + 0.4, 0, bRot, 0);
+      // Roof parapet (4 edges)
+      const parapetH = 0.5;
+      const rfp1 = rotPt(bx, bz, 0, -d / 2 - 0.1, cosR, sinR);
+      addRoof(rfp1.x, groundY + h + parapetH / 2 + 0.2, rfp1.z, w + 0.6, parapetH, 0.15, 0, bRot, 0);
+      const rfp2 = rotPt(bx, bz, 0, d / 2 + 0.1, cosR, sinR);
+      addRoof(rfp2.x, groundY + h + parapetH / 2 + 0.2, rfp2.z, w + 0.6, parapetH, 0.15, 0, bRot, 0);
+
+      // Rooftop details: AC units, water tank
+      if (Math.random() < 0.7) {
+        const acp = rotPt(bx, bz, (Math.random() - 0.5) * w * 0.5, (Math.random() - 0.5) * d * 0.3, cosR, sinR);
+        addDetail(acp.x, groundY + h + 0.5, acp.z, 1.2, 0.8, 0.8, bRot, varyColor(0.5, 0.5, 0.5, 0.2));
+      }
+      if (Math.random() < 0.4) {
+        const wtp = rotPt(bx, bz, (Math.random() - 0.5) * w * 0.3, (Math.random() - 0.5) * d * 0.3, cosR, sinR);
+        // Water tank: cylindrical approximated by box
+        addDetail(wtp.x, groundY + h + 1.0, wtp.z, 1.0, 1.8, 1.0, bRot, varyColor(0.35, 0.3, 0.25, 0.3));
+        // Tank legs
+        for (let tl = -1; tl <= 1; tl += 2) {
+          const tlp = rotPt(wtp.x, wtp.z, tl * 0.35, 0, cosR, sinR);
+          addDetail(tlp.x, groundY + h + 0.25, tlp.z, 0.08, 0.5, 0.08, bRot, varyColor(0.3, 0.25, 0.2, 0.2));
+        }
+      }
+
+      // Fire escape on one side (ladder-like boxes)
+      if (Math.random() < 0.5) {
+        const feSide = Math.random() < 0.5 ? -1 : 1;
+        for (let f = 0; f < actualStories; f++) {
+          const feY = groundY + f * floorH + floorH * 0.5;
+          const fep = rotPt(bx, bz, feSide * (w / 2 + 0.4), 0, cosR, sinR);
+          // Platform
+          addDetail(fep.x, feY, fep.z, 0.08, 0.08, 2.0, bRot, varyColor(0.3, 0.28, 0.25, 0.2));
+          // Railing
+          addDetail(fep.x, feY + 0.5, fep.z, 0.04, 1.0, 0.04, bRot, varyColor(0.3, 0.28, 0.25, 0.2));
+          // Vertical ladder segment
+          if (f < actualStories - 1) {
+            const ladp = rotPt(bx, bz, feSide * (w / 2 + 0.6), d * 0.2, cosR, sinR);
+            addDetail(ladp.x, feY + floorH * 0.5, ladp.z, 0.06, floorH * 0.8, 0.06, bRot, varyColor(0.32, 0.28, 0.22, 0.2));
+          }
+        }
+      }
+
+      // Drainpipe/downspout on a corner
+      if (Math.random() < 0.55) {
+        const dpSide = Math.random() < 0.5 ? -1 : 1;
+        const dpFace = Math.random() < 0.5 ? -1 : 1;
+        const dpp = rotPt(bx, bz, dpSide * (w / 2 - 0.1), dpFace * (d / 2 + 0.1), cosR, sinR);
+        addDetail(dpp.x, groundY + h * 0.5, dpp.z, 0.1, h, 0.1, 0, varyColor(0.35, 0.33, 0.30, 0.2));
+      }
+
+      // Water stain streaks below some windows (dark vertical lines on wall)
+      if (Math.random() < 0.4) {
+        const stainCount = 1 + Math.floor(Math.random() * 2);
+        for (let s = 0; s < stainCount; s++) {
+          const slx = (Math.random() - 0.5) * w * 0.6;
+          const sly = groundY + Math.random() * h * 0.6;
+          const sp = rotPt(bx, bz, slx, -d / 2 - 0.1, cosR, sinR);
+          addWall(sp.x, sly, sp.z, 0.15, 1.5 + Math.random() * 2, 0.05, bRot,
+            bColor.clone().multiplyScalar(0.45 + Math.random() * 0.15));
+        }
+      }
+
+      // Collapsed top floor rubble
       if (collapsed) {
+        // Jagged top edge - uneven wall sections
+        for (let r = 0; r < 4; r++) {
+          const rx = bx + (Math.random() - 0.5) * w * 0.7;
+          const rz = bz + (Math.random() - 0.5) * d * 0.7;
+          addDetail(rx, groundY + h + 0.3 + Math.random() * 0.5, rz,
+            0.8 + Math.random() * 1.5, 0.4 + Math.random() * 0.8, 0.8 + Math.random() * 1.5,
+            Math.random() * 6.28, varyColor(0.45, 0.42, 0.4, 0.3));
+        }
+        // Ground-level rubble from collapse
         for (let r = 0; r < 3; r++) {
-          const rx = bx + (Math.random() - 0.5) * w * 0.6;
-          const rz = bz + (Math.random() - 0.5) * d * 0.6;
-          addDetail(rx, groundY + h + 0.3, rz, 1 + Math.random() * 2, 0.5 + Math.random(), 1 + Math.random() * 2, Math.random() * 6.28);
+          const rp = rotPt(bx, bz, (Math.random() - 0.5) * w, d / 2 + 1 + Math.random() * 2, cosR, sinR);
+          addDetail(rp.x, groundY + 0.2, rp.z,
+            0.5 + Math.random() * 1.2, 0.3 + Math.random() * 0.5, 0.5 + Math.random() * 1.2,
+            Math.random() * 6.28, varyColor(0.4, 0.38, 0.36, 0.3));
+        }
+        // Exposed rebar (thin vertical detail on broken edge)
+        const rbp = rotPt(bx, bz, (Math.random() - 0.5) * w * 0.4, 0, cosR, sinR);
+        addDetail(rbp.x, groundY + h + 0.8, rbp.z, 0.04, 1.5, 0.04, bRot, varyColor(0.5, 0.3, 0.15, 0.3));
+      }
+
+      // Base rubble (30% of all buildings)
+      if (Math.random() < 0.3) {
+        for (let r = 0; r < 2; r++) {
+          const rp = rotPt(bx, bz, (Math.random() - 0.5) * w, -d / 2 - 0.5 - Math.random() * 1.5, cosR, sinR);
+          addDetail(rp.x, groundY + 0.15, rp.z,
+            0.3 + Math.random() * 0.7, 0.2 + Math.random() * 0.3, 0.3 + Math.random() * 0.7,
+            Math.random() * 6.28, varyColor(0.42, 0.4, 0.38, 0.3));
         }
       }
 
-      return { hw: w / 2 + 0.5, hd: d / 2 + 0.5, h: h };
+      return { hw: w / 2 + 1.0, hd: d / 2 + 0.5, h: h };
     }
 
-    // Building type: Shop/Store (1-2 stories)
+    // ═══════════════════════════════════════════════════
+    // Building type: Shop/Store (1-2 stories) — ENHANCED
+    // ═══════════════════════════════════════════════════
     function buildShop(bx, bz, bRot, groundY) {
       const w = 6 + Math.random() * 4;
       const stories = 1 + Math.floor(Math.random() * 2);
-      const h = stories * 3;
+      const h = stories * 3.2;
       const d = 6 + Math.random() * 2;
       const cosR = Math.cos(bRot), sinR = Math.sin(bRot);
-      const bColor = varyColor(0.52, 0.5, 0.48, 0.25);
+
+      // Shop color palettes (warmer tones - cream, beige, tan)
+      const shopPals = [
+        [0.85, 0.78, 0.68], [0.80, 0.76, 0.72], [0.88, 0.80, 0.68],
+        [0.75, 0.78, 0.82], [0.82, 0.74, 0.62]
+      ];
+      const pal = shopPals[Math.floor(Math.random() * shopPals.length)];
+      const bColor = varyColor(pal[0], pal[1], pal[2], 0.2);
 
       // Main body
       addWall(bx, groundY + h / 2, bz, w, h, d, bRot, bColor.clone());
 
-      // Large front window (dark glass)
-      const fwX = bx - sinR * (-d / 2 - 0.06);
-      const fwZ = bz + cosR * (-d / 2 - 0.06);
-      addWindow(fwX, groundY + h * 0.4, fwZ, w * 0.7, h * 0.5, bRot);
+      // Storefront base (darker kick plate)
+      const fp = rotPt(bx, bz, 0, -d / 2 - 0.06, cosR, sinR);
+      addWall(fp.x, groundY + 0.3, fp.z, w - 0.2, 0.6, 0.15, bRot, bColor.clone().multiplyScalar(0.5));
 
-      // Awning (thin box extending forward)
-      const awX = bx - sinR * (-d / 2 - 0.8);
-      const awZ = bz + cosR * (-d / 2 - 0.8);
-      addDetail(awX, groundY + h * 0.7, awZ, w * 0.9, 0.1, 1.5, bRot);
+      // Large storefront windows (2-3 panels across front)
+      const numPanels = Math.max(2, Math.floor(w / 3));
+      for (let p = 0; p < numPanels; p++) {
+        if (Math.random() < 0.1) continue; // broken panel
+        const panelW = (w - 1) / numPanels - 0.3;
+        const lx = -w / 2 + 0.5 + (w - 1) / numPanels * (p + 0.5);
+        const pp = rotPt(bx, bz, lx, -d / 2 - 0.08, cosR, sinR);
+        // Window frame
+        addWall(pp.x, groundY + h * 0.35, pp.z, panelW + 0.3, h * 0.5 + 0.2, 0.12, bRot, bColor.clone().multiplyScalar(0.55));
+        // Glass
+        addWindow(pp.x, groundY + h * 0.35, pp.z, panelW, h * 0.45, bRot,
+          Math.random() < 0.3 ? varyColor(0.02, 0.02, 0.04, 0.5) : undefined);
+      }
 
-      // Flat roof
-      addRoof(bx, groundY + h + 0.05, bz, w + 0.5, 0.15, d + 0.5, 0, bRot, 0);
+      // Door opening (center of storefront)
+      const doorP = rotPt(bx, bz, 0, -d / 2 - 0.08, cosR, sinR);
+      addWindow(doorP.x, groundY + h * 0.25, doorP.z, 1.2, h * 0.4, bRot, new THREE.Color(0.02, 0.02, 0.03));
 
-      return { hw: w / 2 + 0.5, hd: d / 2 + 1.5, h: h };
+      // Signboard above storefront
+      const signP = rotPt(bx, bz, 0, -d / 2 - 0.15, cosR, sinR);
+      const signColors = [
+        varyColor(0.5, 0.15, 0.1, 0.4), varyColor(0.15, 0.3, 0.15, 0.4),
+        varyColor(0.15, 0.15, 0.4, 0.4), varyColor(0.45, 0.35, 0.1, 0.4)
+      ];
+      addDetail(signP.x, groundY + h * 0.72, signP.z, w * 0.8, 0.6, 0.12, bRot,
+        signColors[Math.floor(Math.random() * signColors.length)]);
+
+      // Awning / canopy
+      const awP = rotPt(bx, bz, 0, -d / 2 - 1.0, cosR, sinR);
+      const awningColors = [
+        varyColor(0.5, 0.15, 0.1, 0.3), varyColor(0.15, 0.35, 0.15, 0.3),
+        varyColor(0.4, 0.3, 0.1, 0.3)
+      ];
+      addDetail(awP.x, groundY + h * 0.62, awP.z, w * 0.85, 0.06, 1.8, bRot,
+        awningColors[Math.floor(Math.random() * awningColors.length)]);
+      // Awning support brackets
+      for (let ab = -1; ab <= 1; ab += 2) {
+        const abp = rotPt(bx, bz, ab * w * 0.35, -d / 2 - 0.5, cosR, sinR);
+        addDetail(abp.x, groundY + h * 0.58, abp.z, 0.06, 0.4, 0.8, bRot, varyColor(0.3, 0.28, 0.25, 0.2));
+      }
+
+      // Upper floor windows (if 2 stories)
+      if (stories > 1) {
+        for (let wi = -1; wi <= 1; wi += 2) {
+          if (Math.random() < 0.15) continue;
+          const uwp = rotPt(bx, bz, wi * w * 0.25, -d / 2 - 0.07, cosR, sinR);
+          addWall(uwp.x, groundY + h * 0.75, uwp.z, 1.3, 1.4, 0.12, bRot, bColor.clone().multiplyScalar(0.65));
+          addWindow(uwp.x, groundY + h * 0.75, uwp.z, 1.0, 1.1, bRot);
+        }
+      }
+
+      // Flat roof with slight overhang
+      addRoof(bx, groundY + h + 0.06, bz, w + 0.6, 0.18, d + 0.6, 0, bRot, 0);
+
+      // Roof-edge trim
+      const rtp = rotPt(bx, bz, 0, -d / 2 - 0.35, cosR, sinR);
+      addRoof(rtp.x, groundY + h + 0.22, rtp.z, w + 0.8, 0.25, 0.12, 0, bRot, 0,
+        bColor.clone().multiplyScalar(0.7));
+
+      // Rooftop AC unit
+      if (Math.random() < 0.6) {
+        const acp = rotPt(bx, bz, (Math.random() - 0.5) * w * 0.4, (Math.random() - 0.5) * d * 0.3, cosR, sinR);
+        addDetail(acp.x, groundY + h + 0.4, acp.z, 0.9, 0.6, 0.7, bRot, varyColor(0.45, 0.45, 0.45, 0.2));
+      }
+
+      return { hw: w / 2 + 0.5, hd: d / 2 + 1.8, h: h };
     }
 
-    // Building type: Warehouse (1 story, large)
+    // ═══════════════════════════════════════════════════
+    // Building type: Warehouse (1 story, large) — ENHANCED
+    // ═══════════════════════════════════════════════════
     function buildWarehouse(bx, bz, bRot, groundY) {
       const w = 12 + Math.random() * 6;
       const h = 5 + Math.random() * 2;
       const d = 10 + Math.random() * 5;
       const cosR = Math.cos(bRot), sinR = Math.sin(bRot);
-      const bColor = varyColor(0.48, 0.46, 0.44, 0.2);
+      // Warehouse palettes (industrial, slightly blue-grey or tan)
+      const whPals = [
+        [0.68, 0.66, 0.64], [0.72, 0.68, 0.62], [0.65, 0.67, 0.70],
+        [0.70, 0.65, 0.58], [0.66, 0.68, 0.66]
+      ];
+      const whPal = whPals[Math.floor(Math.random() * whPals.length)];
+      const bColor = varyColor(whPal[0], whPal[1], whPal[2], 0.15);
 
       // Main body
       addWall(bx, groundY + h / 2, bz, w, h, d, bRot, bColor.clone());
 
-      // Corrugated roof (slightly larger, angled)
-      addRoof(bx, groundY + h + 0.15, bz, w + 1, 0.25, d + 1, 0.05, bRot, 0);
+      // Foundation strip
+      addWall(bx, groundY + 0.25, bz, w + 0.2, 0.5, d + 0.2, bRot, bColor.clone().multiplyScalar(0.55));
 
-      // Roll-up door on one end
-      const doorX = bx - sinR * (-d / 2 - 0.06);
-      const doorZ = bz + cosR * (-d / 2 - 0.06);
-      addDetail(doorX, groundY + h * 0.35, doorZ, w * 0.35, h * 0.6, 0.15, bRot);
+      // Corrugated roof effect — main roof + ridges
+      addRoof(bx, groundY + h + 0.15, bz, w + 0.8, 0.3, d + 0.8, 0, bRot, 0);
+      // Ridge line (apex)
+      addRoof(bx, groundY + h + 0.5, bz, 0.3, 0.15, d + 0.4, 0, bRot, 0,
+        varyColor(0.3, 0.28, 0.26, 0.2));
+      // Slight pitched feel: two angled sections
+      for (let side = -1; side <= 1; side += 2) {
+        const rp = rotPt(bx, bz, side * w * 0.28, 0, cosR, sinR);
+        addRoof(rp.x, groundY + h + 0.35, rp.z, w * 0.45, 0.12, d + 0.4, 0, bRot, side * 0.08);
+      }
 
-      return { hw: w / 2 + 0.5, hd: d / 2 + 0.5, h: h };
+      // Large roll-up door(s)
+      const numDoors = 1 + Math.floor(Math.random() * 2);
+      for (let di = 0; di < numDoors; di++) {
+        const dlx = numDoors === 1 ? 0 : (di === 0 ? -w * 0.25 : w * 0.25);
+        const dp = rotPt(bx, bz, dlx, -d / 2 - 0.08, cosR, sinR);
+        const doorW = Math.min(w * 0.3, 4);
+        const doorH = h * 0.7;
+        // Door frame (dark recess)
+        addWall(dp.x, groundY + doorH / 2, dp.z, doorW + 0.4, doorH + 0.2, 0.15, bRot,
+          new THREE.Color(0.15, 0.14, 0.13));
+        // Roll-up door panels (horizontal segments)
+        addDetail(dp.x, groundY + doorH / 2, dp.z, doorW, doorH, 0.12, bRot,
+          varyColor(0.35, 0.32, 0.28, 0.3));
+        // Door track rails
+        for (let tr = -1; tr <= 1; tr += 2) {
+          const trp = rotPt(dp.x, dp.z, tr * (doorW / 2 + 0.15), 0, cosR, sinR);
+          addDetail(trp.x, groundY + doorH / 2, trp.z, 0.08, doorH + 0.4, 0.08, bRot,
+            varyColor(0.3, 0.28, 0.25, 0.2));
+        }
+      }
+
+      // Loading dock platform (raised concrete slab in front)
+      const dockP = rotPt(bx, bz, 0, -d / 2 - 1.2, cosR, sinR);
+      addWall(dockP.x, groundY + 0.4, dockP.z, w * 0.7, 0.8, 2.0, bRot,
+        varyColor(0.42, 0.4, 0.38, 0.15));
+
+      // Side windows (small, high)
+      for (let side = -1; side <= 1; side += 2) {
+        const numSideWin = Math.floor(d / 4);
+        for (let sw = 0; sw < numSideWin; sw++) {
+          if (Math.random() < 0.3) continue;
+          const slz = -d / 2 + d / (numSideWin + 1) * (sw + 1);
+          const swp = rotPt(bx, bz, side * (w / 2 + 0.07), slz, cosR, sinR);
+          addWindow(swp.x, groundY + h * 0.7, swp.z, 1.5, 0.8, bRot + Math.PI / 2);
+        }
+      }
+
+      // Roof ventilation units
+      for (let v = 0; v < 2; v++) {
+        const vp = rotPt(bx, bz, (Math.random() - 0.5) * w * 0.5, (Math.random() - 0.5) * d * 0.4, cosR, sinR);
+        addDetail(vp.x, groundY + h + 0.6, vp.z, 0.7, 0.8, 0.7, bRot + Math.random(), varyColor(0.4, 0.38, 0.35, 0.2));
+      }
+
+      // Drainage pipe on side
+      if (Math.random() < 0.5) {
+        const pp = rotPt(bx, bz, (Math.random() < 0.5 ? -1 : 1) * (w / 2 + 0.12), (Math.random() - 0.5) * d * 0.5, cosR, sinR);
+        addDetail(pp.x, groundY + h * 0.5, pp.z, 0.1, h, 0.1, 0, varyColor(0.35, 0.33, 0.3, 0.2));
+      }
+
+      return { hw: w / 2 + 0.5, hd: d / 2 + 2.0, h: h };
     }
 
-    // Building type: House (1-2 stories with pitched roof)
+    // ═══════════════════════════════════════════════════
+    // Building type: House (1-2 stories) — ENHANCED
+    // ═══════════════════════════════════════════════════
     function buildHouseType(bx, bz, bRot, groundY) {
       const w = 6 + Math.random() * 2;
       const stories = 1 + Math.floor(Math.random() * 2);
       const wallH = stories * 3;
       const d = 7 + Math.random() * 2;
       const cosR = Math.cos(bRot), sinR = Math.sin(bRot);
-      const bColor = varyColor(0.55, 0.5, 0.45, 0.25);
+
+      // House color palettes (warmer residential tones)
+      const housePals = [
+        [0.85, 0.78, 0.68], [0.80, 0.75, 0.72], [0.75, 0.72, 0.68],
+        [0.82, 0.72, 0.60], [0.72, 0.78, 0.72], [0.88, 0.82, 0.70]
+      ];
+      const pal = housePals[Math.floor(Math.random() * housePals.length)];
+      const bColor = varyColor(pal[0], pal[1], pal[2], 0.2);
 
       // Main body
       addWall(bx, groundY + wallH / 2, bz, w, wallH, d, bRot, bColor.clone());
 
-      // Pitched roof (two angled planes)
-      const roofH = 1.5 + Math.random();
-      const roofW = w * 0.55;
-      addRoof(bx + cosR * (-roofW * 0.3), groundY + wallH + roofH * 0.45, bz + sinR * (-roofW * 0.3),
-        roofW, 0.12, d + 0.8, 0, bRot, -0.45);
-      addRoof(bx + cosR * (roofW * 0.3), groundY + wallH + roofH * 0.45, bz + sinR * (roofW * 0.3),
-        roofW, 0.12, d + 0.8, 0, bRot, 0.45);
+      // Foundation
+      addWall(bx, groundY + 0.2, bz, w + 0.15, 0.4, d + 0.15, bRot, bColor.clone().multiplyScalar(0.55));
 
-      // Windows
-      const wyBase = groundY + wallH * 0.5;
-      addWindow(bx - sinR * (-d / 2 - 0.06), wyBase, bz + cosR * (-d / 2 - 0.06), 1.0, 1.2, bRot);
-      addWindow(bx + cosR * (w / 2 + 0.06), wyBase, bz + sinR * (w / 2 + 0.06), 0.8, 1.0, bRot + Math.PI / 2);
+      // Pitched roof (two angled planes - improved)
+      const roofH = 2.0 + Math.random() * 0.8;
+      const roofOverhang = 0.6;
+      // Left slope
+      const roofW = w / 2 + roofOverhang;
+      const roofAngle = Math.atan2(roofH, w / 2);
+      const slopeLen = Math.sqrt(roofH * roofH + (w / 2) * (w / 2));
+      for (let side = -1; side <= 1; side += 2) {
+        const rp = rotPt(bx, bz, side * w * 0.27, 0, cosR, sinR);
+        addRoof(rp.x, groundY + wallH + roofH * 0.45, rp.z,
+          roofW, 0.14, d + roofOverhang * 2, 0, bRot, side * 0.5,
+          varyColor(0.32, 0.22, 0.18, 0.25));
+      }
+      // Ridge cap
+      addRoof(bx, groundY + wallH + roofH * 0.85, bz, 0.2, 0.1, d + roofOverhang * 2, 0, bRot, 0,
+        varyColor(0.28, 0.2, 0.16, 0.2));
 
-      // Attached garage (30% chance)
-      if (Math.random() < 0.3) {
-        const gOff = w / 2 + 1.5;
-        const gx = bx + cosR * gOff;
-        const gz = bz + sinR * gOff;
-        addWall(gx, groundY + 1.5, gz, 3, 3, 4, bRot, bColor.clone().multiplyScalar(0.9));
-        addRoof(gx, groundY + 3.05, gz, 3.5, 0.12, 4.5, 0, bRot, 0.1);
+      // Chimney
+      if (Math.random() < 0.6) {
+        const chimSide = Math.random() < 0.5 ? -1 : 1;
+        const chp = rotPt(bx, bz, chimSide * w * 0.25, d * 0.15, cosR, sinR);
+        const chimH = roofH + 1.0;
+        addWall(chp.x, groundY + wallH + chimH / 2, chp.z, 0.7, chimH, 0.7, bRot,
+          varyColor(0.45, 0.3, 0.22, 0.25));
+        // Chimney cap
+        addDetail(chp.x, groundY + wallH + chimH + 0.1, chp.z, 0.9, 0.15, 0.9, bRot,
+          varyColor(0.35, 0.3, 0.25, 0.2));
       }
 
-      return { hw: w / 2 + 2, hd: d / 2 + 0.5, h: wallH + roofH };
+      // Front door
+      const doorP = rotPt(bx, bz, 0, -d / 2 - 0.07, cosR, sinR);
+      addWindow(doorP.x, groundY + wallH * 0.25, doorP.z, 1.0, wallH * 0.35, bRot,
+        new THREE.Color(0.12, 0.08, 0.05));
+
+      // Front steps (2-3 step staircase)
+      const stepsP = rotPt(bx, bz, 0, -d / 2 - 0.6, cosR, sinR);
+      addWall(stepsP.x, groundY + 0.15, stepsP.z, 1.6, 0.3, 0.8, bRot, varyColor(0.45, 0.43, 0.4, 0.15));
+      const stepsP2 = rotPt(bx, bz, 0, -d / 2 - 1.0, cosR, sinR);
+      addWall(stepsP2.x, groundY + 0.08, stepsP2.z, 1.8, 0.16, 0.5, bRot, varyColor(0.45, 0.43, 0.4, 0.15));
+
+      // Windows - front face (flanking door)
+      for (let ws = -1; ws <= 1; ws += 2) {
+        if (Math.random() < 0.1) continue;
+        const wfp = rotPt(bx, bz, ws * w * 0.3, -d / 2 - 0.07, cosR, sinR);
+        addWall(wfp.x, groundY + wallH * 0.5, wfp.z, 1.3, 1.5, 0.12, bRot, bColor.clone().multiplyScalar(0.65));
+        addWindow(wfp.x, groundY + wallH * 0.5, wfp.z, 1.0, 1.2, bRot);
+        // Window sill
+        addDetail(wfp.x, groundY + wallH * 0.5 - 0.65, wfp.z, 1.2, 0.08, 0.2, bRot,
+          bColor.clone().multiplyScalar(0.6));
+      }
+
+      // Side windows
+      for (let side = -1; side <= 1; side += 2) {
+        const numSW = 1 + Math.floor(Math.random() * 2);
+        for (let sw = 0; sw < numSW; sw++) {
+          if (Math.random() < 0.15) continue;
+          const slz = -d / 2 + d / (numSW + 1) * (sw + 1);
+          const swp = rotPt(bx, bz, side * (w / 2 + 0.07), slz, cosR, sinR);
+          addWall(swp.x, groundY + wallH * 0.5, swp.z, 0.12, 1.3, 1.1, bRot, bColor.clone().multiplyScalar(0.65));
+          addWindow(swp.x, groundY + wallH * 0.5, swp.z, 0.9, 1.0, bRot + Math.PI / 2);
+        }
+      }
+
+      // Upper floor windows (if 2 stories)
+      if (stories > 1) {
+        for (let ws = -1; ws <= 1; ws += 2) {
+          if (Math.random() < 0.15) continue;
+          const wup = rotPt(bx, bz, ws * w * 0.28, -d / 2 - 0.07, cosR, sinR);
+          addWall(wup.x, groundY + wallH * 0.78, wup.z, 1.1, 1.2, 0.12, bRot, bColor.clone().multiplyScalar(0.65));
+          addWindow(wup.x, groundY + wallH * 0.78, wup.z, 0.8, 0.9, bRot);
+        }
+      }
+
+      // Fence around yard (front fence with gaps)
+      if (Math.random() < 0.4) {
+        const fenceH = 0.8;
+        const fenceD = d / 2 + 2.5;
+        for (let fs = -1; fs <= 1; fs += 2) {
+          // Side fence segments
+          const ffp = rotPt(bx, bz, fs * (w / 2 + 1.5), -fenceD, cosR, sinR);
+          addDetail(ffp.x, groundY + fenceH / 2, ffp.z, 0.06, fenceH, 2.0, bRot,
+            varyColor(0.4, 0.35, 0.28, 0.3));
+          // Fence posts
+          const fpp = rotPt(bx, bz, fs * (w / 2 + 1.5), -d / 2 - 0.5, cosR, sinR);
+          addDetail(fpp.x, groundY + fenceH * 0.6, fpp.z, 0.08, fenceH * 1.2, 0.08, bRot,
+            varyColor(0.38, 0.33, 0.26, 0.2));
+        }
+        // Front fence (with gate gap)
+        for (let fs = -1; fs <= 1; fs += 2) {
+          const fwp = rotPt(bx, bz, fs * (w / 2 + 0.75) * 0.8, -fenceD, cosR, sinR);
+          addDetail(fwp.x, groundY + fenceH / 2, fwp.z, w * 0.3, fenceH, 0.06, bRot,
+            varyColor(0.4, 0.35, 0.28, 0.3));
+        }
+      }
+
+      // Attached garage (40% chance)
+      if (Math.random() < 0.4) {
+        const gOff = w / 2 + 1.8;
+        const gp = rotPt(bx, bz, gOff, 0, cosR, sinR);
+        addWall(gp.x, groundY + 1.5, gp.z, 3.2, 3.0, 4.5, bRot, bColor.clone().multiplyScalar(0.88));
+        // Garage roof
+        addRoof(gp.x, groundY + 3.1, gp.z, 3.6, 0.14, 5.0, 0, bRot, 0.12,
+          varyColor(0.3, 0.22, 0.18, 0.25));
+        // Garage door
+        const gdp = rotPt(gp.x, gp.z, 0, -2.3, cosR, sinR);
+        addDetail(gdp.x, groundY + 1.1, gdp.z, 2.4, 2.0, 0.1, bRot, varyColor(0.4, 0.35, 0.3, 0.3));
+      }
+
+      return { hw: w / 2 + 2.5, hd: d / 2 + 1.0, h: wallH + roofH };
     }
 
-    // Building type: Ruined Shell (irregular partial walls)
+    // ═══════════════════════════════════════════════════
+    // Building type: Ruined Shell — ENHANCED
+    // ═══════════════════════════════════════════════════
     function buildRuinedShell(bx, bz, bRot, groundY) {
-      const bColor = varyColor(0.45, 0.43, 0.4, 0.3);
-      // 2-3 standing wall segments at right angles
-      const numWalls = 2 + Math.floor(Math.random() * 2);
-      let maxW = 3, maxD = 3;
+      // Damaged/weathered color palette (still visible, not too dark)
+      const bColor = varyColor(0.58, 0.54, 0.50, 0.3);
+      const cosR = Math.cos(bRot), sinR = Math.sin(bRot);
+
+      // Ruined floor plan size
+      const planW = 5 + Math.random() * 4;
+      const planD = 5 + Math.random() * 4;
+
+      // 3-4 standing wall segments forming partial room outline
+      const numWalls = 3 + Math.floor(Math.random() * 2);
+      let maxW = planW / 2, maxD = planD / 2;
       for (let w = 0; w < numWalls; w++) {
-        const wh = 2 + Math.random() * 3;
-        const ww = 3 + Math.random() * 4;
-        const wallRot = bRot + (w * Math.PI / 2) + (Math.random() - 0.5) * 0.2;
-        const offDist = Math.random() * 2;
-        const offAngle = Math.random() * Math.PI * 2;
-        const wx = bx + Math.cos(offAngle) * offDist;
-        const wz = bz + Math.sin(offAngle) * offDist;
-        addWall(wx, groundY + wh / 2, wz, ww, wh, 0.3, wallRot, bColor.clone());
-        maxW = Math.max(maxW, ww / 2 + offDist);
-        maxD = Math.max(maxD, ww / 2 + offDist);
-      }
-      // Rubble pile at base
-      for (let r = 0; r < 4 + Math.floor(Math.random() * 4); r++) {
-        const rx = bx + (Math.random() - 0.5) * 4;
-        const rz = bz + (Math.random() - 0.5) * 4;
-        const rs = 0.3 + Math.random() * 0.8;
-        addDetail(rx, groundY + rs * 0.3, rz, rs, rs * 0.5, rs, Math.random() * 6.28);
+        const wh = 1.5 + Math.random() * 4;
+        const ww = 2 + Math.random() * 4;
+        // Walls at ~90 degree intervals with variation
+        const wallRot = bRot + (w * Math.PI / 2) + (Math.random() - 0.5) * 0.25;
+        // Position along floor plan edges
+        const isXWall = w % 2 === 0;
+        let wx, wz;
+        if (isXWall) {
+          const side = Math.random() < 0.5 ? -1 : 1;
+          const wp = rotPt(bx, bz, (Math.random() - 0.5) * planW * 0.3, side * planD * 0.4, cosR, sinR);
+          wx = wp.x; wz = wp.z;
+        } else {
+          const side = Math.random() < 0.5 ? -1 : 1;
+          const wp = rotPt(bx, bz, side * planW * 0.4, (Math.random() - 0.5) * planD * 0.3, cosR, sinR);
+          wx = wp.x; wz = wp.z;
+        }
+
+        // Wall with uneven top (slightly tilted)
+        const wallTilt = (Math.random() - 0.5) * 0.12;
+        bDummy.position.set(wx, groundY + wh / 2, wz);
+        bDummy.scale.set(ww, wh, 0.3);
+        bDummy.rotation.set(0, wallRot, wallTilt);
+        bDummy.updateMatrix();
+        if (wallIdx < MAX_WALLS) {
+          wallInst.setMatrixAt(wallIdx, bDummy.matrix);
+          const wc = scorchColor(bColor.clone());
+          wallInst.setColorAt(wallIdx, vegetationTint(wc));
+          wallIdx++;
+        }
+
+        // Window hole in taller walls
+        if (wh > 2.5 && Math.random() < 0.5) {
+          const wholeP = { x: wx, z: wz };
+          addWindow(wholeP.x, groundY + wh * 0.55, wholeP.z, 0.9, 1.0, wallRot);
+        }
+
+        maxW = Math.max(maxW, planW / 2 + 1);
+        maxD = Math.max(maxD, planD / 2 + 1);
       }
 
-      return { hw: maxW + 1, hd: maxD + 1, h: 4 };
+      // Floor slab remnant (cracked concrete pad)
+      addWall(bx, groundY + 0.08, bz, planW * 0.8, 0.16, planD * 0.8, bRot,
+        varyColor(0.35, 0.33, 0.32, 0.15));
+
+      // Large rubble pile at base
+      const numRubble = 5 + Math.floor(Math.random() * 6);
+      for (let r = 0; r < numRubble; r++) {
+        const rp = rotPt(bx, bz, (Math.random() - 0.5) * planW * 0.8, (Math.random() - 0.5) * planD * 0.8, cosR, sinR);
+        const rs = 0.3 + Math.random() * 1.0;
+        addDetail(rp.x, groundY + rs * 0.25, rp.z,
+          rs * (0.5 + Math.random()), rs * (0.3 + Math.random() * 0.4), rs * (0.5 + Math.random()),
+          Math.random() * 6.28, varyColor(0.38, 0.35, 0.32, 0.35));
+      }
+
+      // Exposed interior features: bathtub or sink shape (simple boxes)
+      if (Math.random() < 0.4) {
+        const intp = rotPt(bx, bz, (Math.random() - 0.5) * planW * 0.3, (Math.random() - 0.5) * planD * 0.3, cosR, sinR);
+        // Bathtub: elongated box
+        addDetail(intp.x, groundY + 0.25, intp.z, 0.6, 0.4, 1.4, bRot + Math.random() * 0.5,
+          varyColor(0.7, 0.68, 0.65, 0.15));
+      }
+      if (Math.random() < 0.3) {
+        const sinkP = rotPt(bx, bz, (Math.random() - 0.5) * planW * 0.3, (Math.random() - 0.5) * planD * 0.3, cosR, sinR);
+        addDetail(sinkP.x, groundY + 0.35, sinkP.z, 0.4, 0.5, 0.35, bRot, varyColor(0.65, 0.63, 0.6, 0.15));
+      }
+
+      // Vegetation growing through cracks
+      if (Math.random() < 0.5) {
+        for (let v = 0; v < 2 + Math.floor(Math.random() * 3); v++) {
+          const vp = rotPt(bx, bz, (Math.random() - 0.5) * planW * 0.6, (Math.random() - 0.5) * planD * 0.6, cosR, sinR);
+          addDetail(vp.x, groundY + 0.3 + Math.random() * 0.4, vp.z,
+            0.15 + Math.random() * 0.3, 0.4 + Math.random() * 0.6, 0.15 + Math.random() * 0.3,
+            Math.random() * 6.28, new THREE.Color(0.15 + Math.random() * 0.1, 0.3 + Math.random() * 0.15, 0.08));
+        }
+      }
+
+      // Scattered debris outside perimeter
+      for (let d2 = 0; d2 < 3; d2++) {
+        const dp = rotPt(bx, bz,
+          (Math.random() - 0.5) * (planW + 3),
+          (Math.random() < 0.5 ? -1 : 1) * (planD / 2 + 0.5 + Math.random() * 2),
+          cosR, sinR);
+        const ds = 0.2 + Math.random() * 0.5;
+        addDetail(dp.x, groundY + ds * 0.2, dp.z, ds, ds * 0.4, ds, Math.random() * 6.28,
+          varyColor(0.4, 0.37, 0.34, 0.3));
+      }
+
+      return { hw: maxW + 1.5, hd: maxD + 1.5, h: 4 };
     }
 
-    // Building type: Tower/Tall Structure (3-5 stories)
+    // ═══════════════════════════════════════════════════
+    // Building type: Tower/Tall Structure — ENHANCED
+    // ═══════════════════════════════════════════════════
     function buildTower(bx, bz, bRot, groundY) {
       const w = 5 + Math.random() * 2;
       const stories = 3 + Math.floor(Math.random() * 3);
-      const floorH = 3;
+      const floorH = 3.2;
       const h = stories * floorH;
       const d = 5 + Math.random() * 2;
       const cosR = Math.cos(bRot), sinR = Math.sin(bRot);
-      const bColor = varyColor(0.52, 0.52, 0.54, 0.2);
+      // Tower palettes (concrete/office building tones)
+      const twPals = [
+        [0.76, 0.76, 0.80], [0.72, 0.74, 0.78], [0.80, 0.78, 0.74],
+        [0.74, 0.72, 0.75], [0.78, 0.76, 0.72]
+      ];
+      const twPal = twPals[Math.floor(Math.random() * twPals.length)];
+      const bColor = varyColor(twPal[0], twPal[1], twPal[2], 0.12);
 
       // Main body
       addWall(bx, groundY + h / 2, bz, w, h, d, bRot, bColor.clone());
 
-      // More windows per floor
+      // Foundation base (wider)
+      addWall(bx, groundY + 0.35, bz, w + 0.5, 0.7, d + 0.5, bRot, bColor.clone().multiplyScalar(0.55));
+
+      // Slight taper: narrower wall overlay on upper section
+      if (stories >= 4) {
+        const upperH = floorH * 2;
+        const taperOff = 0.3;
+        addWall(bx, groundY + h - upperH / 2, bz, w - taperOff, upperH, d - taperOff, bRot,
+          bColor.clone().multiplyScalar(0.95));
+      }
+
+      // Windows on ALL four faces per floor
       for (let f = 0; f < stories; f++) {
-        const wy = groundY + f * floorH + floorH * 0.6;
-        // Front and back
+        const wy = groundY + f * floorH + floorH * 0.55;
+
+        // Front and back face windows
         for (let side = -1; side <= 1; side += 2) {
-          const faceX = bx - sinR * (side * d / 2 + side * 0.06);
-          const faceZ = bz + cosR * (side * d / 2 + side * 0.06);
-          addWindow(faceX, wy, faceZ, 1.0, 1.2, bRot);
-          addWindow(faceX + cosR * w * 0.3, wy, faceZ + sinR * w * 0.3, 0.8, 1.0, bRot);
+          const numFW = Math.max(1, Math.floor(w / 3));
+          for (let wi = 0; wi < numFW; wi++) {
+            if (Math.random() < 0.12) continue; // broken
+            const lx = -w / 2 + w / (numFW + 1) * (wi + 1);
+            const p = rotPt(bx, bz, lx, side * (d / 2 + 0.07), cosR, sinR);
+            addWall(p.x, wy, p.z, 1.2, 1.5, 0.12, bRot, bColor.clone().multiplyScalar(0.6));
+            addWindow(p.x, wy, p.z, 0.9, 1.2, bRot);
+          }
+        }
+        // Side face windows
+        for (let side = -1; side <= 1; side += 2) {
+          if (Math.random() < 0.15) continue;
+          const p = rotPt(bx, bz, side * (w / 2 + 0.07), 0, cosR, sinR);
+          addWall(p.x, wy, p.z, 0.12, 1.3, 1.0, bRot, bColor.clone().multiplyScalar(0.6));
+          addWindow(p.x, wy, p.z, 0.8, 1.0, bRot + Math.PI / 2);
+        }
+
+        // Floor separator band on front
+        if (f > 0) {
+          const bp = rotPt(bx, bz, 0, -d / 2 - 0.06, cosR, sinR);
+          addWall(bp.x, groundY + f * floorH, bp.z, w - 0.3, 0.1, 0.15, bRot,
+            bColor.clone().multiplyScalar(0.7));
         }
       }
 
-      // Antenna / broken spire on top
-      addDetail(bx, groundY + h + 1.5, bz, 0.15, 3, 0.15, bRot);
-      // Cross-bar on antenna
-      addDetail(bx, groundY + h + 2.2, bz, 1.0, 0.08, 0.08, bRot);
+      // Flat roof with parapet
+      addRoof(bx, groundY + h + 0.08, bz, w + 0.3, 0.2, d + 0.3, 0, bRot, 0);
+      // Parapet walls (4 sides)
+      for (let side = -1; side <= 1; side += 2) {
+        const pp1 = rotPt(bx, bz, 0, side * (d / 2 + 0.08), cosR, sinR);
+        addRoof(pp1.x, groundY + h + 0.45, pp1.z, w + 0.5, 0.6, 0.12, 0, bRot, 0);
+        const pp2 = rotPt(bx, bz, side * (w / 2 + 0.08), 0, cosR, sinR);
+        addRoof(pp2.x, groundY + h + 0.45, pp2.z, 0.12, 0.6, d + 0.5, 0, bRot, 0);
+      }
 
-      // Flat roof
-      addRoof(bx, groundY + h + 0.05, bz, w + 0.3, 0.15, d + 0.3, 0, bRot, 0);
+      // Observation deck / top platform
+      if (Math.random() < 0.4) {
+        const deckW = w * 1.1, deckD = d * 1.1;
+        addRoof(bx, groundY + h + 0.8, bz, deckW, 0.1, deckD, 0, bRot, 0,
+          varyColor(0.3, 0.3, 0.32, 0.15));
+        // Deck railing posts
+        for (let dp = -1; dp <= 1; dp++) {
+          for (let dp2 = -1; dp2 <= 1; dp2 += 2) {
+            const rrp = rotPt(bx, bz, dp * deckW * 0.4, dp2 * deckD * 0.45, cosR, sinR);
+            addDetail(rrp.x, groundY + h + 1.2, rrp.z, 0.06, 0.7, 0.06, bRot, varyColor(0.3, 0.28, 0.25, 0.2));
+          }
+        }
+      }
 
-      return { hw: w / 2 + 0.5, hd: d / 2 + 0.5, h: h + 3 };
+      // Antenna / communication tower on top
+      addDetail(bx, groundY + h + 2.5, bz, 0.12, 5, 0.12, bRot, varyColor(0.45, 0.42, 0.38, 0.2));
+      // Cross-bars on antenna
+      addDetail(bx, groundY + h + 3.5, bz, 1.2, 0.06, 0.06, bRot, varyColor(0.4, 0.38, 0.35, 0.2));
+      addDetail(bx, groundY + h + 4.2, bz, 0.06, 0.06, 0.8, bRot, varyColor(0.4, 0.38, 0.35, 0.2));
+      // Satellite dish
+      if (Math.random() < 0.5) {
+        const dishP = rotPt(bx, bz, w * 0.3, d * 0.2, cosR, sinR);
+        addDetail(dishP.x, groundY + h + 1.5, dishP.z, 0.8, 0.8, 0.15, bRot + 0.3,
+          varyColor(0.5, 0.48, 0.45, 0.2));
+      }
+
+      // Rooftop AC/mechanical units
+      for (let ac = 0; ac < 1 + Math.floor(Math.random() * 2); ac++) {
+        const acp = rotPt(bx, bz, (Math.random() - 0.5) * w * 0.5, (Math.random() - 0.5) * d * 0.4, cosR, sinR);
+        addDetail(acp.x, groundY + h + 0.45, acp.z, 0.8 + Math.random() * 0.5, 0.6, 0.8 + Math.random() * 0.5, bRot,
+          varyColor(0.42, 0.4, 0.38, 0.2));
+      }
+
+      // Structural cracks (dark lines on walls) — using thin dark wall strips
+      if (Math.random() < 0.4) {
+        const crackSide = Math.random() < 0.5 ? -1 : 1;
+        const crp = rotPt(bx, bz, crackSide * (w / 2 + 0.08), (Math.random() - 0.5) * d * 0.4, cosR, sinR);
+        const crackH = 2 + Math.random() * 3;
+        addWall(crp.x, groundY + h * 0.3 + Math.random() * h * 0.3, crp.z,
+          0.15, crackH, 0.04, bRot + Math.PI / 2 + (Math.random() - 0.5) * 0.3,
+          new THREE.Color(0.12, 0.1, 0.09));
+      }
+
+      // Drainpipes on corners
+      for (let corner = 0; corner < 2; corner++) {
+        if (Math.random() < 0.5) continue;
+        const cSide = corner === 0 ? -1 : 1;
+        const dpp = rotPt(bx, bz, cSide * (w / 2 - 0.05), -d / 2 + 0.1, cosR, sinR);
+        addDetail(dpp.x, groundY + h * 0.5, dpp.z, 0.08, h, 0.08, 0, varyColor(0.35, 0.33, 0.3, 0.2));
+      }
+
+      // Water staining below windows on front facade
+      if (Math.random() < 0.35) {
+        for (let ws = 0; ws < 2; ws++) {
+          const wsp = rotPt(bx, bz, (Math.random() - 0.5) * w * 0.5, -d / 2 - 0.08, cosR, sinR);
+          addWall(wsp.x, groundY + Math.random() * h * 0.5, wsp.z, 0.12, 2 + Math.random() * 2, 0.04, bRot,
+            bColor.clone().multiplyScalar(0.4 + Math.random() * 0.15));
+        }
+      }
+
+      return { hw: w / 2 + 0.5, hd: d / 2 + 0.5, h: h + 5 };
     }
 
     // ── 6. Place Buildings in Town Blocks ──
@@ -3078,6 +4285,7 @@ const buildingPositions = [];
     scene.add(wallInst);
 
     winInst.count = winIdx;
+    if (winIdx > 0 && winInst.instanceColor) winInst.instanceColor.needsUpdate = true;
     scene.add(winInst);
 
     roofInst.count = roofIdx;
@@ -3111,40 +4319,93 @@ const buildingPositions = [];
 const bbPositions = [];
 {
   const billboardTexts = [
-    { text: 'DANGER AHEAD', subtext: 'QUARANTINE ZONE', bgColor: '#3a3530', fgColor: '#c8b898', accentColor: '#8a6030' },
-    { text: 'FUEL 50 MI', subtext: '\u2192', bgColor: '#2a2820', fgColor: '#b0a080', accentColor: '#7a5020' },
-    { text: 'SURVIVORS', subtext: 'WELCOME', bgColor: '#2e3028', fgColor: '#a8a078', accentColor: '#6a7040' },
-    { text: 'NO TRESPASSING', subtext: 'LAST STOP', bgColor: '#3a2020', fgColor: '#c0a0a0', accentColor: '#8a3030' },
+    { text: 'DANGER', subtext: 'QUARANTINE ZONE', bgColor: '#2a2520', fgColor: '#e8d8a8', accentColor: '#b84020' },
+    { text: 'FUEL 50 MI', subtext: 'LAST CHANCE', bgColor: '#1a1810', fgColor: '#d8c890', accentColor: '#9a6020' },
+    { text: 'SURVIVORS', subtext: 'TURN BACK NOW', bgColor: '#1e2018', fgColor: '#c8c098', accentColor: '#8a9040' },
+    { text: 'KEEP OUT', subtext: 'INFECTED AREA', bgColor: '#3a1818', fgColor: '#e0b0b0', accentColor: '#c03030' },
+    { text: 'DEAD END', subtext: 'NO SERVICES', bgColor: '#28221a', fgColor: '#d0c0a0', accentColor: '#8a6830' },
   ];
 
   function createBillboardTexture(config) {
     const c = document.createElement('canvas');
     c.width = 512; c.height = 256;
     const ctx = c.getContext('2d');
+    // Base background with slight noise/texture
     ctx.fillStyle = config.bgColor;
     ctx.fillRect(0, 0, 512, 256);
-    ctx.fillStyle = config.accentColor;
-    ctx.fillRect(0, 0, 512, 8);
-    ctx.fillRect(0, 248, 512, 8);
-    ctx.fillRect(0, 0, 8, 256);
-    ctx.fillRect(504, 0, 8, 256);
-    ctx.fillStyle = config.accentColor;
-    ctx.globalAlpha = 0.2;
-    ctx.fillRect(380, 20, 30, 216);
-    ctx.fillRect(430, 20, 50, 216);
+    // Add weathering/dirt noise
+    for (let i = 0; i < 800; i++) {
+      const nx = Math.random() * 512, ny = Math.random() * 256;
+      const ns = 1 + Math.random() * 4;
+      ctx.globalAlpha = 0.03 + Math.random() * 0.08;
+      ctx.fillStyle = Math.random() < 0.5 ? '#000000' : '#3a3020';
+      ctx.fillRect(nx, ny, ns, ns);
+    }
     ctx.globalAlpha = 1.0;
-    ctx.fillStyle = config.fgColor;
-    ctx.font = 'bold 52px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(config.text, 220, 100);
-    ctx.font = 'bold 72px Arial, sans-serif';
+    // Border with rust/wear effect
     ctx.fillStyle = config.accentColor;
-    ctx.fillText(config.subtext, 220, 195);
+    ctx.fillRect(0, 0, 512, 10);
+    ctx.fillRect(0, 246, 512, 10);
+    ctx.fillRect(0, 0, 10, 256);
+    ctx.fillRect(502, 0, 10, 256);
+    // Rust stains dripping down
+    ctx.globalAlpha = 0.15;
+    for (let d = 0; d < 6; d++) {
+      const dx = 30 + Math.random() * 450;
+      const dh = 20 + Math.random() * 80;
+      ctx.fillStyle = '#5a3010';
+      ctx.fillRect(dx, 10, 2 + Math.random() * 4, dh);
+    }
+    ctx.globalAlpha = 1.0;
+    // Vertical damage bars (faded sections)
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = config.accentColor;
+    ctx.fillRect(350 + Math.random() * 60, 15, 25, 226);
+    ctx.fillRect(410 + Math.random() * 50, 15, 40, 226);
+    ctx.globalAlpha = 1.0;
+    // Torn/missing section (random hole)
+    if (Math.random() < 0.5) {
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#1a1510';
+      const tx = 300 + Math.random() * 180, ty = Math.random() * 200;
+      ctx.fillRect(tx, ty, 30 + Math.random() * 60, 20 + Math.random() * 40);
+      ctx.globalAlpha = 1.0;
+    }
+    // Main text - larger, bolder, with shadow for readability
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Text shadow
+    ctx.fillStyle = '#000000';
+    ctx.globalAlpha = 0.4;
+    ctx.font = 'bold 60px Arial, sans-serif';
+    ctx.fillText(config.text, 258, 88);
+    ctx.globalAlpha = 1.0;
+    // Main text
+    ctx.fillStyle = config.fgColor;
+    ctx.font = 'bold 60px Arial, sans-serif';
+    ctx.fillText(config.text, 256, 86);
+    // Subtext with shadow
+    ctx.fillStyle = '#000000';
+    ctx.globalAlpha = 0.35;
+    ctx.font = 'bold 44px Arial, sans-serif';
+    ctx.fillText(config.subtext, 258, 178);
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = config.accentColor;
+    ctx.font = 'bold 44px Arial, sans-serif';
+    ctx.fillText(config.subtext, 256, 176);
+    // Faded overlay to simulate sun bleaching
+    ctx.globalAlpha = 0.06;
+    const grad = ctx.createLinearGradient(0, 0, 512, 256);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(1, '#000000');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 256);
+    ctx.globalAlpha = 1.0;
     return new THREE.CanvasTexture(c);
   }
 
   let bbPlaced = 0;
-  const bbMax = 3 + Math.floor(Math.random() * 2);
+  const bbMax = 4 + Math.floor(Math.random() * 2);
 
   for (const road of allRoads) {
     if (bbPlaced >= bbMax) break;
@@ -3168,28 +4429,37 @@ const bbPositions = [];
       const by = getTerrainHeight(bx, bz);
       const group = new THREE.Group();
 
-      const poleMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.5, metalness: 0.6 });
-      const poleGeo = new THREE.CylinderGeometry(0.06, 0.06, 3, 4);
+      // Rusted support poles
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0x5a3818, roughness: 0.85, metalness: 0.5 });
+      const poleGeo = new THREE.CylinderGeometry(0.07, 0.09, 3.5, 5);
       const pole1 = new THREE.Mesh(poleGeo, poleMat);
-      pole1.position.set(-1.0, 1.5, 0);
-      pole1.castShadow = true;
+      pole1.position.set(-1.2, 1.75, 0);
+      pole1.castShadow = true; pole1.receiveShadow = true;
       group.add(pole1);
       const pole2 = new THREE.Mesh(poleGeo, poleMat);
-      pole2.position.set(1.0, 1.5, 0);
-      pole2.castShadow = true;
+      pole2.position.set(1.2, 1.75, 0);
+      pole2.castShadow = true; pole2.receiveShadow = true;
       group.add(pole2);
+      // Cross brace for structural detail
+      const braceGeo = new THREE.BoxGeometry(0.04, 0.04, 2.6);
+      const brace = new THREE.Mesh(braceGeo, poleMat);
+      brace.position.set(0, 2.5, 0);
+      brace.rotation.z = 0.15;
+      brace.castShadow = true;
+      group.add(brace);
 
       const config = billboardTexts[bbPlaced % billboardTexts.length];
       const signTex = createBillboardTexture(config);
-      const signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.6, metalness: 0.1 });
-      const signGeo = new THREE.PlaneGeometry(3, 1.5);
+      signTex.anisotropy = 4; // sharper at angles
+      const signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.7, metalness: 0.05 });
+      const signGeo = new THREE.PlaneGeometry(3.5, 1.8);
       const signFront = new THREE.Mesh(signGeo, signMat);
-      signFront.position.set(0, 3.5, 0);
-      signFront.castShadow = true;
+      signFront.position.set(0, 3.8, 0);
+      signFront.castShadow = true; signFront.receiveShadow = true;
       group.add(signFront);
-      const backMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.8, metalness: 0.2 });
+      const backMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.85, metalness: 0.15 });
       const signBack = new THREE.Mesh(signGeo, backMat);
-      signBack.position.set(0, 3.5, -0.02);
+      signBack.position.set(0, 3.8, -0.03);
       signBack.rotation.y = Math.PI;
       signBack.castShadow = true;
       group.add(signBack);
@@ -3245,8 +4515,44 @@ const windTurbineBlades = [];
     return { x: bestX, z: bestZ, y: bestH };
   }
 
-  const towerMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.7, metalness: 0.2 });
-  const nacelleMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.3 });
+  // Tower with rust patches - create a canvas texture
+  function createRustedTowerTexture() {
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 256;
+    const ctx = c.getContext('2d');
+    // Base white-grey
+    ctx.fillStyle = '#9a9a98';
+    ctx.fillRect(0, 0, 128, 256);
+    // Rust patches
+    for (let r = 0; r < 20; r++) {
+      const rx = Math.random() * 128, ry = Math.random() * 256;
+      const rw = 8 + Math.random() * 25, rh = 5 + Math.random() * 20;
+      ctx.globalAlpha = 0.2 + Math.random() * 0.4;
+      ctx.fillStyle = `hsl(${15 + Math.random()*15}, ${50+Math.random()*30}%, ${20+Math.random()*15}%)`;
+      ctx.fillRect(rx, ry, rw, rh);
+    }
+    // Rust streaks running down
+    ctx.globalAlpha = 0.25;
+    for (let s = 0; s < 8; s++) {
+      const sx = Math.random() * 128;
+      ctx.fillStyle = '#5a2a0a';
+      ctx.fillRect(sx, Math.random() * 100, 2 + Math.random() * 3, 40 + Math.random() * 80);
+    }
+    ctx.globalAlpha = 1.0;
+    // Seam lines
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
+    for (let sy = 40; sy < 256; sy += 50) {
+      ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(128, sy); ctx.stroke();
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+  }
+
+  const towerTex = createRustedTowerTexture();
+  const towerMat = new THREE.MeshStandardMaterial({ map: towerTex, roughness: 0.75, metalness: 0.3 });
+  const nacelleMat = new THREE.MeshStandardMaterial({ color: 0x787878, roughness: 0.65, metalness: 0.35 });
   const bladeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.6, metalness: 0.1, side: THREE.DoubleSide });
 
   for (let t = 0; t < turbineCount; t++) {
@@ -3254,26 +4560,43 @@ const windTurbineBlades = [];
     const group = new THREE.Group();
     const towerH = 20;
 
-    const towerGeo = new THREE.CylinderGeometry(0.3, 0.5, towerH, 8);
+    const towerGeo = new THREE.CylinderGeometry(0.3, 0.55, towerH, 8);
     const tower = new THREE.Mesh(towerGeo, towerMat);
     tower.position.set(0, towerH / 2, 0);
-    tower.castShadow = true;
+    tower.castShadow = true; tower.receiveShadow = true;
     group.add(tower);
 
-    const nacelleGeo = new THREE.BoxGeometry(1, 0.6, 0.6);
+    // Nacelle with more detail: main body + access panel + nose cone
+    const nacelleGeo = new THREE.BoxGeometry(1.2, 0.65, 0.65);
     const nacelle = new THREE.Mesh(nacelleGeo, nacelleMat);
     nacelle.position.set(0.3, towerH, 0);
-    nacelle.castShadow = true;
+    nacelle.castShadow = true; nacelle.receiveShadow = true;
     group.add(nacelle);
+    // Access panel on nacelle
+    const panelGeo = new THREE.PlaneGeometry(0.4, 0.3);
+    const panelMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.8, metalness: 0.4 });
+    const panel = new THREE.Mesh(panelGeo, panelMat);
+    panel.position.set(0.3, towerH, 0.33);
+    panel.castShadow = false;
+    group.add(panel);
+    // Nose cone (front of nacelle)
+    const noseGeo = new THREE.ConeGeometry(0.25, 0.4, 6);
+    noseGeo.rotateZ(-Math.PI/2);
+    const nose = new THREE.Mesh(noseGeo, nacelleMat);
+    nose.position.set(-0.5, towerH, 0);
+    group.add(nose);
 
     const bladeGroup = new THREE.Group();
     bladeGroup.position.set(-0.2, towerH, 0);
-    const bladeGeo = new THREE.PlaneGeometry(0.4, 8);
+    const bladeGeo = new THREE.PlaneGeometry(0.45, 8);
     const isBroken = t % 2 === 0; // ~half are broken
-    const bladeCount = isBroken ? 2 : 3;
+    const bladeCount = isBroken ? (1 + Math.floor(Math.random() * 2)) : 3;
     for (let b = 0; b < bladeCount; b++) {
       const blade = new THREE.Mesh(bladeGeo, bladeMat);
-      blade.position.set(0, 4, 0);
+      // Broken blades: shorter length
+      const bladeLen = (isBroken && b === 0) ? 2.5 + Math.random() * 2 : 4;
+      blade.position.set(0, bladeLen, 0);
+      blade.scale.y = bladeLen / 4;
       blade.rotation.z = 0;
       const bladeHolder = new THREE.Group();
       bladeHolder.rotation.z = (b / 3) * Math.PI * 2;
@@ -3299,8 +4622,8 @@ const windTurbineBlades = [];
 // HAY BALES
 // ═══════════════════════════════════════════════════════════════════════
 {
-  const hayGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.8, 8);
-  const hayMat = new THREE.MeshStandardMaterial({ color: 0x7a6030, roughness: 0.95, metalness: 0.0 });
+  const hayGeo = new THREE.CylinderGeometry(0.6, 0.65, 0.8, 10);
+  const hayMat = new THREE.MeshStandardMaterial({ color: 0x6a5028, roughness: 0.95, metalness: 0.0 });
   const HAY_MAX = 20;
   const hayInst = new THREE.InstancedMesh(hayGeo, hayMat, HAY_MAX);
   hayInst.castShadow = true;
@@ -3320,15 +4643,37 @@ const windTurbineBlades = [];
       const slope = Math.abs(getTerrainHeight(hx + 1, hz) - hy) + Math.abs(getTerrainHeight(hx, hz + 1) - hy);
       if (slope > 1.5) continue;
 
-      dummy.position.set(hx, hy + 0.3, hz);
-      dummy.rotation.set(Math.PI / 2, Math.random() * Math.PI, (Math.random() - 0.5) * 0.2);
-      dummy.scale.set(1, 1, 1);
+      // Some hay bales knocked over at dramatic angles, others upright
+      const isKnockedOver = Math.random() < 0.35;
+      const isOnSide = Math.random() < 0.4;
+      if (isKnockedOver) {
+        // Dramatically tipped
+        dummy.position.set(hx, hy + 0.25, hz);
+        dummy.rotation.set(
+          Math.PI / 2 + (Math.random() - 0.5) * 0.8,
+          Math.random() * Math.PI,
+          (Math.random() - 0.5) * 0.6
+        );
+      } else if (isOnSide) {
+        // Laying on side
+        dummy.position.set(hx, hy + 0.35, hz);
+        dummy.rotation.set(Math.PI / 2, Math.random() * Math.PI, (Math.random() - 0.5) * 0.15);
+      } else {
+        // Upright
+        dummy.position.set(hx, hy + 0.4, hz);
+        dummy.rotation.set(0, Math.random() * Math.PI, (Math.random() - 0.5) * 0.1);
+      }
+      dummy.scale.set(0.9 + Math.random() * 0.2, 0.85 + Math.random() * 0.3, 0.9 + Math.random() * 0.2);
       dummy.updateMatrix();
       hayInst.setMatrixAt(hayIdx, dummy.matrix);
+      // Weathered/moldy colors: dark brown-green tint
+      const moldFactor = Math.random();
       hayInst.setColorAt(hayIdx, new THREE.Color().setHSL(
-        0.12 + Math.random() * 0.04,
-        0.5 + Math.random() * 0.2,
-        0.4 + Math.random() * 0.15
+        moldFactor < 0.4 ? 0.08 + Math.random() * 0.04 :  // normal brown
+        moldFactor < 0.7 ? 0.10 + Math.random() * 0.05 :  // olive/moldy
+                           0.22 + Math.random() * 0.08,    // green-moldy
+        0.3 + Math.random() * 0.25,
+        0.2 + Math.random() * 0.15  // darker overall
       ));
 
       const hb = new CANNON.Body({ mass: 0 });
@@ -3671,133 +5016,329 @@ const gasStationPumpPositions = []; // for proximity detection
   function createGasStation(cx, cz, yaw) {
     const group = new THREE.Group();
     const h = getTerrainHeight(cx, cz);
-    flattenTerrainUnder(cx, cz, 8, 6, 3);
+    flattenTerrainUnder(cx, cz, 10, 8, 4);
     const baseH = getTerrainHeight(cx, cz);
+    const bright = 0.8 + Math.random() * 0.3;
 
     // Materials
-    const concreteMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.95, metalness: 0.02 });
-    const rustedMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9, metalness: 0.15 });
-    const fadedPaintMat = new THREE.MeshStandardMaterial({ color: 0x994422, roughness: 0.85, metalness: 0.1 });
-    const darkMat2 = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9, metalness: 0.05 });
+    const concreteMat = new THREE.MeshStandardMaterial({ color: 0x777772, roughness: 0.95, metalness: 0.02 });
+    const concreteStainedMat = new THREE.MeshStandardMaterial({ color: 0x5a5a55, roughness: 0.95, metalness: 0.02 });
+    const rustedMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.54 * bright, 0.27 * bright, 0.07 * bright), roughness: 0.92, metalness: 0.18 });
+    const darkRustMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.35 * bright, 0.15 * bright, 0.05 * bright), roughness: 0.95, metalness: 0.12 });
+    const fadedPaintMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.6 * bright, 0.27 * bright, 0.13 * bright), roughness: 0.88, metalness: 0.1 });
+    const darkMat2 = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.95, metalness: 0.05 });
+    const whiteFadedMat = new THREE.MeshStandardMaterial({ color: 0x8a8a82, roughness: 0.9, metalness: 0.02 });
 
-    // Canopy - slightly tilted for collapsed look
-    const canopy = new THREE.Mesh(new THREE.BoxGeometry(12, 0.3, 8), rustedMat);
-    canopy.position.set(0, 4, 0);
-    canopy.rotation.x = (Math.random() - 0.5) * 0.08;
-    canopy.rotation.z = (Math.random() - 0.5) * 0.12;
-    canopy.castShadow = true;
-    group.add(canopy);
+    // --- Concrete ground slab ---
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(14, 0.15, 10), concreteStainedMat);
+    slab.position.set(0, 0.075, 0); slab.receiveShadow = true; group.add(slab);
+    // Oil stain patches on ground
+    for (let os = 0; os < 3; os++) {
+      const stain = new THREE.Mesh(new THREE.PlaneGeometry(1.5 + Math.random(), 1.5 + Math.random()),
+        new THREE.MeshStandardMaterial({ color: 0x1a1a18, roughness: 0.98, metalness: 0, transparent: true, opacity: 0.4 }));
+      stain.rotation.x = -Math.PI / 2;
+      stain.position.set((Math.random()-0.5) * 8, 0.16, (Math.random()-0.5) * 5);
+      group.add(stain);
+    }
 
-    // Support pillars (some tilted)
-    const pillarPositions = [[-5, 0, -3], [5, 0, -3], [-5, 0, 3], [5, 0, 3]];
-    pillarPositions.forEach((pp, pi) => {
-      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 4, 6), concreteMat);
-      pillar.position.set(pp[0], 2, pp[2]);
-      // Some pillars tilted
-      if (pi === 2 || pi === 3) {
-        pillar.rotation.x = (Math.random() - 0.5) * 0.15;
-        pillar.rotation.z = (Math.random() - 0.5) * 0.1;
+    // --- Canopy with one collapsed corner ---
+    const canopyW = 13, canopyD = 9, canopyH = 4.5;
+    const canopyGeo = new THREE.BoxGeometry(canopyW, 0.25, canopyD, 4, 1, 4);
+    const cPos = canopyGeo.attributes.position;
+    // Collapse one corner
+    const collapseCorner = Math.floor(Math.random() * 4);
+    for (let i = 0; i < cPos.count; i++) {
+      const cx2 = cPos.getX(i), cz2 = cPos.getZ(i);
+      const cornerX = collapseCorner % 2 === 0 ? -canopyW/2 : canopyW/2;
+      const cornerZ = collapseCorner < 2 ? -canopyD/2 : canopyD/2;
+      const dist = Math.hypot(cx2 - cornerX, cz2 - cornerZ);
+      if (dist < 4) {
+        const drop = (4 - dist) / 4 * (1.0 + Math.random() * 0.5);
+        cPos.setY(i, cPos.getY(i) - drop);
       }
-      pillar.castShadow = true;
-      group.add(pillar);
+    }
+    canopyGeo.computeVertexNormals();
+    const canopy = new THREE.Mesh(canopyGeo, rustedMat);
+    canopy.position.set(0, canopyH, 0);
+    canopy.rotation.x = (Math.random() - 0.5) * 0.04;
+    canopy.rotation.z = (Math.random() - 0.5) * 0.06;
+    canopy.castShadow = true; canopy.receiveShadow = true; group.add(canopy);
+
+    // Canopy fascia / edge trim
+    const fasciaMat = new THREE.MeshStandardMaterial({ color: 0x4a4a45, roughness: 0.9, metalness: 0.1 });
+    const fasciaF = new THREE.Mesh(new THREE.BoxGeometry(canopyW, 0.3, 0.06), fasciaMat);
+    fasciaF.position.set(0, canopyH - 0.1, -canopyD/2); group.add(fasciaF);
+    const fasciaB = new THREE.Mesh(new THREE.BoxGeometry(canopyW, 0.3, 0.06), fasciaMat);
+    fasciaB.position.set(0, canopyH - 0.1, canopyD/2); group.add(fasciaB);
+    const fasciaL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.3, canopyD), fasciaMat);
+    fasciaL.position.set(-canopyW/2, canopyH - 0.1, 0); group.add(fasciaL);
+    const fasciaR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.3, canopyD), fasciaMat);
+    fasciaR.position.set(canopyW/2, canopyH - 0.1, 0); group.add(fasciaR);
+
+    // --- Support pillars (I-beam style, some bent) ---
+    const pillarPositions = [[-5.5, 0, -3.5], [5.5, 0, -3.5], [-5.5, 0, 3.5], [5.5, 0, 3.5]];
+    pillarPositions.forEach((pp, pi) => {
+      // I-beam: 3 boxes forming H cross-section
+      const pillarH = canopyH;
+      const iBeamW = 0.25, iBeamD = 0.25, flangeT = 0.06;
+      const web = new THREE.Mesh(new THREE.BoxGeometry(0.06, pillarH, iBeamD), concreteMat);
+      const flangeF = new THREE.Mesh(new THREE.BoxGeometry(iBeamW, pillarH, flangeT), concreteMat);
+      const flangeB = new THREE.Mesh(new THREE.BoxGeometry(iBeamW, pillarH, flangeT), concreteMat);
+      web.position.set(pp[0], pillarH/2, pp[2]);
+      flangeF.position.set(pp[0], pillarH/2, pp[2] - iBeamD/2 + flangeT/2);
+      flangeB.position.set(pp[0], pillarH/2, pp[2] + iBeamD/2 - flangeT/2);
+      // Bent pillars near collapsed corner
+      const isNearCollapse = pi === collapseCorner;
+      if (isNearCollapse) {
+        const bendX = (Math.random() - 0.5) * 0.2;
+        const bendZ = (Math.random() - 0.5) * 0.15;
+        web.rotation.x = bendZ; web.rotation.z = bendX;
+        flangeF.rotation.x = bendZ; flangeF.rotation.z = bendX;
+        flangeB.rotation.x = bendZ; flangeB.rotation.z = bendX;
+      } else if (pi >= 2) {
+        web.rotation.x = (Math.random()-0.5) * 0.06;
+        web.rotation.z = (Math.random()-0.5) * 0.04;
+        flangeF.rotation.x = web.rotation.x; flangeF.rotation.z = web.rotation.z;
+        flangeB.rotation.x = web.rotation.x; flangeB.rotation.z = web.rotation.z;
+      }
+      web.castShadow = true; flangeF.castShadow = true; flangeB.castShadow = true;
+      group.add(web); group.add(flangeF); group.add(flangeB);
     });
 
-    // Fuel pumps (2-3 under canopy)
+    // --- Fuel pumps with hoses ---
     const pumpCount = 2 + Math.floor(Math.random() * 2);
     const stationPumps = [];
     for (let p = 0; p < pumpCount; p++) {
-      const pumpX = (p - (pumpCount - 1) / 2) * 2.5;
-      const pump = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.3), fadedPaintMat);
-      pump.position.set(pumpX, 0.6, 0);
-      // Some pumps tilted or fallen
-      if (Math.random() < 0.3) {
-        pump.rotation.z = (Math.random() - 0.5) * 0.8;
-        pump.position.y = 0.3;
+      const pumpX = (p - (pumpCount - 1) / 2) * 2.8;
+      const isFallen = Math.random() < 0.25;
+      // Pump body
+      const pump = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.4, 0.35), fadedPaintMat);
+      pump.position.set(pumpX, isFallen ? 0.35 : 0.7, 0);
+      if (isFallen) {
+        pump.rotation.z = (Math.random() - 0.5) * 1.2;
+        pump.rotation.x = (Math.random() - 0.5) * 0.3;
       }
-      pump.castShadow = true;
-      group.add(pump);
-
-      // Pump nozzle detail
-      const nozzle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.3), darkMat2);
-      nozzle.position.set(pumpX + 0.15, 0.8, 0.15);
+      pump.castShadow = true; pump.receiveShadow = true; group.add(pump);
+      // Pump screen (dark rectangle)
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.02), darkMat2);
+      screen.position.set(pumpX, isFallen ? 0.5 : 1.0, isFallen ? 0 : 0.18);
+      if (isFallen) screen.rotation.z = pump.rotation.z;
+      group.add(screen);
+      // Pump top
+      const pTop = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.4), darkRustMat);
+      pTop.position.set(pumpX, isFallen ? 0.55 : 1.38, 0);
+      if (isFallen) pTop.rotation.z = pump.rotation.z;
+      pTop.castShadow = true; group.add(pTop);
+      // Nozzle cradle
+      const nozzle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.2), darkMat2);
+      nozzle.position.set(pumpX + 0.2, isFallen ? 0.4 : 0.9, 0.2);
       group.add(nozzle);
+      // Hose (segmented thin boxes forming a drooping curve)
+      if (!isFallen) {
+        const hoseSegs = 6;
+        for (let hs = 0; hs < hoseSegs; hs++) {
+          const t = hs / hoseSegs;
+          const hx = pumpX + 0.25 + t * 0.8;
+          const hy = 0.9 - t * 0.4 - Math.sin(t * Math.PI) * 0.3;
+          const hz = 0.2 + t * 0.3;
+          const hoseSeg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.15), darkMat2);
+          hoseSeg.position.set(hx, hy, hz);
+          hoseSeg.rotation.x = t * 0.5;
+          hoseSeg.rotation.z = -t * 0.3;
+          group.add(hoseSeg);
+        }
+        // Nozzle at end of hose
+        const hoseEnd = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.12), darkMat2);
+        hoseEnd.position.set(pumpX + 1.1, 0.25, 0.6);
+        hoseEnd.rotation.x = 0.8;
+        group.add(hoseEnd);
+      }
+      // Pump concrete island
+      const island = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.6), concreteMat);
+      island.position.set(pumpX, 0.1, 0); island.receiveShadow = true; group.add(island);
 
-      // Track pump world positions for proximity checks
       const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
       const worldPX = cx + cosY * pumpX - sinY * 0;
       const worldPZ = cz + sinY * pumpX + cosY * 0;
       stationPumps.push({ x: worldPX, z: worldPZ, y: baseH });
     }
 
-    // Station building
-    const building = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 5), concreteMat);
-    building.position.set(0, 1.5, -6);
-    building.castShadow = true;
-    group.add(building);
+    // --- Station building (more detailed) ---
+    const bldgW = 7, bldgH = 3.5, bldgD = 5.5;
+    const bldgGeo = new THREE.BoxGeometry(bldgW, bldgH, bldgD, 3, 3, 3);
+    const bColors = []; const bPos2 = bldgGeo.attributes.position;
+    for (let i = 0; i < bPos2.count; i++) {
+      const py = bPos2.getY(i); const normY = (py + bldgH/2) / bldgH;
+      const stain = normY < 0.15 ? (0.15 - normY) * 2.0 : 0;
+      const weathering = Math.random() * 0.06;
+      bColors.push(
+        Math.min(1, 0.47 * bright - stain * 0.15 + weathering),
+        Math.min(1, 0.47 * bright - stain * 0.12 + weathering * 0.5),
+        Math.min(1, 0.45 * bright - stain * 0.1 + weathering * 0.3)
+      );
+    }
+    bldgGeo.setAttribute('color', new THREE.Float32BufferAttribute(bColors, 3));
+    const bldgMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0.02 });
+    const building = new THREE.Mesh(bldgGeo, bldgMat);
+    building.position.set(0, bldgH/2, -7);
+    building.castShadow = true; building.receiveShadow = true; group.add(building);
 
-    // Collapsed roof piece
-    const roofPiece = new THREE.Mesh(new THREE.PlaneGeometry(5, 4), rustedMat);
-    roofPiece.position.set(0.5, 3.2, -6);
-    roofPiece.rotation.x = -0.3;
-    roofPiece.rotation.z = 0.15;
-    roofPiece.material.side = THREE.DoubleSide;
-    roofPiece.castShadow = true;
-    group.add(roofPiece);
+    // Building roof (flat with slight slope)
+    const bRoof = new THREE.Mesh(new THREE.BoxGeometry(bldgW + 0.5, 0.12, bldgD + 0.5), darkRustMat);
+    bRoof.position.set(0, bldgH + 0.06, -7);
+    bRoof.rotation.z = 0.04 + Math.random() * 0.04;
+    bRoof.castShadow = true; group.add(bRoof);
 
-    // Doorway (dark rectangle)
-    const door = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 2.2), darkMat2);
-    door.position.set(-1, 1.1, -3.49);
-    group.add(door);
+    // Collapsed roof piece on ground
+    const roofPiece = new THREE.Mesh(new THREE.BoxGeometry(2.5 + Math.random() * 1.5, 0.1, 2 + Math.random()),
+      new THREE.MeshStandardMaterial({ color: 0x3a2a20, roughness: 0.92, metalness: 0.12, side: THREE.DoubleSide }));
+    roofPiece.position.set(1 + Math.random() * 2, 0.4, -6 + Math.random() * 3);
+    roofPiece.rotation.set(0.2 + Math.random() * 0.3, Math.random() * 0.4, 0.1 + Math.random() * 0.3);
+    roofPiece.castShadow = true; group.add(roofPiece);
 
-    // Window holes
-    const windowHole1 = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.6), darkMat2);
-    windowHole1.position.set(1.5, 1.8, -3.49);
-    group.add(windowHole1);
+    // --- Doorway with frame ---
+    const doorVoid = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 2.4), darkMat2);
+    doorVoid.position.set(-1.2, 1.2, -7 + bldgD/2 + 0.01);
+    group.add(doorVoid);
+    const dfMat = new THREE.MeshStandardMaterial({ color: 0x4a3a28, roughness: 0.93, metalness: 0 });
+    const dfT2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.15), dfMat);
+    dfT2.position.set(-1.2, 2.44, -7 + bldgD/2 + 0.04); group.add(dfT2);
+    const dfL2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.4, 0.15), dfMat);
+    dfL2.position.set(-1.85, 1.2, -7 + bldgD/2 + 0.04); group.add(dfL2);
+    const dfR2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.4, 0.15), dfMat);
+    dfR2.position.set(-0.55, 1.2, -7 + bldgD/2 + 0.04); group.add(dfR2);
+    // Door panel (ajar)
+    const doorPanel = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.2, 0.6), dfMat);
+    doorPanel.position.set(-1.85 - 0.1, 1.1, -7 + bldgD/2 + 0.4);
+    doorPanel.rotation.y = 0.5; doorPanel.castShadow = true; group.add(doorPanel);
 
-    // Debris around station
-    for (let d = 0; d < 6; d++) {
-      const debrisSize = 0.1 + Math.random() * 0.3;
-      const debris = new THREE.Mesh(new THREE.BoxGeometry(debrisSize, debrisSize * 0.5, debrisSize * 0.8),
-        Math.random() < 0.5 ? concreteMat : rustedMat);
-      debris.position.set((Math.random() - 0.5) * 10, debrisSize * 0.2, (Math.random() - 0.5) * 8);
+    // --- Windows with frames ---
+    const winFrameMat = new THREE.MeshStandardMaterial({ color: 0x3a3028, roughness: 0.9, metalness: 0.05 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x1a2530, roughness: 0.3, metalness: 0.15, transparent: true, opacity: 0.4 });
+    const windowDefs = [
+      { x: 1.0, y: 2.0, z: -7 + bldgD/2 + 0.01, w: 1.0, h: 0.7, horiz: true },
+      { x: 2.5, y: 2.0, z: -7 + bldgD/2 + 0.01, w: 0.8, h: 0.7, horiz: true },
+      { x: bldgW/2 + 0.01, y: 2.0, z: -6, w: 0.8, h: 0.7, horiz: false },
+      { x: bldgW/2 + 0.01, y: 2.0, z: -8, w: 0.8, h: 0.7, horiz: false },
+    ];
+    windowDefs.forEach(wd => {
+      const isBroken = Math.random() < 0.4;
+      // Frame
+      if (wd.horiz) {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(wd.w + 0.1, wd.h + 0.1, 0.06), winFrameMat);
+        frame.position.set(wd.x, wd.y, wd.z); frame.castShadow = true; group.add(frame);
+        const glass = new THREE.Mesh(new THREE.PlaneGeometry(wd.w, wd.h), isBroken ? darkMat2 : glassMat);
+        glass.position.set(wd.x, wd.y, wd.z + 0.01); group.add(glass);
+        // Sill
+        const sill = new THREE.Mesh(new THREE.BoxGeometry(wd.w + 0.15, 0.04, 0.1), concreteMat);
+        sill.position.set(wd.x, wd.y - wd.h/2 - 0.02, wd.z + 0.05); group.add(sill);
+      } else {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.06, wd.h + 0.1, wd.w + 0.1), winFrameMat);
+        frame.position.set(wd.x, wd.y, wd.z); frame.castShadow = true; group.add(frame);
+        const glass = new THREE.Mesh(new THREE.PlaneGeometry(wd.h, wd.w), isBroken ? darkMat2 : glassMat);
+        glass.position.set(wd.x + 0.01, wd.y, wd.z); glass.rotation.y = Math.PI/2; group.add(glass);
+      }
+    });
+
+    // --- Interior visible through windows (dark boxes suggesting shelves etc.) ---
+    const interiorBox = new THREE.Mesh(new THREE.BoxGeometry(bldgW - 0.4, bldgH - 0.4, bldgD - 0.4),
+      new THREE.MeshStandardMaterial({ color: 0x0a0a08, roughness: 1, metalness: 0, side: THREE.BackSide }));
+    interiorBox.position.set(0, bldgH/2, -7); group.add(interiorBox);
+    // Shelving unit inside
+    const shelf = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.0, 0.3), new THREE.MeshStandardMaterial({ color: 0x2a2218, roughness: 0.95 }));
+    shelf.position.set(1.5, 1.0, -8.5); group.add(shelf);
+
+    // --- Debris (more and varied) ---
+    for (let d = 0; d < 12; d++) {
+      const debrisSize = 0.1 + Math.random() * 0.5;
+      const debrisMat = [concreteMat, rustedMat, darkRustMat, whiteFadedMat][Math.floor(Math.random() * 4)];
+      const debris = new THREE.Mesh(
+        Math.random() < 0.5
+          ? new THREE.BoxGeometry(debrisSize, debrisSize * 0.4, debrisSize * 0.7)
+          : new THREE.BoxGeometry(debrisSize * 1.5, debrisSize * 0.15, debrisSize * 0.5),
+        debrisMat);
+      debris.position.set((Math.random() - 0.5) * 14, debrisSize * 0.15, (Math.random() - 0.5) * 12);
       debris.rotation.set(Math.random() * 0.5, Math.random() * 6.28, Math.random() * 0.5);
-      group.add(debris);
+      debris.castShadow = true; group.add(debris);
+    }
+    // Concrete chunks (larger)
+    for (let c = 0; c < 3; c++) {
+      const cs = 0.4 + Math.random() * 0.6;
+      const chunk = new THREE.Mesh(new THREE.BoxGeometry(cs, cs * 0.5, cs * 0.7), concreteStainedMat);
+      chunk.position.set((Math.random()-0.5) * 10, cs * 0.25, 4 + Math.random() * 4);
+      chunk.rotation.set(Math.random() * 0.4, Math.random() * 3, Math.random() * 0.3);
+      chunk.castShadow = true; group.add(chunk);
+    }
+    // Metal sheet debris
+    for (let ms = 0; ms < 2; ms++) {
+      const sheet = new THREE.Mesh(new THREE.BoxGeometry(1.5 + Math.random(), 0.03, 0.8 + Math.random()), rustedMat);
+      sheet.position.set((Math.random()-0.5) * 8, 0.1 + Math.random() * 0.3, (Math.random()-0.5) * 10);
+      sheet.rotation.set(Math.random() * 0.3, Math.random() * 3, Math.random() * 0.2);
+      sheet.castShadow = true; group.add(sheet);
     }
 
-    // Sign pole with tilted sign
-    const signPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 6, 4), concreteMat);
-    signPole.position.set(7, 3, -2);
-    signPole.rotation.z = (Math.random() - 0.5) * 0.15;
-    signPole.castShadow = true;
-    group.add(signPole);
+    // --- Sign (larger, more visible, emissive) ---
+    const signPole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 7, 6), concreteMat);
+    signPole.position.set(8, 3.5, -2);
+    signPole.rotation.z = (Math.random() - 0.5) * 0.12;
+    signPole.castShadow = true; group.add(signPole);
 
-    // Sign face
     const signC = document.createElement('canvas');
-    signC.width = 256; signC.height = 128;
+    signC.width = 512; signC.height = 256;
     const signCtx = signC.getContext('2d');
-    signCtx.fillStyle = '#3a2a20'; signCtx.fillRect(0, 0, 256, 128);
-    signCtx.fillStyle = '#8a6a40'; signCtx.font = 'bold 40px Arial';
-    signCtx.textAlign = 'center';
-    signCtx.fillText('GAS', 128, 55);
-    signCtx.fillStyle = '#6a4a30'; signCtx.font = 'bold 24px Arial';
-    signCtx.fillText('FUEL', 128, 95);
-    // Weathering - random scratches
-    signCtx.strokeStyle = 'rgba(0,0,0,0.3)'; signCtx.lineWidth = 2;
-    for (let i = 0; i < 8; i++) {
+    // Background with gradient
+    const grad = signCtx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, '#4a3020'); grad.addColorStop(1, '#2a1a10');
+    signCtx.fillStyle = grad; signCtx.fillRect(0, 0, 512, 256);
+    // Border
+    signCtx.strokeStyle = '#6a4a30'; signCtx.lineWidth = 8;
+    signCtx.strokeRect(10, 10, 492, 236);
+    // Text
+    signCtx.fillStyle = '#cc8844'; signCtx.font = 'bold 80px Arial';
+    signCtx.textAlign = 'center'; signCtx.fillText('GAS', 256, 100);
+    signCtx.fillStyle = '#aa6633'; signCtx.font = 'bold 48px Arial';
+    signCtx.fillText('FUEL STOP', 256, 170);
+    // Price signs (faded)
+    signCtx.fillStyle = '#886644'; signCtx.font = '24px Arial';
+    signCtx.fillText('$3.99', 256, 220);
+    // Weathering scratches
+    signCtx.strokeStyle = 'rgba(0,0,0,0.25)'; signCtx.lineWidth = 2;
+    for (let i = 0; i < 15; i++) {
       signCtx.beginPath();
-      signCtx.moveTo(Math.random() * 256, Math.random() * 128);
-      signCtx.lineTo(Math.random() * 256, Math.random() * 128);
+      signCtx.moveTo(Math.random() * 512, Math.random() * 256);
+      signCtx.lineTo(Math.random() * 512, Math.random() * 256);
       signCtx.stroke();
     }
+    // Rust splotches
+    signCtx.fillStyle = 'rgba(80,30,10,0.3)';
+    for (let r = 0; r < 5; r++) {
+      signCtx.beginPath();
+      signCtx.arc(Math.random() * 512, Math.random() * 256, 15 + Math.random() * 30, 0, Math.PI * 2);
+      signCtx.fill();
+    }
     const signTex = new THREE.CanvasTexture(signC);
-    const signFace = new THREE.Mesh(new THREE.PlaneGeometry(2, 1), new THREE.MeshStandardMaterial({
-      map: signTex, roughness: 0.8, metalness: 0.1
-    }));
-    signFace.position.set(7, 5.5, -2);
+    const signFaceMat = new THREE.MeshStandardMaterial({
+      map: signTex, roughness: 0.75, metalness: 0.1,
+      emissive: 0x775533, emissiveIntensity: 0.6, emissiveMap: signTex
+    });
+    const signFace = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.8, 0.12), signFaceMat);
+    signFace.position.set(8, 6.8, -2);
     signFace.rotation.y = yaw + Math.PI / 2;
-    signFace.rotation.z = (Math.random() - 0.5) * 0.2;
-    signFace.castShadow = true;
-    group.add(signFace);
+    signFace.rotation.z = (Math.random() - 0.5) * 0.15;
+    signFace.castShadow = true; group.add(signFace);
+    // Warm sign light
+    const signLight = new THREE.PointLight(0xcc8844, 0.8, 12);
+    signLight.position.set(8, 6.8, -1.5);
+    group.add(signLight);
+    // Sign back
+    const signBack = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.8, 0.12), rustedMat);
+    signBack.position.set(8, 6.8, -2);
+    signBack.rotation.y = yaw - Math.PI / 2;
+    signBack.rotation.z = signFace.rotation.z;
+    group.add(signBack);
+    // Sign bracket
+    const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.6, 0.08), concreteMat);
+    bracket.position.set(8, 6.8, -2); group.add(bracket);
 
     group.position.set(cx, baseH, cz);
     group.rotation.y = yaw;
@@ -3809,18 +5350,18 @@ const gasStationPumpPositions = []; // for proximity detection
       const wx = cx + cosY2 * pp[0] - sinY2 * pp[2];
       const wz = cz + sinY2 * pp[0] + cosY2 * pp[2];
       const pb = new CANNON.Body({ mass: 0 });
-      pb.addShape(new CANNON.Cylinder(0.25, 0.25, 4, 6));
-      pb.position.set(wx, baseH + 2, wz);
+      pb.addShape(new CANNON.Cylinder(0.3, 0.3, canopyH, 6));
+      pb.position.set(wx, baseH + canopyH/2, wz);
       world.addBody(pb);
     });
 
     // Physics collider for building
     const buildingBody = new CANNON.Body({ mass: 0 });
-    buildingBody.addShape(new CANNON.Box(new CANNON.Vec3(3, 1.5, 2.5)));
+    buildingBody.addShape(new CANNON.Box(new CANNON.Vec3(bldgW/2, bldgH/2, bldgD/2)));
     const bCosY = Math.cos(yaw), bSinY = Math.sin(yaw);
-    const bwx = cx + bCosY * 0 - bSinY * (-6);
-    const bwz = cz + bSinY * 0 + bCosY * (-6);
-    buildingBody.position.set(bwx, baseH + 1.5, bwz);
+    const bwx = cx + bCosY * 0 - bSinY * (-7);
+    const bwz = cz + bSinY * 0 + bCosY * (-7);
+    buildingBody.position.set(bwx, baseH + bldgH/2, bwz);
     buildingBody.quaternion.setFromEuler(0, yaw, 0);
     world.addBody(buildingBody);
 
@@ -5746,11 +7287,11 @@ function updateDayNightCycle(dt) {
   }
 
   // Animate lantern emissive
-  lanternMat.emissiveIntensity = 0.8 * lampFactor;
+  lanternMat.emissiveIntensity = 1.0 * lampFactor;
   lanternMat.emissive.set(lampFactor > 0.1 ? 0xffaa44 : 0x000000);
 
   // Animate ground glow opacity
-  glowMat.opacity = 0.12 * lampFactor;
+  glowMat.opacity = 0.18 * lampFactor;
 
   // ── Stars ──
   let starOpacity = 0;
@@ -6598,6 +8139,10 @@ let riverMesh = null;
   foliageDefs.forEach((d, li) => {
     reseatInstancedMesh(foliageInsts[li], (pos, sc) => d.y * sc.y);
   });
+  // Dead tree branch stubs
+  if (deadBranchInst && deadBranchInst.count > 0) {
+    reseatInstancedMesh(deadBranchInst, (pos, sc) => 0);
+  }
   // Update tree collision bodies
   // (tree bodies are at treePositions with h+2.5, recalc)
   // Note: CANNON bodies created earlier are hard to update; skip for now
