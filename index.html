@@ -65,17 +65,51 @@
     border-radius: 4px; padding: 1px 6px; font-weight: 600;
     color: #ddd; min-width: 20px; text-align: center; font-size: 10px;
   }
+  #weather-hud {
+    position: fixed; top: 70px; right: 20px;
+    font-family: 'Courier New', monospace; font-size: 14px; font-weight: 700;
+    color: rgba(220,200,160,0.85); text-shadow: 0 0 8px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.5);
+    letter-spacing: 2px; pointer-events: none; user-select: none;
+    background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 6px 14px; backdrop-filter: blur(6px);
+    transition: color 0.5s;
+  }
+  #rain-lens-overlay {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(150,180,220,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 40%, rgba(150,180,220,0.06) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 80%, rgba(150,180,220,0.05) 0%, transparent 45%);
+    transition: opacity 0.5s;
+  }
   #hit-flash {
     position: fixed; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse at center, transparent 50%, rgba(200,0,0,0.4) 100%);
     opacity: 0; transition: opacity 0.08s;
+  }
+  #minimap-canvas {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(10, 8, 6, 0.72);
+    border: 2px solid rgba(160, 140, 100, 0.25);
+    box-shadow: 0 0 12px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.3);
+    pointer-events: none;
+    user-select: none;
+    z-index: 50;
+    backdrop-filter: blur(4px);
   }
 </style>
 </head>
 <body>
 
 <div id="hit-flash"></div>
+<div id="rain-lens-overlay"></div>
 <div id="time-display">12:00</div>
+<div id="weather-hud">CLEAR</div>
+<canvas id="minimap-canvas" width="360" height="360"></canvas>
 
 <div id="hud">
   <div class="hud-panel">
@@ -1691,8 +1725,8 @@ function getRoadPerp(tangent) {
 // ═══════════════════════════════════════════════════════════════════════
 // SMALL BUILDINGS / BARNS
 // ═══════════════════════════════════════════════════════════════════════
+const buildingPositions = [];
 {
-  const buildingPositions = [];
 
   function findBuildingSpot(nearRoadIdx, minDist, maxDist) {
     const road = allRoads[nearRoadIdx >= allRoads.length ? 0 : nearRoadIdx];
@@ -1890,6 +1924,7 @@ function getRoadPerp(tangent) {
 // ═══════════════════════════════════════════════════════════════════════
 // BILLBOARDS / SIGNS
 // ═══════════════════════════════════════════════════════════════════════
+const bbPositions = [];
 {
   const billboardTexts = [
     { text: 'DANGER AHEAD', subtext: 'QUARANTINE ZONE', bgColor: '#3a3530', fgColor: '#c8b898', accentColor: '#8a6030' },
@@ -1926,7 +1961,6 @@ function getRoadPerp(tangent) {
 
   let bbPlaced = 0;
   const bbMax = 3 + Math.floor(Math.random() * 2);
-  const bbPositions = [];
 
   for (const road of allRoads) {
     if (bbPlaced >= bbMax) break;
@@ -3553,17 +3587,26 @@ function updateDayNightCycle(dt) {
     hemiLight.intensity = 0.3;
   }
 
-  // ── Fog ──
+  // ── Fog (with weather multiplier) ──
   scene.fog.color.copy(skyColors.hz);
   // Denser fog at night, lighter during day
   const baseFogDensity = 0.0014;
+  let computedFogDensity;
   if (sunAltitude > 0.1) {
-    scene.fog.density = baseFogDensity;
+    computedFogDensity = baseFogDensity;
   } else if (sunAltitude > -0.1) {
     const t = (sunAltitude + 0.1) / 0.2;
-    scene.fog.density = baseFogDensity + (1 - t) * 0.001;
+    computedFogDensity = baseFogDensity + (1 - t) * 0.001;
   } else {
-    scene.fog.density = baseFogDensity + 0.001;
+    computedFogDensity = baseFogDensity + 0.001;
+  }
+  // Apply weather fog multiplier
+  const weatherFogMult = getWeatherFogMultiplier();
+  scene.fog.density = computedFogDensity * weatherFogMult;
+  // Apply weather fog color tint
+  const fogTint = getWeatherFogColorTint();
+  if (fogTint.amount > 0) {
+    scene.fog.color.lerp(fogTint.color, fogTint.amount);
   }
 
   // ── Renderer exposure ──
@@ -3641,23 +3684,464 @@ function updateDayNightCycle(dt) {
   moonMat.opacity = moonOpacity * 0.9;
   moonGlowMat.opacity = moonOpacity * 0.15;
 
-  // ── Cloud tinting ──
+  // ── Cloud tinting (with weather integration) ──
+  const wType = weatherState.type;
+  const wInt = weatherState.intensity;
   clouds.forEach(c => {
     if (sunAltitude > 0.1) {
       c.mesh.material.color.set(0xffffff);
       c.mesh.material.opacity = 0.25 + Math.random() * 0.01;
     } else if (sunAltitude > -0.05) {
-      // Sunrise/sunset: orange-tinted clouds
       const t = (sunAltitude + 0.05) / 0.15;
       const cloudColor = new THREE.Color(0xff8844).lerp(new THREE.Color(0xffffff), t);
       c.mesh.material.color.copy(cloudColor);
       c.mesh.material.opacity = 0.3;
     } else {
-      // Night: very dark clouds
       c.mesh.material.color.set(0x222233);
       c.mesh.material.opacity = 0.08;
     }
+    // Weather overrides
+    if (wType === 'rain' && wInt > 0) {
+      c.mesh.material.color.lerp(new THREE.Color(0x555566), wInt * 0.6);
+      c.mesh.material.opacity = Math.min(0.7, c.mesh.material.opacity + wInt * 0.35);
+    } else if (wType === 'dust_storm' && wInt > 0) {
+      c.mesh.material.color.lerp(new THREE.Color(0x9a7550), wInt * 0.5);
+      c.mesh.material.opacity = Math.min(0.6, c.mesh.material.opacity + wInt * 0.2);
+    }
   });
+
+  // ── Sky dome weather adjustments ──
+  if (wType === 'rain' && wInt > 0) {
+    // Darken sky during rain
+    skyMat.uniforms.topColor.value.lerp(new THREE.Color(0x334455), wInt * 0.4);
+    skyMat.uniforms.horizonColor.value.lerp(new THREE.Color(0x667788), wInt * 0.3);
+  } else if (wType === 'dust_storm' && wInt > 0) {
+    // Shift toward orange/brown
+    skyMat.uniforms.topColor.value.lerp(new THREE.Color(0x8a6540), wInt * 0.5);
+    skyMat.uniforms.horizonColor.value.lerp(new THREE.Color(0xc49060), wInt * 0.6);
+  } else if (wType === 'fog' && wInt > 0) {
+    // Haze everything
+    skyMat.uniforms.topColor.value.lerp(new THREE.Color(0x778899), wInt * 0.3);
+    skyMat.uniforms.horizonColor.value.lerp(new THREE.Color(0x8899aa), wInt * 0.4);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DYNAMIC WEATHER SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+
+const weatherState = {
+  type: 'clear',       // 'clear' | 'rain' | 'dust_storm' | 'fog'
+  intensity: 0,        // 0-1 current effective intensity
+  transitionProgress: 1, // 0-1, 1 = fully in current state
+};
+window.weatherState = weatherState;
+
+// Internal weather system state
+const _weather = {
+  currentType: 'clear',
+  nextType: 'clear',
+  currentIntensity: 0,
+  targetIntensity: 0,
+  transitionTimer: 0,
+  transitionDuration: 30, // seconds for transition
+  nextChangeTimer: 240 + Math.random() * 240, // 4-8 game minutes (240-480 seconds)
+  windDirection: new THREE.Vector2(1, 0.3).normalize(), // dust storm wind direction
+  windAngle: Math.random() * Math.PI * 2,
+};
+
+const WEATHER_TYPES = ['clear', 'rain', 'dust_storm', 'fog'];
+const WEATHER_WEIGHTS = [0.40, 0.25, 0.20, 0.15]; // distribution
+
+function pickNextWeather(currentType) {
+  // Weighted random, avoid picking same type
+  const r = Math.random();
+  let cumulative = 0;
+  for (let i = 0; i < WEATHER_TYPES.length; i++) {
+    cumulative += WEATHER_WEIGHTS[i];
+    if (r <= cumulative) {
+      const picked = WEATHER_TYPES[i];
+      if (picked === currentType) {
+        // Pick next one instead
+        return WEATHER_TYPES[(i + 1) % WEATHER_TYPES.length];
+      }
+      return picked;
+    }
+  }
+  return 'clear';
+}
+
+const weatherHudEl = document.getElementById('weather-hud');
+const rainLensOverlay = document.getElementById('rain-lens-overlay');
+
+const WEATHER_LABELS = {
+  clear: 'CLEAR',
+  rain: 'RAIN',
+  dust_storm: 'DUST STORM',
+  fog: 'FOG',
+};
+
+// ── Rain Particle System ──
+const RAIN_MAX = 2000;
+const rainPositions = new Float32Array(RAIN_MAX * 3);
+const rainVelocities = new Float32Array(RAIN_MAX * 3); // vx, vy, vz per particle
+const rainSizes = new Float32Array(RAIN_MAX);
+const rainGeo = new THREE.BufferGeometry();
+rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+rainGeo.setAttribute('size', new THREE.BufferAttribute(rainSizes, 1));
+
+const rainMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: {
+    color: { value: new THREE.Color(0.7, 0.75, 0.9) },
+    opacity: { value: 0.0 },
+  },
+  vertexShader: `
+    attribute float size;
+    varying float vSize;
+    void main() {
+      vSize = size;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * (200.0 / -mv.z);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 color;
+    uniform float opacity;
+    varying float vSize;
+    void main() {
+      vec2 uv = gl_PointCoord - vec2(0.5);
+      // Elongated vertically for rain streak look
+      float d = length(vec2(uv.x * 3.0, uv.y));
+      if (d > 0.5) discard;
+      float alpha = smoothstep(0.5, 0.1, d) * opacity;
+      gl_FragColor = vec4(color, alpha * (vSize > 0.0 ? 1.0 : 0.0));
+    }
+  `
+});
+const rainPoints = new THREE.Points(rainGeo, rainMat);
+rainPoints.frustumCulled = false;
+scene.add(rainPoints);
+
+// Initialize rain positions around camera
+for (let i = 0; i < RAIN_MAX; i++) {
+  rainPositions[i * 3] = (Math.random() - 0.5) * 80;
+  rainPositions[i * 3 + 1] = Math.random() * 60;
+  rainPositions[i * 3 + 2] = (Math.random() - 0.5) * 80;
+  rainVelocities[i * 3] = (Math.random() - 0.5) * 1.0; // slight horizontal drift
+  rainVelocities[i * 3 + 1] = -(15 + Math.random() * 10); // fall speed
+  rainVelocities[i * 3 + 2] = (Math.random() - 0.5) * 1.0;
+  rainSizes[i] = 0.3 + Math.random() * 0.5;
+}
+
+// ── Rain Splash System ──
+const SPLASH_MAX = 300;
+const splashData = [];
+const splashPositions = new Float32Array(SPLASH_MAX * 3);
+const splashSizes = new Float32Array(SPLASH_MAX);
+for (let i = 0; i < SPLASH_MAX; i++) {
+  splashData.push({ life: 0, maxLife: 0.3 });
+  splashSizes[i] = 0;
+}
+const splashGeo = new THREE.BufferGeometry();
+splashGeo.setAttribute('position', new THREE.BufferAttribute(splashPositions, 3));
+splashGeo.setAttribute('size', new THREE.BufferAttribute(splashSizes, 1));
+const splashMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false,
+  uniforms: { tex: { value: particleTex }, color: { value: new THREE.Color(0.6, 0.65, 0.8) } },
+  vertexShader: `attribute float size;varying float vA;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=size*(150.0/-mv.z);gl_Position=projectionMatrix*mv;vA=size>0.0?1.0:0.0;}`,
+  fragmentShader: `uniform sampler2D tex;uniform vec3 color;varying float vA;void main(){vec4 t=texture2D(tex,gl_PointCoord);gl_FragColor=vec4(color,t.a*vA*0.4);}`
+});
+const splashPoints = new THREE.Points(splashGeo, splashMat);
+splashPoints.frustumCulled = false;
+scene.add(splashPoints);
+let splashIdx = 0;
+
+// ── Dust Storm Particle System ──
+const STORM_MAX = 1500;
+const stormPositions = new Float32Array(STORM_MAX * 3);
+const stormVelocities = new Float32Array(STORM_MAX * 3);
+const stormSizes = new Float32Array(STORM_MAX);
+const stormGeo = new THREE.BufferGeometry();
+stormGeo.setAttribute('position', new THREE.BufferAttribute(stormPositions, 3));
+stormGeo.setAttribute('size', new THREE.BufferAttribute(stormSizes, 1));
+
+const stormMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false,
+  uniforms: {
+    tex: { value: particleTex },
+    color: { value: new THREE.Color(0xc4956a) },
+    opacity: { value: 0.0 },
+  },
+  vertexShader: `
+    attribute float size;
+    varying float vA;
+    void main() {
+      vA = size > 0.0 ? 1.0 : 0.0;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * (250.0 / -mv.z);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tex;
+    uniform vec3 color;
+    uniform float opacity;
+    varying float vA;
+    void main() {
+      vec4 t = texture2D(tex, gl_PointCoord);
+      gl_FragColor = vec4(color, t.a * vA * opacity * 0.5);
+    }
+  `
+});
+const stormPoints = new THREE.Points(stormGeo, stormMat);
+stormPoints.frustumCulled = false;
+scene.add(stormPoints);
+
+// Initialize storm particles spread around camera
+for (let i = 0; i < STORM_MAX; i++) {
+  stormPositions[i * 3] = (Math.random() - 0.5) * 120;
+  stormPositions[i * 3 + 1] = Math.random() * 30;
+  stormPositions[i * 3 + 2] = (Math.random() - 0.5) * 120;
+  stormSizes[i] = 1.0 + Math.random() * 2.5;
+}
+
+function updateWeatherSystem(dt) {
+  // ── Allow external override (for testing) ──
+  if (window.weatherState &&
+      (window.weatherState.type !== _weather.currentType ||
+       Math.abs(window.weatherState.intensity - _weather.currentIntensity) > 0.01 ||
+       Math.abs(window.weatherState.transitionProgress - weatherState.transitionProgress) > 0.01)) {
+    // External state changed -- sync internal state
+    _weather.currentType = window.weatherState.type;
+    _weather.currentIntensity = window.weatherState.intensity;
+    _weather.targetIntensity = window.weatherState.intensity;
+    weatherState.type = window.weatherState.type;
+    weatherState.intensity = window.weatherState.intensity;
+    weatherState.transitionProgress = window.weatherState.transitionProgress;
+  }
+
+  // ── Automatic weather transitions (only when not externally overridden) ──
+  _weather.nextChangeTimer -= dt;
+  if (_weather.nextChangeTimer <= 0) {
+    // Pick next weather
+    _weather.nextType = pickNextWeather(_weather.currentType);
+    _weather.transitionTimer = _weather.transitionDuration;
+    _weather.targetIntensity = _weather.nextType === 'clear' ? 0 : (0.5 + Math.random() * 0.5);
+    _weather.nextChangeTimer = 240 + Math.random() * 240;
+  }
+
+  // ── Transition logic ──
+  if (_weather.transitionTimer > 0) {
+    _weather.transitionTimer -= dt;
+    const progress = 1 - Math.max(0, _weather.transitionTimer / _weather.transitionDuration);
+    weatherState.transitionProgress = progress;
+
+    // Halfway through transition, switch the active type
+    if (progress >= 0.5 && weatherState.type !== _weather.nextType) {
+      _weather.currentType = _weather.nextType;
+      weatherState.type = _weather.nextType;
+    }
+
+    // Interpolate intensity
+    if (progress < 0.5) {
+      // First half: fade out current
+      weatherState.intensity = _weather.currentIntensity * (1 - progress * 2);
+    } else {
+      // Second half: fade in new
+      weatherState.intensity = _weather.targetIntensity * ((progress - 0.5) * 2);
+    }
+
+    if (_weather.transitionTimer <= 0) {
+      weatherState.transitionProgress = 1;
+      weatherState.intensity = _weather.targetIntensity;
+      _weather.currentIntensity = _weather.targetIntensity;
+    }
+  }
+
+  // Keep window ref in sync
+  window.weatherState = weatherState;
+
+  // ── Update HUD ──
+  weatherHudEl.textContent = WEATHER_LABELS[weatherState.type] || 'CLEAR';
+
+  // ── Update Rain ──
+  const rainActive = weatherState.type === 'rain';
+  const rainIntensity = rainActive ? weatherState.intensity : 0;
+  rainMat.uniforms.opacity.value = rainIntensity;
+
+  if (rainIntensity > 0) {
+    const camX = camera.position.x, camY = camera.position.y, camZ = camera.position.z;
+    const windDriftX = 2.0 * rainIntensity;
+    const windDriftZ = 0.5 * rainIntensity;
+    const activeCount = Math.floor(RAIN_MAX * rainIntensity);
+
+    for (let i = 0; i < RAIN_MAX; i++) {
+      if (i >= activeCount) {
+        rainSizes[i] = 0;
+        continue;
+      }
+      const idx = i * 3;
+      // Move particles
+      rainPositions[idx] += (rainVelocities[idx] + windDriftX) * dt;
+      rainPositions[idx + 1] += rainVelocities[idx + 1] * (0.8 + rainIntensity * 0.4) * dt;
+      rainPositions[idx + 2] += (rainVelocities[idx + 2] + windDriftZ) * dt;
+
+      // Re-center around camera and respawn when below ground
+      const relX = rainPositions[idx] - camX;
+      const relZ = rainPositions[idx + 2] - camZ;
+
+      if (rainPositions[idx + 1] < camY - 20 || Math.abs(relX) > 40 || Math.abs(relZ) > 40) {
+        // Spawn splash at ground level
+        if (rainPositions[idx + 1] < camY - 10 && Math.random() < 0.3) {
+          const si = splashIdx % SPLASH_MAX;
+          splashData[si].life = 0.2 + Math.random() * 0.15;
+          splashData[si].maxLife = splashData[si].life;
+          splashPositions[si * 3] = rainPositions[idx];
+          splashPositions[si * 3 + 1] = getTerrainHeight(rainPositions[idx], rainPositions[idx + 2]) + 0.1;
+          splashPositions[si * 3 + 2] = rainPositions[idx + 2];
+          splashSizes[si] = 0.5 + Math.random() * 1.0;
+          splashIdx++;
+        }
+
+        // Respawn at top
+        rainPositions[idx] = camX + (Math.random() - 0.5) * 80;
+        rainPositions[idx + 1] = camY + 20 + Math.random() * 20;
+        rainPositions[idx + 2] = camZ + (Math.random() - 0.5) * 80;
+        rainVelocities[idx] = (Math.random() - 0.5) * 1.0;
+        rainVelocities[idx + 1] = -(15 + Math.random() * 10);
+        rainVelocities[idx + 2] = (Math.random() - 0.5) * 1.0;
+      }
+
+      rainSizes[i] = 0.3 + Math.random() * 0.5;
+    }
+    rainGeo.attributes.position.needsUpdate = true;
+    rainGeo.attributes.size.needsUpdate = true;
+  } else {
+    // Hide all rain particles
+    if (rainSizes[0] > 0) {
+      rainSizes.fill(0);
+      rainGeo.attributes.size.needsUpdate = true;
+    }
+  }
+
+  // ── Update Rain Splashes ──
+  for (let i = 0; i < SPLASH_MAX; i++) {
+    const d = splashData[i];
+    if (d.life <= 0) { splashSizes[i] = 0; continue; }
+    d.life -= dt;
+    const lifeRatio = d.life / d.maxLife;
+    splashSizes[i] = (1 - lifeRatio) * 2.0; // expand as they fade
+  }
+  splashGeo.attributes.position.needsUpdate = true;
+  splashGeo.attributes.size.needsUpdate = true;
+
+  // ── Rain lens overlay ──
+  rainLensOverlay.style.opacity = rainIntensity > 0.3 ? ((rainIntensity - 0.3) * 1.4).toFixed(2) : '0';
+
+  // ── Update Dust Storm ──
+  const stormActive = weatherState.type === 'dust_storm';
+  const stormIntensity = stormActive ? weatherState.intensity : 0;
+  stormMat.uniforms.opacity.value = stormIntensity;
+
+  if (stormIntensity > 0) {
+    const camX = camera.position.x, camY = camera.position.y, camZ = camera.position.z;
+    const windX = Math.cos(_weather.windAngle) * 25 * stormIntensity;
+    const windZ = Math.sin(_weather.windAngle) * 25 * stormIntensity;
+    const activeCount = Math.floor(STORM_MAX * stormIntensity);
+
+    for (let i = 0; i < STORM_MAX; i++) {
+      if (i >= activeCount) {
+        stormSizes[i] = 0;
+        continue;
+      }
+      const idx = i * 3;
+      // Fast horizontal movement, slow vertical bobbing
+      stormPositions[idx] += windX * dt + (Math.random() - 0.5) * 2 * dt;
+      stormPositions[idx + 1] += (Math.sin(performance.now() * 0.001 + i) * 0.5) * dt;
+      stormPositions[idx + 2] += windZ * dt + (Math.random() - 0.5) * 2 * dt;
+
+      // Re-center around camera
+      const relX = stormPositions[idx] - camX;
+      const relZ = stormPositions[idx + 2] - camZ;
+
+      if (Math.abs(relX) > 60 || Math.abs(relZ) > 60 || stormPositions[idx + 1] < -2 || stormPositions[idx + 1] > 35) {
+        stormPositions[idx] = camX + (Math.random() - 0.5) * 120;
+        stormPositions[idx + 1] = 0.5 + Math.random() * 25;
+        stormPositions[idx + 2] = camZ + (Math.random() - 0.5) * 120;
+      }
+
+      stormSizes[i] = 1.0 + Math.random() * 2.5;
+    }
+    stormGeo.attributes.position.needsUpdate = true;
+    stormGeo.attributes.size.needsUpdate = true;
+  } else {
+    if (stormSizes[0] > 0) {
+      stormSizes.fill(0);
+      stormGeo.attributes.size.needsUpdate = true;
+    }
+  }
+
+  // ── Physics Effects ──
+  applyWeatherPhysics(dt);
+}
+
+// ── Weather Physics ──
+function applyWeatherPhysics(dt) {
+  const wType = weatherState.type;
+  const wInt = weatherState.intensity;
+
+  if (wType === 'rain' && wInt > 0) {
+    // Reduce road grip by 20%, increase offroad slip
+    for (let w = 0; w < 4; w++) {
+      const baseGrip = vehicle.wheelInfos[w]._surfaceBaseGrip;
+      if (baseGrip) {
+        const roadReduction = 1 - (0.20 * wInt); // up to 20% reduction
+        vehicle.wheelInfos[w].frictionSlip *= roadReduction;
+      }
+    }
+  }
+
+  if (wType === 'dust_storm' && wInt > 0) {
+    // Lateral wind force on car
+    const windForce = 80 * wInt;
+    const windX = Math.cos(_weather.windAngle) * windForce;
+    const windZ = Math.sin(_weather.windAngle) * windForce;
+    chassisBody.applyForce(
+      new CANNON.Vec3(windX, 0, windZ),
+      chassisBody.position
+    );
+  }
+  // Fog: no physics changes
+}
+
+// ── Weather Visual Integration (called from updateDayNightCycle) ──
+function getWeatherFogMultiplier() {
+  const wType = weatherState.type;
+  const wInt = weatherState.intensity;
+  if (wType === 'fog') return 1 + 3.0 * wInt; // 3-4x density
+  if (wType === 'dust_storm') return 1 + 2.5 * wInt; // dramatic visibility reduction
+  if (wType === 'rain') return 1 + 0.8 * wInt; // slight fog increase during rain
+  return 1;
+}
+
+function getWeatherFogColorTint() {
+  const wType = weatherState.type;
+  const wInt = weatherState.intensity;
+  if (wType === 'fog') {
+    // Cooler gray tint
+    return { color: new THREE.Color(0x8899aa), amount: 0.3 * wInt };
+  }
+  if (wType === 'dust_storm') {
+    // Warm orange-brown tint
+    return { color: new THREE.Color(0x9a7550), amount: 0.5 * wInt };
+  }
+  if (wType === 'rain') {
+    // Slightly darker, blue-gray
+    return { color: new THREE.Color(0x667788), amount: 0.2 * wInt };
+  }
+  return { color: new THREE.Color(0x000000), amount: 0 };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -4195,6 +4679,8 @@ function animate(){
   updateSurfaceSounds(speed, lateralSpeed, avgSurfaceBlend, isDrifting, brakingHard);
   updateLampLights(camera.position);
   updateDayNightCycle(dt);
+  updateWeatherSystem(dt);
+  minimapSystem.update();
 
   // ── Post-Processing Uniform Updates ──
   const elapsedTime = clock.elapsedTime;
@@ -4204,8 +4690,10 @@ function animate(){
   const damageRatio = 1.0 - avgHealth / 100.0;
   vignettePass.uniforms.intensity.value = 0.2 + damageRatio * 0.5;
 
-  // Film grain time
+  // Film grain time + dust storm grain boost
   filmGrainSpeedPass.uniforms.time.value = elapsedTime;
+  const dustStormGrainBoost = (weatherState.type === 'dust_storm') ? weatherState.intensity * 0.08 : 0;
+  filmGrainSpeedPass.uniforms.grainIntensity.value = 0.03 + dustStormGrainBoost;
 
   // Speed lines: activate above 100 km/h, ramp up to max at ~200 km/h
   const kmhSpeed = speed * 3.6;
@@ -4223,6 +4711,290 @@ window.addEventListener('resize',()=>{
   composer.setSize(window.innerWidth,window.innerHeight);
   bloomPass.resolution.set(window.innerWidth,window.innerHeight);
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+// MINIMAP / COMPASS HUD SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+const minimapSystem = (() => {
+  const canvas = document.getElementById('minimap-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;   // 360 (2x CSS size for crispness)
+  const H = canvas.height;
+  const CX = W / 2, CY = H / 2;
+  const RADIUS = W / 2 - 4; // drawing radius within canvas
+  const MAP_RANGE = 200;    // world-units visible radius
+
+  // Discovered POIs
+  const discoveredPOIs = [];
+  const DISCOVER_DIST = 30; // how close the car must be to "discover" a POI
+
+  // All POIs that can be discovered (buildings + billboards)
+  const allPOIs = [];
+  function initPOIs() {
+    for (const bp of buildingPositions) {
+      allPOIs.push({ x: bp.x, z: bp.z, type: 'building', discovered: false });
+    }
+    for (const bp of bbPositions) {
+      allPOIs.push({ x: bp.x, z: bp.z, type: 'billboard', discovered: false });
+    }
+  }
+
+  // Pre-rendered static layer (roads, buildings, trees as background)
+  let staticCanvas = null;
+  let staticDirty = true;
+
+  function buildStaticLayer() {
+    staticCanvas = document.createElement('canvas');
+    staticCanvas.width = W;
+    staticCanvas.height = H;
+    const sc = staticCanvas.getContext('2d');
+    // This will be drawn centered at 0,0 in world space then transformed per frame
+    // We store raw world data and redraw relative to player each frame
+    // Actually for performance, we just mark it ready
+    staticDirty = false;
+  }
+
+  // Convert world coords to minimap pixel coords relative to player
+  function worldToMinimap(wx, wz, playerX, playerZ, cosA, sinA) {
+    const dx = wx - playerX;
+    const dz = wz - playerZ;
+    // Rotate so car faces up on minimap
+    const rx = dx * cosA - dz * sinA;
+    const ry = dx * sinA + dz * cosA;
+    // Scale to minimap
+    const px = CX + (rx / MAP_RANGE) * RADIUS;
+    const py = CY - (ry / MAP_RANGE) * RADIUS;
+    return { x: px, y: py };
+  }
+
+  // Check if a point is within the circular minimap area
+  function inCircle(px, py) {
+    const dx = px - CX, dy = py - CY;
+    return (dx * dx + dy * dy) <= (RADIUS * RADIUS);
+  }
+
+  // Frame counter for throttling
+  let frameCount = 0;
+  const REDRAW_INTERVAL = 8; // redraw every 8 frames (~7.5 FPS at 60fps)
+
+  function update() {
+    frameCount++;
+    if (frameCount % REDRAW_INTERVAL !== 0) return;
+
+    // Init POIs on first call
+    if (allPOIs.length === 0 && (buildingPositions.length > 0 || bbPositions.length > 0)) {
+      initPOIs();
+    }
+
+    const playerX = chassisBody.position.x;
+    const playerZ = chassisBody.position.z;
+
+    // Get car forward direction (yaw angle)
+    // The car's forward is -Z in local space
+    const fwd = new CANNON.Vec3(0, 0, -1);
+    chassisBody.quaternion.vmult(fwd, fwd);
+    const carYaw = Math.atan2(fwd.x, fwd.z); // angle from +Z axis
+
+    // For rotating minimap so car points up: we need to rotate by -carYaw
+    const cosA = Math.cos(-carYaw);
+    const sinA = Math.sin(-carYaw);
+
+    // Discover nearby POIs
+    for (const poi of allPOIs) {
+      if (!poi.discovered) {
+        const d = Math.hypot(poi.x - playerX, poi.z - playerZ);
+        if (d < DISCOVER_DIST) {
+          poi.discovered = true;
+          discoveredPOIs.push(poi);
+        }
+      }
+    }
+
+    // Determine night factor for lamp color
+    const isNight = (gameTime < 6 || gameTime > 18);
+
+    // ── Clear with circular clip ──
+    ctx.save();
+    ctx.clearRect(0, 0, W, H);
+
+    // Circular clip path
+    ctx.beginPath();
+    ctx.arc(CX, CY, RADIUS, 0, Math.PI * 2);
+    ctx.clip();
+
+    // ── Background ──
+    // Subtle terrain-colored background
+    const grad = ctx.createRadialGradient(CX, CY, 0, CX, CY, RADIUS);
+    grad.addColorStop(0, 'rgba(35, 42, 28, 0.85)');
+    grad.addColorStop(0.7, 'rgba(30, 35, 22, 0.8)');
+    grad.addColorStop(1, 'rgba(20, 22, 15, 0.9)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Draw roads ──
+    ctx.strokeStyle = 'rgba(110, 100, 85, 0.8)';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const road of allRoads) {
+      ctx.beginPath();
+      let started = false;
+      for (let i = 0; i < road.length; i += 2) {
+        const p = worldToMinimap(road[i].x, road[i].z, playerX, playerZ, cosA, sinA);
+        if (!started) {
+          ctx.moveTo(p.x, p.y);
+          started = true;
+        } else {
+          ctx.lineTo(p.x, p.y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    // ── Draw trees (every 5th) ──
+    ctx.fillStyle = 'rgba(55, 100, 40, 0.55)';
+    for (let i = 0; i < treePositions.length; i += 5) {
+      const tp = treePositions[i];
+      if (tp.isDead) continue;
+      const dist = Math.hypot(tp.x - playerX, tp.z - playerZ);
+      if (dist > MAP_RANGE * 1.1) continue;
+      const p = worldToMinimap(tp.x, tp.z, playerX, playerZ, cosA, sinA);
+      if (!inCircle(p.x, p.y)) continue;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ── Draw lamp posts ──
+    const lampColor = isNight ? 'rgba(220, 190, 80, 0.7)' : 'rgba(120, 110, 100, 0.35)';
+    ctx.fillStyle = lampColor;
+    for (let i = 0; i < lampPostPositions.length; i++) {
+      const lp = lampPostPositions[i];
+      const dist = Math.hypot(lp.x - playerX, lp.z - playerZ);
+      if (dist > MAP_RANGE * 1.1) continue;
+      const p = worldToMinimap(lp.x, lp.z, playerX, playerZ, cosA, sinA);
+      if (!inCircle(p.x, p.y)) continue;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, isNight ? 2.5 : 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ── Draw buildings (all, not just discovered) ──
+    ctx.fillStyle = 'rgba(130, 115, 90, 0.7)';
+    for (const bp of buildingPositions) {
+      const dist = Math.hypot(bp.x - playerX, bp.z - playerZ);
+      if (dist > MAP_RANGE * 1.1) continue;
+      const p = worldToMinimap(bp.x, bp.z, playerX, playerZ, cosA, sinA);
+      if (!inCircle(p.x, p.y)) continue;
+      ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
+    }
+
+    // ── Draw discovered POI markers ──
+    for (const poi of discoveredPOIs) {
+      const dist = Math.hypot(poi.x - playerX, poi.z - playerZ);
+      if (dist > MAP_RANGE * 1.1) continue;
+      const p = worldToMinimap(poi.x, poi.z, playerX, playerZ, cosA, sinA);
+      if (!inCircle(p.x, p.y)) continue;
+      if (poi.type === 'building') {
+        ctx.fillStyle = 'rgba(200, 170, 100, 0.85)';
+        ctx.fillRect(p.x - 5, p.y - 5, 10, 10);
+        ctx.strokeStyle = 'rgba(180, 150, 80, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(p.x - 5, p.y - 5, 10, 10);
+      } else {
+        // Billboard - small diamond
+        ctx.fillStyle = 'rgba(180, 140, 60, 0.85)';
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 5);
+        ctx.lineTo(p.x + 4, p.y);
+        ctx.lineTo(p.x, p.y + 5);
+        ctx.lineTo(p.x - 4, p.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // ── Draw player arrow (always centered, pointing up) ──
+    ctx.fillStyle = 'rgba(240, 85, 30, 1.0)';
+    ctx.strokeStyle = 'rgba(255, 140, 50, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(CX, CY - 14);         // tip (forward)
+    ctx.lineTo(CX - 9, CY + 9);      // back-left
+    ctx.lineTo(CX, CY + 4);           // notch
+    ctx.lineTo(CX + 9, CY + 9);      // back-right
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Bright center dot for visibility
+    ctx.fillStyle = 'rgba(255, 200, 100, 0.9)';
+    ctx.beginPath();
+    ctx.arc(CX, CY, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore(); // un-clip
+
+    // ── Compass ring ──
+    // Draw cardinal direction letters around edge, rotating with car
+    const compassRadius = RADIUS + 1;
+    const directions = [
+      { label: 'N', angle: 0,          color: 'rgba(210, 60, 40, 0.9)' },
+      { label: 'E', angle: Math.PI/2,  color: 'rgba(160, 145, 120, 0.55)' },
+      { label: 'S', angle: Math.PI,    color: 'rgba(160, 145, 120, 0.55)' },
+      { label: 'W', angle: -Math.PI/2, color: 'rgba(160, 145, 120, 0.55)' },
+    ];
+
+    ctx.font = 'bold 18px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (const dir of directions) {
+      const a = dir.angle - carYaw;
+      const lx = CX + Math.sin(a) * compassRadius;
+      const ly = CY - Math.cos(a) * compassRadius;
+
+      ctx.fillStyle = dir.color;
+      if (dir.label === 'N') {
+        ctx.font = 'bold 20px "Courier New", monospace';
+        ctx.shadowColor = 'rgba(180, 40, 20, 0.5)';
+        ctx.shadowBlur = 6;
+      } else {
+        ctx.font = 'bold 16px "Courier New", monospace';
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 3;
+      }
+      ctx.fillText(dir.label, lx, ly);
+      ctx.shadowBlur = 0;
+    }
+
+    // ── Worn/torn edge overlay ──
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(CX, CY, RADIUS, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(120, 100, 70, 0.3)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([4, 6, 2, 8]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Inner shadow ring for worn appearance
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(CX, CY, RADIUS - 1, 0, Math.PI * 2);
+    const innerShadow = ctx.createRadialGradient(CX, CY, RADIUS * 0.8, CX, CY, RADIUS);
+    innerShadow.addColorStop(0, 'rgba(0,0,0,0)');
+    innerShadow.addColorStop(1, 'rgba(0,0,0,0.45)');
+    ctx.fillStyle = innerShadow;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  buildStaticLayer();
+
+  return { update, discoveredPOIs };
+})();
+
 animate();
 </script>
 </body>
