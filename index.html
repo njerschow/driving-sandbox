@@ -406,6 +406,213 @@
   }
   #settings-footer .reset-btn { color: rgba(220, 80, 60, 0.7); }
   #settings-footer .reset-btn:hover { color: rgba(220, 80, 60, 1); background: rgba(220, 80, 60, 0.1); }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     PHOTO MODE OVERLAY
+     ═══════════════════════════════════════════════════════════════════════ */
+  #photo-mode-overlay {
+    position: fixed; inset: 0; pointer-events: none; user-select: none; z-index: 200;
+    display: none;
+  }
+  #photo-mode-overlay.active { display: block; }
+
+  #photo-mode-title {
+    position: fixed; top: 28px; left: 50%; transform: translateX(-50%);
+    font-family: 'Courier New', monospace; font-size: 22px; font-weight: 900;
+    color: rgba(255,255,255,0.92); text-shadow: 0 0 20px rgba(255,255,255,0.3), 0 2px 6px rgba(0,0,0,0.8);
+    letter-spacing: 8px;
+    background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; padding: 8px 28px; backdrop-filter: blur(10px);
+  }
+  #photo-mode-filter {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700;
+    color: rgba(255,220,120,0.9); letter-spacing: 3px;
+    text-shadow: 0 0 8px rgba(255,180,50,0.4);
+  }
+  #photo-mode-controls {
+    position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%);
+    font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.9;
+    color: rgba(255,255,255,0.6); text-align: center;
+    background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 12px 22px; backdrop-filter: blur(10px);
+  }
+  #photo-mode-controls .key {
+    display: inline-block; background: rgba(255,255,255,0.12);
+    border-radius: 4px; padding: 1px 6px; font-weight: 600;
+    color: #ddd; min-width: 20px; text-align: center; font-size: 10px;
+  }
+  #photo-mode-cam-info {
+    position: fixed; bottom: 160px; left: 20px;
+    font-family: 'Courier New', monospace; font-size: 10px;
+    color: rgba(255,255,255,0.4); letter-spacing: 1px;
+  }
+  #photo-mode-dof-badge {
+    position: fixed; top: 80px; right: 20px;
+    font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700;
+    color: rgba(100,200,255,0.9); letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(100,200,255,0.4);
+    opacity: 0;
+  }
+  #photo-mode-dof-badge.active { opacity: 1; }
+  /* Photo mode letterbox bars for cinematic feel */
+  .photo-letterbox {
+    position: fixed; left: 0; right: 0; height: 0;
+    background: #000; transition: height 0.4s ease-out; z-index: 199;
+  }
+  .photo-letterbox.top { top: 0; }
+  .photo-letterbox.bottom { bottom: 0; }
+  .photo-letterbox.active { height: 40px; }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     RADIO HUD
+     ═══════════════════════════════════════════════════════════════════════ */
+  #radio-hud {
+    position: fixed;
+    top: 120px;
+    right: 20px;
+    font-family: 'Courier New', monospace;
+    pointer-events: none;
+    user-select: none;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  #radio-hud.active { opacity: 1; }
+  #radio-panel {
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(180, 140, 60, 0.25);
+    border-radius: 8px;
+    padding: 8px 14px;
+    backdrop-filter: blur(6px);
+    min-width: 200px;
+  }
+  #radio-icon-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  #radio-icon {
+    font-size: 16px;
+    color: rgba(220, 180, 60, 0.9);
+    text-shadow: 0 0 6px rgba(220, 180, 60, 0.4);
+  }
+  #radio-freq {
+    font-size: 11px;
+    color: rgba(220, 180, 60, 0.7);
+    letter-spacing: 2px;
+    font-weight: 700;
+  }
+  #radio-station-name {
+    font-size: 13px;
+    color: rgba(220, 200, 160, 0.9);
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+    letter-spacing: 1px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  #radio-signal {
+    font-size: 10px;
+    color: rgba(120, 200, 80, 0.7);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  #radio-signal.weak { color: rgba(220, 120, 40, 0.7); }
+  #radio-signal.lost { color: rgba(200, 60, 60, 0.7); }
+  #radio-eq {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 18px;
+    margin-top: 6px;
+  }
+  .eq-bar {
+    width: 3px;
+    background: rgba(220, 180, 60, 0.6);
+    border-radius: 1px;
+    transition: height 0.08s ease;
+  }
+  #radio-volume-indicator {
+    position: fixed;
+    top: 50%;
+    right: 60px;
+    transform: translateY(-50%);
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(220, 200, 160, 0.9);
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+    letter-spacing: 2px;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 6px 12px;
+    backdrop-filter: blur(6px);
+    z-index: 150;
+  }
+  @keyframes radio-tuning {
+    0% { opacity: 1; }
+    25% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+    75% { opacity: 0.4; }
+    100% { opacity: 1; }
+  }
+  #radio-hud.tuning #radio-station-name {
+    animation: radio-tuning 0.5s ease;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     SAVE/LOAD TOAST NOTIFICATION
+     ═══════════════════════════════════════════════════════════════════════ */
+  #save-toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 0 8px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.5);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 12px 28px;
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    z-index: 500;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  #save-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     SAVE SLOT INDICATOR
+     ═══════════════════════════════════════════════════════════════════════ */
+  #save-indicator {
+    position: fixed;
+    bottom: 8px;
+    right: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 1px;
+    pointer-events: none;
+    user-select: none;
+    z-index: 50;
+  }
 </style>
 </head>
 <body>
@@ -437,16 +644,54 @@
   </div>
 </div>
 
+<!-- Photo Mode Overlay -->
+<div class="photo-letterbox top"></div>
+<div class="photo-letterbox bottom"></div>
+<div id="photo-mode-overlay">
+  <div id="photo-mode-title">PHOTO MODE</div>
+  <div id="photo-mode-filter">FILTER: NORMAL</div>
+  <div id="photo-mode-dof-badge">DOF: ON</div>
+  <div id="photo-mode-cam-info">POS: 0, 0, 0 | ROT: 0, 0</div>
+  <div id="photo-mode-controls">
+    <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> Fly Camera &nbsp;
+    <span class="key">Q</span><span class="key">E</span> Down / Up &nbsp;
+    <span class="key">Shift</span> Fast &nbsp;
+    <span class="key">Mouse Drag</span> Look<br>
+    <span class="key">1</span>-<span class="key">5</span> Filters &nbsp;
+    <span class="key">F</span> Depth of Field &nbsp;
+    <span class="key">Enter</span> Screenshot &nbsp;
+    <span class="key">P</span> Exit
+  </div>
+</div>
+
 <div id="controls-hint">
   <span class="key">W</span> <span class="key">S</span> Accel / Brake<br>
   <span class="key">A</span> <span class="key">D</span> Steer<br>
   <span class="key">Space</span> Handbrake<br>
-  <span class="key">R</span> Reset &nbsp; <span class="key">C</span> Camera<br>
+  <span class="key">T</span> Reset &nbsp; <span class="key">C</span> Camera<br>
   <span class="key">F</span> Switch Vehicle &nbsp; <span class="key">E</span> Refuel<br>
+  <span class="key">R</span> Radio &nbsp; <span class="key">-</span><span class="key">+</span> Volume<br>
+  <span class="key">P</span> Photo Mode &nbsp;
+  <span class="key">F5</span> Save &nbsp; <span class="key">F9</span> Load<br>
   <span class="key">`</span> Debug &nbsp; <span class="key">Esc</span> Settings
 </div>
 <div id="fuel-warning">OUT OF FUEL</div>
 <div id="refuel-prompt">Press <span style="color:#fff;font-size:24px">E</span> to refuel</div>
+
+<div id="radio-hud">
+  <div id="radio-panel">
+    <div id="radio-icon-row">
+      <span id="radio-icon">|||</span>
+      <span id="radio-freq">87.3 FM</span>
+    </div>
+    <div id="radio-station-name">WASTELAND RADIO</div>
+    <div id="radio-signal">SIGNAL: STRONG</div>
+    <div id="radio-eq"></div>
+  </div>
+</div>
+<div id="radio-volume-indicator"></div>
+<div id="save-toast"></div>
+<div id="save-indicator"></div>
 
 <div id="vehicle-name" style="
   position: fixed; top: 76px; left: 20px;
@@ -815,7 +1060,7 @@ function createDirtTexture() {
 // ═══════════════════════════════════════════════════════════════════════
 // RENDERER + SCENE
 // ═══════════════════════════════════════════════════════════════════════
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
@@ -6858,14 +7103,41 @@ function updateSurfaceSounds(speed, lateralSpeed, avgOnRoad, isDriftingNow, brak
 const keys={};
 let gamePaused = false;
 window.addEventListener('keydown',e=>{
+  // F5 = quick save, F9 = quick load — intercept before browser default
+  if (e.code === 'F5') { e.preventDefault(); if (typeof saveGame === 'function') saveGame(); return; }
+  if (e.code === 'F9') { e.preventDefault(); if (typeof loadGame === 'function') loadGame(); return; }
   // Allow Escape and Backquote even when paused
   if (gamePaused && e.code !== 'Escape' && e.code !== 'Backquote') return;
+  // Photo mode key tracking (separate from game keys)
+  if (photoMode.active) {
+    photoMode.freeCamKeys[e.code] = true;
+    if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE'].includes(e.code)) e.preventDefault();
+    return;
+  }
   keys[e.code]=true;
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
   if(!audioStarted)initAudio();
 });
 window.addEventListener('keyup',e=>{
   keys[e.code]=false;
+  // Photo mode key handling
+  if (photoMode.active) {
+    photoMode.freeCamKeys[e.code] = false;
+    // P exits photo mode
+    if (e.code === 'KeyP') { photoMode.toggle(); return; }
+    // Number keys for filters
+    if (e.code === 'Digit1') { photoMode.applyFilter('normal'); return; }
+    if (e.code === 'Digit2') { photoMode.applyFilter('dramatic'); return; }
+    if (e.code === 'Digit3') { photoMode.applyFilter('vintage'); return; }
+    if (e.code === 'Digit4') { photoMode.applyFilter('noir'); return; }
+    if (e.code === 'Digit5') { photoMode.applyFilter('neon'); return; }
+    // F for DOF
+    if (e.code === 'KeyF') { photoMode.toggleDOF(); return; }
+    // Enter for screenshot
+    if (e.code === 'Enter') { photoMode.takeScreenshot(); return; }
+    return;
+  }
+
   // ── Backtick toggles debug overlay ──
   if(e.code==='Backquote'){
     const ov=document.getElementById('debug-overlay');
@@ -6882,7 +7154,12 @@ window.addEventListener('keyup',e=>{
   }
   if(gamePaused) return;
   if(e.code==='KeyC')toggleCamera();
-  if(e.code==='KeyR')resetVehicle();
+  // ── P toggles photo mode ──
+  if(e.code==='KeyP'){ photoMode.toggle(); return; }
+  if(e.code==='KeyT')resetVehicle();
+  if(e.code==='KeyR')toggleRadioStation();
+  if(e.code==='Minus'||e.code==='NumpadSubtract')adjustRadioVolume(-0.1);
+  if(e.code==='Equal'||e.code==='NumpadAdd')adjustRadioVolume(0.1);
   if(e.code==='KeyF' && nearestFindable) switchToVehicle(nearestFindable);
   if(e.code==='KeyE')fuelState.isRefueling=false;
 });
@@ -9023,6 +9300,1103 @@ function buildSettingsUI() {
   });
 }
 
+// PHOTO MODE SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+const photoMode = (() => {
+  let active = false;
+  let currentFilter = 'normal'; // normal, dramatic, vintage, noir, neon
+  let dofEnabled = false;
+
+  // Free camera state
+  const freeCamPos = new THREE.Vector3();
+  const freeCamEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+  const freeCamKeys = {};
+  let mouseDown = false;
+  let lastMouseX = 0, lastMouseY = 0;
+
+  // Store original pass values to restore later
+  let origBloomStrength, origBloomThreshold, origBloomRadius;
+  let origSaturation, origWarmth, origContrast;
+  let origGrainIntensity;
+  let origVignetteIntensity;
+
+  // Filter names for display
+  const FILTER_NAMES = {
+    normal: 'NORMAL',
+    dramatic: 'DRAMATIC',
+    vintage: 'VINTAGE',
+    noir: 'NOIR',
+    neon: 'NEON'
+  };
+
+  // DOF shader pass (simple bokeh-like blur based on depth)
+  const DOFShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+      focusDist: { value: 10.0 },
+      aperture: { value: 0.025 },
+      enabled: { value: 0.0 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform vec2 resolution;
+      uniform float focusDist;
+      uniform float aperture;
+      uniform float enabled;
+      varying vec2 vUv;
+
+      void main() {
+        if (enabled < 0.5) {
+          gl_FragColor = texture2D(tDiffuse, vUv);
+          return;
+        }
+
+        vec2 texelSize = 1.0 / resolution;
+        vec4 center = texture2D(tDiffuse, vUv);
+
+        // Use distance from center of screen as pseudo-depth
+        float dist = length(vUv - 0.5) * 2.0;
+        float blurAmount = dist * dist * aperture * 40.0;
+        blurAmount = clamp(blurAmount, 0.0, 8.0);
+
+        if (blurAmount < 0.1) {
+          gl_FragColor = center;
+          return;
+        }
+
+        // 9-tap gaussian-like blur
+        vec3 col = vec3(0.0);
+        float total = 0.0;
+        for (float x = -2.0; x <= 2.0; x += 1.0) {
+          for (float y = -2.0; y <= 2.0; y += 1.0) {
+            float w = 1.0 / (1.0 + (x*x + y*y) * 0.5);
+            col += texture2D(tDiffuse, vUv + vec2(x, y) * texelSize * blurAmount).rgb * w;
+            total += w;
+          }
+        }
+        col /= total;
+
+        gl_FragColor = vec4(col, center.a);
+      }
+    `
+  };
+
+  let dofPass = null;
+
+  function initDOFPass() {
+    dofPass = new ShaderPass(DOFShader);
+    dofPass.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
+    dofPass.enabled = true;
+    // Insert before the last pass (filmGrainSpeedPass)
+    const passes = composer.passes;
+    composer.insertPass(dofPass, passes.length - 1);
+  }
+
+  // DOM elements
+  const overlayEl = document.getElementById('photo-mode-overlay');
+  const filterEl = document.getElementById('photo-mode-filter');
+  const camInfoEl = document.getElementById('photo-mode-cam-info');
+  const dofBadgeEl = document.getElementById('photo-mode-dof-badge');
+  const letterboxTop = document.querySelector('.photo-letterbox.top');
+  const letterboxBot = document.querySelector('.photo-letterbox.bottom');
+  const hudEl = document.getElementById('hud');
+  const timeDisplayEl = document.getElementById('time-display');
+  const weatherHudEl2 = document.getElementById('weather-hud');
+  const vehicleNameEl = document.getElementById('vehicle-name');
+  const minimapEl = document.getElementById('minimap-canvas');
+  const fuelWarning2 = document.getElementById('fuel-warning');
+  const refuelPrompt2 = document.getElementById('refuel-prompt');
+
+  function saveOriginalValues() {
+    origBloomStrength = bloomPass.strength;
+    origBloomThreshold = bloomPass.threshold;
+    origBloomRadius = bloomPass.radius;
+    origSaturation = colorGradingPass.uniforms.saturation.value;
+    origWarmth = colorGradingPass.uniforms.warmth.value;
+    origContrast = colorGradingPass.uniforms.contrast.value;
+    origGrainIntensity = filmGrainSpeedPass.uniforms.grainIntensity.value;
+    origVignetteIntensity = vignettePass.uniforms.intensity.value;
+  }
+
+  function restoreOriginalValues() {
+    bloomPass.strength = origBloomStrength;
+    bloomPass.threshold = origBloomThreshold;
+    bloomPass.radius = origBloomRadius;
+    colorGradingPass.uniforms.saturation.value = origSaturation;
+    colorGradingPass.uniforms.warmth.value = origWarmth;
+    colorGradingPass.uniforms.contrast.value = origContrast;
+    filmGrainSpeedPass.uniforms.grainIntensity.value = origGrainIntensity;
+    vignettePass.uniforms.intensity.value = origVignetteIntensity;
+    filmGrainSpeedPass.uniforms.speedFactor.value = 0;
+  }
+
+  function applyFilter(name) {
+    currentFilter = name;
+    filterEl.textContent = 'FILTER: ' + FILTER_NAMES[name];
+
+    // Reset to sane base first
+    bloomPass.strength = currentSettings.bloomStrength;
+    bloomPass.threshold = 0.85;
+    bloomPass.radius = 0.6;
+    colorGradingPass.uniforms.saturation.value = 1.0;
+    colorGradingPass.uniforms.warmth.value = 0.02;
+    colorGradingPass.uniforms.contrast.value = 1.0;
+    filmGrainSpeedPass.uniforms.grainIntensity.value = 0.015;
+    filmGrainSpeedPass.uniforms.speedFactor.value = 0;
+    vignettePass.uniforms.intensity.value = 0.0;
+
+    // Enable post-processing for filters
+    bloomPass.enabled = true;
+    colorGradingPass.enabled = true;
+    vignettePass.enabled = true;
+    filmGrainSpeedPass.enabled = true;
+
+    switch (name) {
+      case 'dramatic':
+        colorGradingPass.uniforms.contrast.value = 1.45;
+        colorGradingPass.uniforms.saturation.value = 1.35;
+        vignettePass.uniforms.intensity.value = 0.35;
+        bloomPass.strength = 0.5;
+        break;
+      case 'vintage':
+        colorGradingPass.uniforms.warmth.value = 0.35;
+        colorGradingPass.uniforms.saturation.value = 0.75;
+        colorGradingPass.uniforms.contrast.value = 1.1;
+        filmGrainSpeedPass.uniforms.grainIntensity.value = 0.06;
+        vignettePass.uniforms.intensity.value = 0.45;
+        bloomPass.strength = 0.2;
+        break;
+      case 'noir':
+        colorGradingPass.uniforms.saturation.value = 0.08;
+        colorGradingPass.uniforms.contrast.value = 1.6;
+        vignettePass.uniforms.intensity.value = 0.5;
+        filmGrainSpeedPass.uniforms.grainIntensity.value = 0.04;
+        bloomPass.strength = 0.15;
+        break;
+      case 'neon':
+        colorGradingPass.uniforms.saturation.value = 1.8;
+        colorGradingPass.uniforms.warmth.value = -0.1;
+        colorGradingPass.uniforms.contrast.value = 1.2;
+        bloomPass.strength = 1.2;
+        bloomPass.threshold = 0.3;
+        bloomPass.radius = 0.8;
+        break;
+      case 'normal':
+      default:
+        break;
+    }
+  }
+
+  function enter() {
+    if (active) return;
+    active = true;
+
+    // Initialize DOF pass if needed
+    if (!dofPass) initDOFPass();
+
+    // Save current camera state
+    freeCamPos.copy(camera.position);
+    freeCamEuler.setFromQuaternion(camera.quaternion);
+
+    // Save original post-processing values
+    saveOriginalValues();
+
+    // Show overlay, hide game HUD
+    overlayEl.classList.add('active');
+    letterboxTop.classList.add('active');
+    letterboxBot.classList.add('active');
+    hudEl.style.display = 'none';
+    timeDisplayEl.style.display = 'none';
+    weatherHudEl2.style.display = 'none';
+    vehicleNameEl.style.display = 'none';
+    minimapEl.style.display = 'none';
+    fuelWarning2.style.display = 'none';
+    refuelPrompt2.style.display = 'none';
+
+    // Disable orbit controls
+    orbitControls.enabled = false;
+
+    // Apply default filter
+    applyFilter('normal');
+    dofEnabled = false;
+    dofPass.uniforms.enabled.value = 0.0;
+    dofBadgeEl.classList.remove('active');
+
+    // Reset mouse state
+    mouseDown = false;
+  }
+
+  function exit() {
+    if (!active) return;
+    active = false;
+
+    // Restore post-processing values
+    restoreOriginalValues();
+
+    // Disable DOF
+    if (dofPass) dofPass.uniforms.enabled.value = 0.0;
+
+    // Hide overlay, show game HUD
+    overlayEl.classList.remove('active');
+    letterboxTop.classList.remove('active');
+    letterboxBot.classList.remove('active');
+    hudEl.style.display = 'flex';
+    timeDisplayEl.style.display = '';
+    weatherHudEl2.style.display = '';
+    vehicleNameEl.style.display = '';
+    minimapEl.style.display = '';
+    fuelWarning2.style.display = '';
+    refuelPrompt2.style.display = '';
+
+    // Restore camera mode
+    if (cameraMode === 'orbit') orbitControls.enabled = true;
+  }
+
+  function toggle() {
+    if (active) exit();
+    else enter();
+  }
+
+  function toggleDOF() {
+    dofEnabled = !dofEnabled;
+    if (dofPass) dofPass.uniforms.enabled.value = dofEnabled ? 1.0 : 0.0;
+    if (dofEnabled) dofBadgeEl.classList.add('active');
+    else dofBadgeEl.classList.remove('active');
+  }
+
+  function takeScreenshot() {
+    // Render one frame to make sure the buffer is up to date
+    if (currentSettings.postProcessing || active) {
+      composer.render();
+    } else {
+      renderer.render(scene, camera);
+    }
+    const dataURL = renderer.domElement.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = 'photo_mode_' + Date.now() + '.png';
+    link.href = dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function updateFreeCamera(dt) {
+    if (!active) return;
+
+    const speed = freeCamKeys['ShiftLeft'] || freeCamKeys['ShiftRight'] ? 60 : 20;
+
+    // Build movement vector in camera's local space
+    const forward = new THREE.Vector3(0, 0, -1).applyEuler(freeCamEuler);
+    const right = new THREE.Vector3(1, 0, 0).applyEuler(freeCamEuler);
+    const move = new THREE.Vector3();
+
+    if (freeCamKeys['KeyW']) move.add(forward);
+    if (freeCamKeys['KeyS']) move.sub(forward);
+    if (freeCamKeys['KeyA']) move.sub(right);
+    if (freeCamKeys['KeyD']) move.add(right);
+    if (freeCamKeys['KeyE']) move.y += 1;
+    if (freeCamKeys['KeyQ']) move.y -= 1;
+
+    if (move.lengthSq() > 0) {
+      move.normalize().multiplyScalar(speed * dt);
+      freeCamPos.add(move);
+    }
+
+    camera.position.copy(freeCamPos);
+    camera.quaternion.setFromEuler(freeCamEuler);
+
+    // Update camera info display
+    const p = freeCamPos;
+    const pitchDeg = THREE.MathUtils.radToDeg(freeCamEuler.x).toFixed(1);
+    const yawDeg = THREE.MathUtils.radToDeg(freeCamEuler.y).toFixed(1);
+    camInfoEl.textContent = 'POS: ' + p.x.toFixed(1) + ', ' + p.y.toFixed(1) + ', ' + p.z.toFixed(1) + ' | ROT: ' + pitchDeg + ', ' + yawDeg;
+  }
+
+  // Mouse handlers for looking around
+  function onMouseDown(e) {
+    if (!active) return;
+    mouseDown = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  }
+  function onMouseUp() {
+    mouseDown = false;
+  }
+  function onMouseMove(e) {
+    if (!active || !mouseDown) return;
+    const dx = e.clientX - lastMouseX;
+    const dy = e.clientY - lastMouseY;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+
+    freeCamEuler.y -= dx * 0.003;
+    freeCamEuler.x -= dy * 0.003;
+    freeCamEuler.x = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, freeCamEuler.x));
+  }
+
+  window.addEventListener('mousedown', onMouseDown);
+  window.addEventListener('mouseup', onMouseUp);
+  window.addEventListener('mousemove', onMouseMove);
+
+  // Handle resize for DOF
+  window.addEventListener('resize', () => {
+    if (dofPass) {
+      dofPass.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
+    }
+  });
+
+  return {
+    get active() { return active; },
+    get freeCamKeys() { return freeCamKeys; },
+    toggle,
+    enter,
+    exit,
+    applyFilter,
+    toggleDOF,
+    takeScreenshot,
+    updateFreeCamera,
+  };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════
+// RADIO SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+const radioSystem = (() => {
+  // ── State ──
+  let radioOn = false;
+  let currentStation = -1; // -1 = off
+  let radioVolume = 0.5;
+  let signalStrength = 1.0;
+  let isInitialized = false;
+  let isTuning = false;
+  let tuningTimer = 0;
+  let volumeIndicatorTimer = 0;
+
+  // ── Stations ──
+  const stations = [
+    { name: 'WASTELAND STATIC',     freq: '87.3 FM', type: 'static' },
+    { name: 'EMERGENCY BROADCAST',   freq: '91.1 FM', type: 'ebs' },
+    { name: 'DARK AMBIENT',          freq: '103.7 FM', type: 'drone' },
+    { name: 'MORSE OUTPOST',         freq: '108.9 FM', type: 'morse' },
+  ];
+
+  // ── Audio nodes (created once, reused) ──
+  let masterGain = null;
+  let staticNoiseSource = null;
+  let staticNoiseGain = null;
+  let staticNoiseBuffer = null;
+  let staticFilter = null;
+  // EBS
+  let ebsOsc1 = null;
+  let ebsOsc2 = null;
+  let ebsGain = null;
+  let ebsLfo = null;
+  let ebsLfoGain = null;
+  let ebsStaticGain = null;
+  let ebsStaticSource = null;
+  // Drone
+  let droneOsc1 = null;
+  let droneOsc2 = null;
+  let droneOsc3 = null;
+  let droneGain = null;
+  let droneLfo1 = null;
+  let droneLfo2 = null;
+  let droneLfo1Gain = null;
+  let droneLfo2Gain = null;
+  let droneFilter = null;
+  // Morse
+  let morseOsc = null;
+  let morseGain = null;
+  let morseStaticGain = null;
+  let morseStaticSource = null;
+  let morsePattern = [];
+  let morseIndex = 0;
+  let morseNextTime = 0;
+  // Tuning static
+  let tuningNoiseSource = null;
+  let tuningNoiseGain = null;
+
+  // ── DOM refs ──
+  const hudEl = document.getElementById('radio-hud');
+  const stationNameEl = document.getElementById('radio-station-name');
+  const freqEl = document.getElementById('radio-freq');
+  const signalEl = document.getElementById('radio-signal');
+  const eqEl = document.getElementById('radio-eq');
+  const volIndicatorEl = document.getElementById('radio-volume-indicator');
+
+  // ── Create EQ bars ──
+  const NUM_EQ_BARS = 12;
+  const eqBars = [];
+  for (let i = 0; i < NUM_EQ_BARS; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'eq-bar';
+    bar.style.height = '2px';
+    eqEl.appendChild(bar);
+    eqBars.push(bar);
+  }
+
+  // ── Create white noise buffer (shared) ──
+  function createNoiseBuffer() {
+    if (!audioCtx) return null;
+    const len = audioCtx.sampleRate * 4;
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    return buf;
+  }
+
+  // ── Generate a random morse pattern ──
+  function generateMorsePattern() {
+    const pattern = [];
+    const numChars = 20 + Math.floor(Math.random() * 30);
+    for (let i = 0; i < numChars; i++) {
+      if (Math.random() < 0.3) {
+        // Dash
+        pattern.push({ type: 'on', duration: 0.2 });
+      } else {
+        // Dot
+        pattern.push({ type: 'on', duration: 0.07 });
+      }
+      // Inter-element gap
+      pattern.push({ type: 'off', duration: 0.07 });
+      // Word gap sometimes
+      if (Math.random() < 0.15) {
+        pattern.push({ type: 'off', duration: 0.35 });
+      }
+    }
+    // Longer pause at end
+    pattern.push({ type: 'off', duration: 1.0 + Math.random() * 2.0 });
+    return pattern;
+  }
+
+  // ── Initialize all audio nodes ──
+  function initRadioAudio() {
+    if (!audioCtx || isInitialized) return;
+    isInitialized = true;
+
+    staticNoiseBuffer = createNoiseBuffer();
+
+    // Master gain for radio
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0;
+    masterGain.connect(audioCtx.destination);
+
+    // ── STATION: Static ──
+    staticNoiseSource = audioCtx.createBufferSource();
+    staticNoiseSource.buffer = staticNoiseBuffer;
+    staticNoiseSource.loop = true;
+    staticFilter = audioCtx.createBiquadFilter();
+    staticFilter.type = 'bandpass';
+    staticFilter.frequency.value = 3000;
+    staticFilter.Q.value = 0.5;
+    staticNoiseGain = audioCtx.createGain();
+    staticNoiseGain.gain.value = 0;
+    staticNoiseSource.connect(staticFilter);
+    staticFilter.connect(staticNoiseGain);
+    staticNoiseGain.connect(masterGain);
+    staticNoiseSource.start();
+
+    // ── STATION: Emergency Broadcast System ──
+    ebsOsc1 = audioCtx.createOscillator();
+    ebsOsc1.type = 'sine';
+    ebsOsc1.frequency.value = 853;
+    ebsOsc2 = audioCtx.createOscillator();
+    ebsOsc2.type = 'sine';
+    ebsOsc2.frequency.value = 960;
+    ebsGain = audioCtx.createGain();
+    ebsGain.gain.value = 0;
+    // LFO for intermittent on/off pattern
+    ebsLfo = audioCtx.createOscillator();
+    ebsLfo.type = 'square';
+    ebsLfo.frequency.value = 0.5; // on/off every second
+    ebsLfoGain = audioCtx.createGain();
+    ebsLfoGain.gain.value = 0.5;
+    ebsLfo.connect(ebsLfoGain);
+    const ebsMix1 = audioCtx.createGain();
+    ebsMix1.gain.value = 0.4;
+    const ebsMix2 = audioCtx.createGain();
+    ebsMix2.gain.value = 0.4;
+    ebsOsc1.connect(ebsMix1);
+    ebsOsc2.connect(ebsMix2);
+    ebsMix1.connect(ebsGain);
+    ebsMix2.connect(ebsGain);
+    ebsLfoGain.connect(ebsGain.gain);
+    ebsGain.connect(masterGain);
+    // EBS static background
+    ebsStaticSource = audioCtx.createBufferSource();
+    ebsStaticSource.buffer = staticNoiseBuffer;
+    ebsStaticSource.loop = true;
+    ebsStaticGain = audioCtx.createGain();
+    ebsStaticGain.gain.value = 0;
+    const ebsStaticFilter = audioCtx.createBiquadFilter();
+    ebsStaticFilter.type = 'lowpass';
+    ebsStaticFilter.frequency.value = 2000;
+    ebsStaticSource.connect(ebsStaticFilter);
+    ebsStaticFilter.connect(ebsStaticGain);
+    ebsStaticGain.connect(masterGain);
+    ebsOsc1.start();
+    ebsOsc2.start();
+    ebsLfo.start();
+    ebsStaticSource.start();
+
+    // ── STATION: Dark Ambient Drone ──
+    droneOsc1 = audioCtx.createOscillator();
+    droneOsc1.type = 'sine';
+    droneOsc1.frequency.value = 55; // low A
+    droneOsc2 = audioCtx.createOscillator();
+    droneOsc2.type = 'triangle';
+    droneOsc2.frequency.value = 82.5; // fifth above
+    droneOsc3 = audioCtx.createOscillator();
+    droneOsc3.type = 'sawtooth';
+    droneOsc3.frequency.value = 110; // octave
+    droneFilter = audioCtx.createBiquadFilter();
+    droneFilter.type = 'lowpass';
+    droneFilter.frequency.value = 400;
+    droneFilter.Q.value = 2;
+    droneGain = audioCtx.createGain();
+    droneGain.gain.value = 0;
+    // LFOs for evolving texture
+    droneLfo1 = audioCtx.createOscillator();
+    droneLfo1.type = 'sine';
+    droneLfo1.frequency.value = 0.07; // very slow
+    droneLfo1Gain = audioCtx.createGain();
+    droneLfo1Gain.gain.value = 20;
+    droneLfo1.connect(droneLfo1Gain);
+    droneLfo1Gain.connect(droneFilter.frequency);
+    droneLfo2 = audioCtx.createOscillator();
+    droneLfo2.type = 'sine';
+    droneLfo2.frequency.value = 0.03;
+    droneLfo2Gain = audioCtx.createGain();
+    droneLfo2Gain.gain.value = 3;
+    droneLfo2.connect(droneLfo2Gain);
+    droneLfo2Gain.connect(droneOsc2.frequency);
+    const droneMix1 = audioCtx.createGain();
+    droneMix1.gain.value = 0.5;
+    const droneMix2 = audioCtx.createGain();
+    droneMix2.gain.value = 0.3;
+    const droneMix3 = audioCtx.createGain();
+    droneMix3.gain.value = 0.12;
+    droneOsc1.connect(droneMix1);
+    droneOsc2.connect(droneMix2);
+    droneOsc3.connect(droneMix3);
+    droneMix1.connect(droneFilter);
+    droneMix2.connect(droneFilter);
+    droneMix3.connect(droneFilter);
+    droneFilter.connect(droneGain);
+    droneGain.connect(masterGain);
+    droneOsc1.start();
+    droneOsc2.start();
+    droneOsc3.start();
+    droneLfo1.start();
+    droneLfo2.start();
+
+    // ── STATION: Morse Code ──
+    morseOsc = audioCtx.createOscillator();
+    morseOsc.type = 'sine';
+    morseOsc.frequency.value = 680;
+    morseGain = audioCtx.createGain();
+    morseGain.gain.value = 0;
+    morseOsc.connect(morseGain);
+    morseGain.connect(masterGain);
+    morseOsc.start();
+    morseStaticSource = audioCtx.createBufferSource();
+    morseStaticSource.buffer = staticNoiseBuffer;
+    morseStaticSource.loop = true;
+    morseStaticGain = audioCtx.createGain();
+    morseStaticGain.gain.value = 0;
+    const morseStaticFilter = audioCtx.createBiquadFilter();
+    morseStaticFilter.type = 'bandpass';
+    morseStaticFilter.frequency.value = 1500;
+    morseStaticFilter.Q.value = 1;
+    morseStaticSource.connect(morseStaticFilter);
+    morseStaticFilter.connect(morseStaticGain);
+    morseStaticGain.connect(masterGain);
+    morseStaticSource.start();
+    morsePattern = generateMorsePattern();
+    morseNextTime = audioCtx.currentTime;
+
+    // ── Tuning noise (brief burst when switching stations) ──
+    tuningNoiseSource = audioCtx.createBufferSource();
+    tuningNoiseSource.buffer = staticNoiseBuffer;
+    tuningNoiseSource.loop = true;
+    tuningNoiseGain = audioCtx.createGain();
+    tuningNoiseGain.gain.value = 0;
+    tuningNoiseSource.connect(tuningNoiseGain);
+    tuningNoiseGain.connect(masterGain);
+    tuningNoiseSource.start();
+  }
+
+  // ── Mute all station-specific gains ──
+  function muteAllStations() {
+    if (!isInitialized) return;
+    const t = audioCtx.currentTime;
+    const fadeTime = 0.05;
+    staticNoiseGain.gain.setTargetAtTime(0, t, fadeTime);
+    ebsGain.gain.setTargetAtTime(0, t, fadeTime);
+    ebsStaticGain.gain.setTargetAtTime(0, t, fadeTime);
+    droneGain.gain.setTargetAtTime(0, t, fadeTime);
+    morseGain.gain.setTargetAtTime(0, t, fadeTime);
+    morseStaticGain.gain.setTargetAtTime(0, t, fadeTime);
+  }
+
+  // ── Activate a specific station ──
+  function activateStation(index) {
+    if (!isInitialized) return;
+    muteAllStations();
+    const t = audioCtx.currentTime;
+    const fadeTime = 0.15;
+    switch (stations[index].type) {
+      case 'static':
+        staticNoiseGain.gain.setTargetAtTime(0.25, t + 0.2, fadeTime);
+        break;
+      case 'ebs':
+        ebsGain.gain.setTargetAtTime(0.3, t + 0.2, fadeTime);
+        ebsStaticGain.gain.setTargetAtTime(0.06, t + 0.2, fadeTime);
+        break;
+      case 'drone':
+        droneGain.gain.setTargetAtTime(0.35, t + 0.2, fadeTime);
+        break;
+      case 'morse':
+        morseStaticGain.gain.setTargetAtTime(0.05, t + 0.2, fadeTime);
+        // morseGain is controlled per-frame by the morse sequencer
+        break;
+    }
+  }
+
+  // ── Play tuning burst ──
+  function playTuningBurst() {
+    if (!isInitialized || !tuningNoiseGain) return;
+    const t = audioCtx.currentTime;
+    tuningNoiseGain.gain.cancelScheduledValues(t);
+    tuningNoiseGain.gain.setValueAtTime(0.3, t);
+    tuningNoiseGain.gain.setTargetAtTime(0, t + 0.35, 0.08);
+    isTuning = true;
+    tuningTimer = 0.5;
+    hudEl.classList.add('tuning');
+  }
+
+  // ── Toggle station (called on keypress) ──
+  function toggle() {
+    if (!audioCtx) return;
+    if (!isInitialized) initRadioAudio();
+
+    if (!radioOn) {
+      // Turn on, first station
+      radioOn = true;
+      currentStation = 0;
+      masterGain.gain.setTargetAtTime(radioVolume, audioCtx.currentTime, 0.05);
+      playTuningBurst();
+      activateStation(currentStation);
+      hudEl.classList.add('active');
+    } else {
+      currentStation++;
+      if (currentStation >= stations.length) {
+        // Turn off
+        radioOn = false;
+        currentStation = -1;
+        muteAllStations();
+        masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+        hudEl.classList.remove('active');
+        return;
+      }
+      playTuningBurst();
+      activateStation(currentStation);
+    }
+    // Update HUD
+    if (radioOn) {
+      stationNameEl.textContent = stations[currentStation].name;
+      freqEl.textContent = stations[currentStation].freq;
+    }
+  }
+
+  // ── Adjust volume ──
+  function adjustVolume(delta) {
+    radioVolume = Math.max(0, Math.min(1, radioVolume + delta));
+    if (radioOn && isInitialized && masterGain) {
+      masterGain.gain.setTargetAtTime(radioVolume, audioCtx.currentTime, 0.03);
+    }
+    // Show volume indicator
+    const pct = Math.round(radioVolume * 100);
+    volIndicatorEl.textContent = 'RADIO VOL: ' + pct + '%';
+    volIndicatorEl.style.opacity = '1';
+    volumeIndicatorTimer = 1.5;
+  }
+
+  // ── Update (called every frame) ──
+  function update(dt) {
+    // Volume indicator fade
+    if (volumeIndicatorTimer > 0) {
+      volumeIndicatorTimer -= dt;
+      if (volumeIndicatorTimer <= 0) {
+        volIndicatorEl.style.opacity = '0';
+      }
+    }
+
+    if (!radioOn || !isInitialized) return;
+
+    // ── Tuning timer ──
+    if (isTuning) {
+      tuningTimer -= dt;
+      if (tuningTimer <= 0) {
+        isTuning = false;
+        hudEl.classList.remove('tuning');
+      }
+    }
+
+    // ── Distance effect: signal strength based on proximity to town centers ──
+    const carX = chassisBody.position.x;
+    const carZ = chassisBody.position.z;
+    let minDist = Infinity;
+    for (const tc of townCenters) {
+      const d = Math.hypot(carX - tc.x, carZ - tc.z);
+      if (d < minDist) minDist = d;
+    }
+    // Signal is strong within 100 units of a town, degrades up to 300 units, very weak beyond
+    if (minDist < 80) {
+      signalStrength = 1.0;
+    } else if (minDist < 250) {
+      signalStrength = 1.0 - (minDist - 80) / 250;
+    } else {
+      signalStrength = Math.max(0.1, 0.3 - (minDist - 250) / 500);
+    }
+    signalStrength = Math.max(0.05, Math.min(1.0, signalStrength));
+
+    // Apply signal degradation: add static overlay based on signal loss
+    const staticOverlay = (1 - signalStrength) * 0.2;
+    // Modulate the static noise gain to simulate interference
+    if (currentStation >= 0 && stations[currentStation].type !== 'static') {
+      const t = audioCtx.currentTime;
+      // Blend in static noise proportional to signal loss
+      const currentStaticLevel = staticNoiseGain.gain.value;
+      const targetStatic = staticOverlay;
+      staticNoiseGain.gain.setTargetAtTime(targetStatic, t, 0.1);
+    }
+
+    // Update signal HUD
+    if (signalStrength > 0.6) {
+      signalEl.textContent = 'SIGNAL: STRONG';
+      signalEl.className = '';
+      signalEl.id = 'radio-signal';
+    } else if (signalStrength > 0.3) {
+      signalEl.textContent = 'SIGNAL: WEAK';
+      signalEl.className = 'weak';
+      signalEl.id = 'radio-signal';
+    } else {
+      signalEl.textContent = 'SIGNAL: LOST';
+      signalEl.className = 'lost';
+      signalEl.id = 'radio-signal';
+    }
+
+    // ── Morse code sequencer ──
+    if (currentStation >= 0 && stations[currentStation].type === 'morse') {
+      const now = audioCtx.currentTime;
+      if (now >= morseNextTime) {
+        const step = morsePattern[morseIndex];
+        if (step.type === 'on') {
+          morseGain.gain.setTargetAtTime(0.25 * signalStrength, now, 0.005);
+        } else {
+          morseGain.gain.setTargetAtTime(0, now, 0.005);
+        }
+        morseNextTime = now + step.duration;
+        morseIndex++;
+        if (morseIndex >= morsePattern.length) {
+          morseIndex = 0;
+          morsePattern = generateMorsePattern();
+        }
+      }
+    }
+
+    // ── EBS: modulate the LFO pattern with signal strength ──
+    if (currentStation >= 0 && stations[currentStation].type === 'ebs') {
+      // Occasionally introduce static bursts at low signal
+      if (signalStrength < 0.5) {
+        ebsStaticGain.gain.setTargetAtTime(0.06 + (1 - signalStrength) * 0.1, audioCtx.currentTime, 0.1);
+      }
+    }
+
+    // ── Update EQ visualization ──
+    const time = performance.now() * 0.001;
+    for (let i = 0; i < NUM_EQ_BARS; i++) {
+      let h = 2;
+      if (radioOn) {
+        const stationType = stations[currentStation].type;
+        switch (stationType) {
+          case 'static':
+            h = 2 + Math.random() * 14 * signalStrength;
+            break;
+          case 'ebs':
+            h = 2 + (Math.sin(time * 6.28 + i * 0.5) * 0.5 + 0.5) * 12 * signalStrength;
+            break;
+          case 'drone':
+            h = 2 + (Math.sin(time * 0.8 + i * 0.7) * 0.5 + 0.5) * 14 * signalStrength;
+            break;
+          case 'morse':
+            // Pulse with the morse beeps
+            const morseActive = morseGain.gain.value > 0.05;
+            h = morseActive ? (3 + Math.random() * 13 * signalStrength) : (2 + Math.random() * 3);
+            break;
+        }
+        // Add signal noise
+        if (signalStrength < 0.5) {
+          h += Math.random() * 4 * (1 - signalStrength);
+        }
+      }
+      eqBars[i].style.height = Math.max(2, Math.min(18, h)) + 'px';
+    }
+
+    // ── Crackle bursts for static station ──
+    if (currentStation >= 0 && stations[currentStation].type === 'static') {
+      // Randomly vary the bandpass frequency to simulate crackle
+      if (Math.random() < 0.05) {
+        staticFilter.frequency.setTargetAtTime(
+          1000 + Math.random() * 6000,
+          audioCtx.currentTime,
+          0.02
+        );
+      }
+    }
+  }
+
+  return { toggle, adjustVolume, update };
+})();
+
+function toggleRadioStation() {
+  radioSystem.toggle();
+}
+function adjustRadioVolume(delta) {
+  radioSystem.adjustVolume(delta);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SAVE / LOAD SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+const SAVE_KEY = 'drivingSandbox_save';
+const saveToastEl = document.getElementById('save-toast');
+const saveIndicatorEl = document.getElementById('save-indicator');
+let lastSaveTimestamp = 0;
+let autoSaveTimer = 0;
+let _toastTimeout = null;
+
+function showToast(message) {
+  saveToastEl.textContent = message;
+  saveToastEl.classList.add('visible');
+  if (_toastTimeout) clearTimeout(_toastTimeout);
+  _toastTimeout = setTimeout(() => {
+    saveToastEl.classList.remove('visible');
+    _toastTimeout = null;
+  }, 2000);
+}
+
+function gatherSaveData() {
+  const cb = chassisBody;
+  const saveData = {
+    version: 1,
+    timestamp: Date.now(),
+    vehicle: {
+      typeKey: currentVehicle.typeKey,
+      position: { x: cb.position.x, y: cb.position.y, z: cb.position.z },
+      quaternion: { x: cb.quaternion.x, y: cb.quaternion.y, z: cb.quaternion.z, w: cb.quaternion.w },
+      velocity: { x: cb.velocity.x, y: cb.velocity.y, z: cb.velocity.z },
+      angularVelocity: { x: cb.angularVelocity.x, y: cb.angularVelocity.y, z: cb.angularVelocity.z },
+      damage: {
+        front: damageZones.front.health,
+        rear: damageZones.rear.health,
+        left: damageZones.left.health,
+        right: damageZones.right.health,
+        top: damageZones.top.health,
+      },
+    },
+    fuel: {
+      current: fuelState.current,
+      outOfFuel: fuelState.outOfFuel,
+    },
+    gameTime: gameTime,
+    weather: {
+      type: weatherState.type,
+      intensity: weatherState.intensity,
+      transitionProgress: weatherState.transitionProgress,
+    },
+    cameraMode: cameraMode,
+    findableVehicles: findableVehicles.filter(fv => fv.active).map(fv => ({
+      typeKey: fv.typeKey,
+      position: { x: fv.position.x, y: fv.position.y, z: fv.position.z },
+      rotation: fv.rotation,
+    })),
+  };
+  return saveData;
+}
+
+function saveGame() {
+  try {
+    const data = gatherSaveData();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    lastSaveTimestamp = data.timestamp;
+    showToast('Game Saved');
+  } catch (e) {
+    console.warn('Save failed:', e);
+    showToast('Save Failed');
+  }
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) {
+      showToast('No Save Found');
+      return false;
+    }
+    const data = JSON.parse(raw);
+    applySaveData(data);
+    lastSaveTimestamp = data.timestamp;
+    showToast('Game Loaded');
+    return true;
+  } catch (e) {
+    console.warn('Load failed:', e);
+    showToast('Load Failed');
+    return false;
+  }
+}
+
+function applySaveData(data) {
+  // -- Switch vehicle type if needed --
+  if (data.vehicle.typeKey !== currentVehicle.typeKey) {
+    // Remove current vehicle from physics and scene
+    currentVehicle.vehicle.removeFromWorld(world);
+    currentVehicle.vehicle.wheelInfos.forEach(w => {
+      if (w._wheelBody) world.removeBody(w._wheelBody);
+    });
+    scene.remove(currentVehicle.carGroup);
+    currentVehicle.wheelMeshes.forEach(wm => scene.remove(wm));
+    currentVehicle.debrisList.forEach(d => { scene.remove(d.mesh); world.removeBody(d.body); });
+    currentVehicle.debrisList.length = 0;
+
+    // Create new vehicle of saved type
+    currentVehicle = createVehicle(data.vehicle.typeKey, data.vehicle.position, 0);
+    rebindVehicleAliases();
+    vehicleNameEl.textContent = currentVehicle.vtype.name.toUpperCase();
+  }
+
+  // -- Restore physics state --
+  const v = data.vehicle;
+  chassisBody.position.set(v.position.x, v.position.y, v.position.z);
+  chassisBody.quaternion.set(v.quaternion.x, v.quaternion.y, v.quaternion.z, v.quaternion.w);
+  chassisBody.velocity.set(v.velocity.x, v.velocity.y, v.velocity.z);
+  chassisBody.angularVelocity.set(v.angularVelocity.x, v.angularVelocity.y, v.angularVelocity.z);
+
+  // -- Restore damage --
+  if (v.damage) {
+    damageZones.front.health = v.damage.front;
+    damageZones.rear.health = v.damage.rear;
+    damageZones.left.health = v.damage.left;
+    damageZones.right.health = v.damage.right;
+    damageZones.top.health = v.damage.top;
+    const avgHealth = (v.damage.front + v.damage.rear + v.damage.left + v.damage.right + v.damage.top) / 5;
+    damageBarEl.style.width = avgHealth + '%';
+  }
+
+  // -- Restore fuel --
+  if (data.fuel) {
+    fuelState.current = data.fuel.current;
+    fuelState.outOfFuel = data.fuel.outOfFuel || false;
+    fuelState.isRefueling = false;
+    fuelState.lowFuelBeepTimer = 0;
+    fuelState.lastWarningLevel = '';
+    const fuelPct = Math.round((fuelState.current / fuelState.max) * 100);
+    fuelBarEl.style.width = fuelPct + '%';
+  }
+
+  // -- Restore game time --
+  if (typeof data.gameTime === 'number') {
+    gameTime = data.gameTime;
+    window.gameTime = gameTime;
+  }
+
+  // -- Restore weather --
+  if (data.weather) {
+    weatherState.type = data.weather.type;
+    weatherState.intensity = data.weather.intensity;
+    weatherState.transitionProgress = data.weather.transitionProgress;
+    _weather.currentType = data.weather.type;
+    _weather.currentIntensity = data.weather.intensity;
+    _weather.targetIntensity = data.weather.intensity;
+    window.weatherState = weatherState;
+  }
+
+  // -- Restore camera mode --
+  if (data.cameraMode && data.cameraMode !== cameraMode) {
+    cameraMode = data.cameraMode;
+    orbitControls.enabled = (cameraMode === 'orbit');
+    if (cameraMode === 'orbit') orbitControls.target.copy(carGroup.position);
+  }
+  camInit = false;
+
+  // -- Restore findable vehicles positions --
+  if (data.findableVehicles && data.findableVehicles.length > 0) {
+    // Remove existing findable vehicles from scene
+    for (const fv of findableVehicles) {
+      if (fv.mesh) {
+        if (fv.mesh.userData._staticWheels) {
+          fv.mesh.userData._staticWheels.forEach(w => scene.remove(w));
+        }
+        scene.remove(fv.mesh);
+      }
+      if (fv.glowMesh) scene.remove(fv.glowMesh);
+    }
+    findableVehicles.length = 0;
+
+    // Recreate findable vehicles from save data
+    for (const sv of data.findableVehicles) {
+      const entry = createFindableVehicleMarker(sv.typeKey, sv.position.x, sv.position.z);
+      if (typeof sv.rotation === 'number') {
+        entry.mesh.rotation.y = sv.rotation;
+        entry.rotation = sv.rotation;
+      }
+    }
+  }
+
+  smoothedEngineForce = 0;
+}
+
+function updateSaveIndicator() {
+  if (lastSaveTimestamp > 0) {
+    const elapsed = Date.now() - lastSaveTimestamp;
+    const mins = Math.floor(elapsed / 60000);
+    if (mins < 1) {
+      saveIndicatorEl.textContent = 'Last save: just now';
+    } else if (mins === 1) {
+      saveIndicatorEl.textContent = 'Last save: 1 minute ago';
+    } else {
+      saveIndicatorEl.textContent = 'Last save: ' + mins + ' minutes ago';
+    }
+  } else {
+    saveIndicatorEl.textContent = '';
+  }
+}
+
+// Auto-load on startup: if a save exists, load it
+{
+  const existingSave = localStorage.getItem(SAVE_KEY);
+  if (existingSave) {
+    try {
+      const data = JSON.parse(existingSave);
+      applySaveData(data);
+      lastSaveTimestamp = data.timestamp;
+    } catch (e) {
+      console.warn('Auto-load failed:', e);
+    }
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // GAME LOOP
 // ═══════════════════════════════════════════════════════════════════════
@@ -9038,6 +10412,17 @@ function animate(){
     // Still render the scene so it's visible behind the settings overlay
     if (currentSettings.postProcessing) { composer.render(); }
     else { renderer.render(scene, camera); }
+    updateDebugOverlay();
+    return;
+  }
+
+  // ── Photo mode: skip physics, update free camera, render ──
+  if (photoMode.active) {
+    photoMode.updateFreeCamera(dt);
+    // Keep film grain time updating for visual effect
+    filmGrainSpeedPass.uniforms.time.value = clock.elapsedTime;
+    // Render
+    composer.render();
     updateDebugOverlay();
     return;
   }
@@ -9639,7 +11024,10 @@ function animate(){
   if (currentSettings.weatherEnabled) updateWeatherSystem(dt);
   // ── Water bodies system update ──
   updateWaterSystem(dt, clock.elapsedTime, chassisBody.position, speed);
+  if (typeof updateAITraffic === 'function') updateAITraffic(dt);
   minimapSystem.update();
+  // ── Radio system update ──
+  radioSystem.update(dt);
 
   // ── Post-Processing Uniform Updates ──
   const elapsedTime = clock.elapsedTime;
@@ -9666,6 +11054,18 @@ function animate(){
 
   // ── FPS Debug Overlay ──
   updateDebugOverlay();
+
+  // ── Auto-save every 60 seconds ──
+  autoSaveTimer += dt;
+  if (autoSaveTimer >= 60) {
+    autoSaveTimer = 0;
+    try {
+      const data = gatherSaveData();
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      lastSaveTimestamp = data.timestamp;
+    } catch (e) { /* silent auto-save failure */ }
+  }
+  updateSaveIndicator();
 }
 
 window.addEventListener('resize',()=>{
@@ -10044,6 +11444,31 @@ const minimapSystem = (() => {
       ctx.fill();
     }
 
+    // ── Draw AI traffic NPCs on minimap ──
+    if (typeof aiTrafficNPCs !== 'undefined') {
+      for (const npc of aiTrafficNPCs) {
+        if (!npc.mesh) continue;
+        const nx = npc.mesh.position.x, nz = npc.mesh.position.z;
+        const dist = Math.hypot(nx - playerX, nz - playerZ);
+        if (dist > MAP_RANGE * 1.1) continue;
+        const p = worldToMinimap(nx, nz, playerX, playerZ, cosA, sinA);
+        if (!inCircle(p.x, p.y)) continue;
+        // Raiders = red dot, Traders = green dot
+        if (npc.type === 'raider') {
+          ctx.fillStyle = 'rgba(200, 50, 50, 0.9)';
+        } else {
+          ctx.fillStyle = 'rgba(80, 180, 60, 0.9)';
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        // Outline for visibility
+        ctx.strokeStyle = npc.type === 'raider' ? 'rgba(255, 80, 80, 0.6)' : 'rgba(100, 220, 80, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
     // ── Draw player arrow (always centered, pointing up) ──
     ctx.fillStyle = 'rgba(240, 85, 30, 1.0)';
     ctx.strokeStyle = 'rgba(255, 140, 50, 0.8)';
@@ -10124,6 +11549,366 @@ const minimapSystem = (() => {
 
   return { update, discoveredPOIs };
 })();
+
+// ═══════════════════════════════════════════════════════════════════════
+// AI TRAFFIC SYSTEM — NPC vehicles that drive along roads
+// ═══════════════════════════════════════════════════════════════════════
+const aiTrafficNPCs = [];
+window.aiTrafficNPCs = aiTrafficNPCs;
+
+(function initAITraffic() {
+  const NPC_COUNT = 5;
+  const MAP_HALF = TSIZE * 0.45;
+
+  // NPC type definitions
+  const npcTypes = [
+    { type: 'raider', bodyColor: 0x5a1a1a, cabinColor: 0x1a1a1a, headlightColor: 0xff4422,
+      bodyW: 1.8, bodyH: 0.55, bodyL: 3.8, cabinW: 1.5, cabinH: 0.45, cabinL: 1.4, cabinZ: -0.3,
+      speed: 38 + Math.random() * 12 },
+    { type: 'raider', bodyColor: 0x6b2020, cabinColor: 0x222222, headlightColor: 0xff3300,
+      bodyW: 1.7, bodyH: 0.5, bodyL: 3.6, cabinW: 1.4, cabinH: 0.42, cabinL: 1.3, cabinZ: -0.2,
+      speed: 40 + Math.random() * 10 },
+    { type: 'trader', bodyColor: 0x3d4a2a, cabinColor: 0x2a3320, headlightColor: 0xffcc44,
+      bodyW: 2.0, bodyH: 0.6, bodyL: 4.5, cabinW: 1.6, cabinH: 0.5, cabinL: 1.2, cabinZ: -1.2,
+      speed: 22 + Math.random() * 8, hasCargo: true },
+    { type: 'trader', bodyColor: 0x4a5530, cabinColor: 0x333d28, headlightColor: 0xffdd55,
+      bodyW: 1.9, bodyH: 0.55, bodyL: 4.2, cabinW: 1.5, cabinH: 0.48, cabinL: 1.3, cabinZ: -1.0,
+      speed: 25 + Math.random() * 10, hasCargo: true },
+    { type: 'raider', bodyColor: 0x4a1515, cabinColor: 0x181818, headlightColor: 0xff2200,
+      bodyW: 1.6, bodyH: 0.5, bodyL: 3.4, cabinW: 1.3, cabinH: 0.4, cabinL: 1.2, cabinZ: -0.25,
+      speed: 42 + Math.random() * 8 },
+  ];
+
+  function buildNPCMesh(def) {
+    const group = new THREE.Group();
+
+    // Main body
+    const bodyMat = new THREE.MeshStandardMaterial({ color: def.bodyColor, roughness: 0.7, metalness: 0.3 });
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(def.bodyW, def.bodyH, def.bodyL),
+      bodyMat
+    );
+    body.position.y = 0.4;
+    body.castShadow = true;
+    group.add(body);
+
+    // Cabin
+    const cabinMat = new THREE.MeshStandardMaterial({ color: def.cabinColor, roughness: 0.6, metalness: 0.2 });
+    const cabin = new THREE.Mesh(
+      new THREE.BoxGeometry(def.cabinW, def.cabinH, def.cabinL),
+      cabinMat
+    );
+    cabin.position.set(0, 0.4 + def.bodyH / 2 + def.cabinH / 2, def.cabinZ);
+    cabin.castShadow = true;
+    group.add(cabin);
+
+    // Cargo cover for traders
+    if (def.hasCargo) {
+      const cargoMat = new THREE.MeshStandardMaterial({ color: 0x6b6348, roughness: 0.9, metalness: 0.0 });
+      const cargoW = def.bodyW * 0.9;
+      const cargoH = 0.65;
+      const cargoL = def.bodyL * 0.4;
+      const cargo = new THREE.Mesh(
+        new THREE.BoxGeometry(cargoW, cargoH, cargoL),
+        cargoMat
+      );
+      cargo.position.set(0, 0.4 + def.bodyH / 2 + cargoH / 2, def.bodyL * 0.25);
+      cargo.castShadow = true;
+      group.add(cargo);
+    }
+
+    // Headlights (emissive glow at front)
+    const hlMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, emissive: def.headlightColor, emissiveIntensity: 0.8,
+      roughness: 0.1, metalness: 0.0
+    });
+    const hlSize = 0.15;
+    const hlGeo = new THREE.BoxGeometry(hlSize, hlSize, 0.08);
+    const hlL = new THREE.Mesh(hlGeo, hlMat);
+    hlL.position.set(-def.bodyW * 0.35, 0.45, -def.bodyL / 2 - 0.02);
+    group.add(hlL);
+    const hlR = new THREE.Mesh(hlGeo, hlMat);
+    hlR.position.set(def.bodyW * 0.35, 0.45, -def.bodyL / 2 - 0.02);
+    group.add(hlR);
+
+    // Tail lights (red glow at back)
+    const tlMat = new THREE.MeshStandardMaterial({
+      color: 0xff0000, emissive: 0x660000, emissiveIntensity: 0.4,
+      roughness: 0.2, metalness: 0.0
+    });
+    const tlGeo = new THREE.BoxGeometry(0.2, 0.1, 0.06);
+    const tlL = new THREE.Mesh(tlGeo, tlMat);
+    tlL.position.set(-def.bodyW * 0.35, 0.45, def.bodyL / 2 + 0.02);
+    group.add(tlL);
+    const tlR = new THREE.Mesh(tlGeo, tlMat);
+    tlR.position.set(def.bodyW * 0.35, 0.45, def.bodyL / 2 + 0.02);
+    group.add(tlR);
+
+    // Simple wheel placeholders (dark cylinders at corners)
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85, metalness: 0.1 });
+    const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.25, 12);
+    wheelGeo.rotateZ(Math.PI / 2);
+    const wheelPositions = [
+      { x: -def.bodyW / 2 - 0.05, z: -def.bodyL * 0.33 },
+      { x:  def.bodyW / 2 + 0.05, z: -def.bodyL * 0.33 },
+      { x: -def.bodyW / 2 - 0.05, z:  def.bodyL * 0.33 },
+      { x:  def.bodyW / 2 + 0.05, z:  def.bodyL * 0.33 },
+    ];
+    for (const wp of wheelPositions) {
+      const w = new THREE.Mesh(wheelGeo, wheelMat);
+      w.position.set(wp.x, 0.15, wp.z);
+      w.castShadow = true;
+      group.add(w);
+    }
+
+    return group;
+  }
+
+  // Pick a random road and starting position for an NPC
+  function pickRandomRoadPosition() {
+    if (allRoads.length === 0) return null;
+    const roadIdx = Math.floor(Math.random() * allRoads.length);
+    const road = allRoads[roadIdx];
+    if (road.length < 10) return pickRandomRoadPosition();
+    const ptIdx = Math.floor(Math.random() * (road.length - 2));
+    return { roadIdx: roadIdx, pointIdx: ptIdx, progress: 0 };
+  }
+
+  // Create NPC vehicles
+  for (let i = 0; i < NPC_COUNT; i++) {
+    const def = npcTypes[i % npcTypes.length];
+    // Ensure each NPC gets its own speed value
+    const npcSpeed = def.type === 'raider'
+      ? (38 + Math.random() * 12)
+      : (22 + Math.random() * 10);
+
+    const mesh = buildNPCMesh(def);
+    scene.add(mesh);
+
+    const pos = pickRandomRoadPosition();
+    if (!pos) continue;
+
+    const road = allRoads[pos.roadIdx];
+    const pt = road[pos.pointIdx];
+    const terrainH = getTerrainHeight(pt.x, pt.z);
+    const h = (pt.y !== undefined) ? Math.max(pt.y, terrainH) : terrainH;
+    mesh.position.set(pt.x, h + 0.15, pt.z);
+
+    aiTrafficNPCs.push({
+      mesh: mesh,
+      type: def.type,
+      speed: npcSpeed / 3.6, // convert km/h to m/s (roughly, game units)
+      roadIdx: pos.roadIdx,
+      pointIdx: pos.pointIdx,
+      progress: 0,        // interpolation 0-1 between current and next point
+      direction: 1,        // 1 = forward along road, -1 = reverse
+      stuckTimer: 0,
+      slowFactor: 1.0,     // for collision avoidance slowdown
+    });
+  }
+
+  // If roads are empty, bail out
+  if (aiTrafficNPCs.length === 0) return;
+
+})();
+
+function updateAITraffic(dt) {
+  if (aiTrafficNPCs.length === 0 || allRoads.length === 0) return;
+
+  const playerX = chassisBody.position.x;
+  const playerZ = chassisBody.position.z;
+  const MAP_HALF = TSIZE * 0.48;
+  const PLAYER_AVOID_DIST = 12;    // start slowing when within this distance
+  const PLAYER_STOP_DIST = 5;      // stop when within this distance
+  const NPC_AVOID_DIST = 8;        // NPC-to-NPC avoidance distance
+  const STUCK_TIMEOUT = 8;         // seconds before respawn
+  const MAX_RENDER_DIST = 350;     // hide NPCs beyond this distance for performance
+
+  for (let ni = 0; ni < aiTrafficNPCs.length; ni++) {
+    const npc = aiTrafficNPCs[ni];
+    const road = allRoads[npc.roadIdx];
+    if (!road || road.length < 3) {
+      // Pick a new road
+      npc.roadIdx = Math.floor(Math.random() * allRoads.length);
+      npc.pointIdx = 0;
+      npc.progress = 0;
+      continue;
+    }
+
+    // ── Distance to player — hide if too far ──
+    const distToPlayer = Math.hypot(
+      npc.mesh.position.x - playerX,
+      npc.mesh.position.z - playerZ
+    );
+    if (distToPlayer > MAX_RENDER_DIST) {
+      npc.mesh.visible = false;
+    } else {
+      npc.mesh.visible = true;
+    }
+
+    // ── Collision avoidance: slow near player ──
+    npc.slowFactor = 1.0;
+    if (distToPlayer < PLAYER_AVOID_DIST) {
+      if (distToPlayer < PLAYER_STOP_DIST) {
+        npc.slowFactor = 0.0; // full stop
+      } else {
+        npc.slowFactor = (distToPlayer - PLAYER_STOP_DIST) / (PLAYER_AVOID_DIST - PLAYER_STOP_DIST);
+      }
+    }
+
+    // ── NPC-to-NPC basic avoidance ──
+    for (let oi = 0; oi < aiTrafficNPCs.length; oi++) {
+      if (oi === ni) continue;
+      const other = aiTrafficNPCs[oi];
+      const dd = Math.hypot(
+        npc.mesh.position.x - other.mesh.position.x,
+        npc.mesh.position.z - other.mesh.position.z
+      );
+      if (dd < NPC_AVOID_DIST) {
+        const factor = dd / NPC_AVOID_DIST;
+        npc.slowFactor = Math.min(npc.slowFactor, factor);
+      }
+    }
+
+    // ── Movement along road path ──
+    const effectiveSpeed = npc.speed * npc.slowFactor;
+
+    // Current and next point indices
+    let ci = npc.pointIdx;
+    let ni2 = ci + npc.direction;
+
+    // Clamp to road bounds
+    if (ni2 < 0 || ni2 >= road.length) {
+      // Reached end of road: pick a new random road
+      npc.roadIdx = Math.floor(Math.random() * allRoads.length);
+      const newRoad = allRoads[npc.roadIdx];
+      npc.pointIdx = npc.direction > 0 ? 0 : (newRoad.length - 1);
+      npc.progress = 0;
+      // Randomly flip direction
+      npc.direction = Math.random() > 0.5 ? 1 : -1;
+      continue;
+    }
+
+    const pA = road[ci];
+    const pB = road[ni2];
+    const segDist = Math.hypot(pB.x - pA.x, pB.z - pA.z);
+
+    if (segDist < 0.01) {
+      // Degenerate segment, skip
+      npc.pointIdx = ni2;
+      npc.progress = 0;
+      continue;
+    }
+
+    // Advance progress
+    const step = (effectiveSpeed * dt) / segDist;
+    npc.progress += step;
+
+    // Move to next segments as needed
+    while (npc.progress >= 1.0) {
+      npc.progress -= 1.0;
+      npc.pointIdx += npc.direction;
+
+      // Check bounds after advancing
+      const nextPt = npc.pointIdx + npc.direction;
+      if (npc.pointIdx < 0 || npc.pointIdx >= road.length ||
+          nextPt < 0 || nextPt >= road.length) {
+        // End of road — pick new road
+        npc.roadIdx = Math.floor(Math.random() * allRoads.length);
+        const nr = allRoads[npc.roadIdx];
+        npc.direction = Math.random() > 0.5 ? 1 : -1;
+        npc.pointIdx = npc.direction > 0 ? 0 : (nr.length - 1);
+        npc.progress = 0;
+        break;
+      }
+    }
+
+    // Recompute current segment for interpolation
+    ci = npc.pointIdx;
+    ni2 = ci + npc.direction;
+    const curRoad = allRoads[npc.roadIdx];
+
+    if (ci < 0 || ci >= curRoad.length || ni2 < 0 || ni2 >= curRoad.length) {
+      npc.pointIdx = 0;
+      npc.progress = 0;
+      continue;
+    }
+
+    const cA = curRoad[ci];
+    const cB = curRoad[ni2];
+    const t = Math.max(0, Math.min(1, npc.progress));
+
+    // Interpolated position
+    const ix = cA.x + (cB.x - cA.x) * t;
+    const iz = cA.z + (cB.z - cA.z) * t;
+    // Use road point Y (smoothed road surface height) with terrain as fallback
+    const roadY = (cA.y !== undefined && cB.y !== undefined)
+      ? (cA.y + (cB.y - cA.y) * t)
+      : getTerrainHeight(ix, iz);
+    const iy = Math.max(roadY, getTerrainHeight(ix, iz)) + 0.15;
+
+    // ── Off-map / stuck detection ──
+    if (Math.abs(ix) > MAP_HALF || Math.abs(iz) > MAP_HALF || isNaN(iy)) {
+      // Respawn on a new road
+      npc.roadIdx = Math.floor(Math.random() * allRoads.length);
+      const nr2 = allRoads[npc.roadIdx];
+      npc.pointIdx = Math.floor(Math.random() * Math.max(1, nr2.length - 2));
+      npc.progress = 0;
+      npc.stuckTimer = 0;
+      continue;
+    }
+
+    // Stuck detection: if barely moving
+    const prevX = npc.mesh.position.x;
+    const prevZ = npc.mesh.position.z;
+    const moved = Math.hypot(ix - prevX, iz - prevZ);
+    if (moved < 0.01 * dt && effectiveSpeed > 0.5) {
+      npc.stuckTimer += dt;
+    } else {
+      npc.stuckTimer = Math.max(0, npc.stuckTimer - dt * 0.5);
+    }
+
+    if (npc.stuckTimer > STUCK_TIMEOUT) {
+      // Respawn
+      npc.roadIdx = Math.floor(Math.random() * allRoads.length);
+      const nr3 = allRoads[npc.roadIdx];
+      npc.pointIdx = Math.floor(Math.random() * Math.max(1, nr3.length - 2));
+      npc.progress = 0;
+      npc.stuckTimer = 0;
+      continue;
+    }
+
+    // ── Set position ──
+    npc.mesh.position.set(ix, iy, iz);
+
+    // ── Face direction of travel ──
+    const dx = cB.x - cA.x;
+    const dz = cB.z - cA.z;
+    if (Math.abs(dx) > 0.001 || Math.abs(dz) > 0.001) {
+      const angle = Math.atan2(dx * npc.direction, dz * npc.direction);
+      // Smooth rotation
+      const curY = npc.mesh.rotation.y;
+      let diff = angle - curY;
+      // Normalize to -PI..PI
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      npc.mesh.rotation.y = curY + diff * Math.min(1, 5 * dt);
+    }
+
+    // ── Align to terrain slope (subtle) ──
+    const sampleD = 1.5;
+    const hFront = getTerrainHeight(
+      ix - Math.sin(npc.mesh.rotation.y) * sampleD,
+      iz - Math.cos(npc.mesh.rotation.y) * sampleD
+    );
+    const hBack = getTerrainHeight(
+      ix + Math.sin(npc.mesh.rotation.y) * sampleD,
+      iz + Math.cos(npc.mesh.rotation.y) * sampleD
+    );
+    const pitchAngle = Math.atan2(hFront - hBack, sampleD * 2);
+    npc.mesh.rotation.x = npc.mesh.rotation.x + (pitchAngle - npc.mesh.rotation.x) * Math.min(1, 3 * dt);
+  }
+}
 
 animate();
 </script>
