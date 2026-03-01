@@ -613,6 +613,851 @@
     user-select: none;
     z-index: 50;
   }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     MISSION SYSTEM — BOARD OVERLAY
+     ═══════════════════════════════════════════════════════════════════════ */
+  #mission-board-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(12px);
+    z-index: 8000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  #mission-board-overlay.open {
+    display: flex;
+    opacity: 1;
+  }
+  #mission-board {
+    background: linear-gradient(145deg, rgba(35, 28, 18, 0.96), rgba(22, 18, 12, 0.98));
+    border: 2px solid rgba(160, 120, 60, 0.35);
+    border-radius: 4px;
+    width: min(680px, 94vw);
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,0,0,0.3),
+                0 0 2px rgba(160,120,60,0.2);
+    animation: mb-in 0.3s ease both;
+    position: relative;
+  }
+  #mission-board::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px, transparent 3px,
+      rgba(0,0,0,0.03) 3px, rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+  @keyframes mb-in {
+    from { transform: scale(0.92) translateY(20px); opacity: 0; }
+    to   { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  #mb-header {
+    padding: 18px 22px 10px;
+    border-bottom: 2px solid rgba(160, 120, 60, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+  #mb-header h2 {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+    font-weight: 900;
+    color: rgba(220, 180, 100, 0.95);
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(200,150,50,0.3);
+  }
+  #mb-rep {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: rgba(200, 170, 100, 0.7);
+    letter-spacing: 2px;
+  }
+  #mb-close {
+    background: none; border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.5);
+    font-size: 18px; cursor: pointer; padding: 4px 10px;
+    border-radius: 4px; transition: background 0.15s, color 0.15s;
+    font-family: 'Courier New', monospace;
+  }
+  #mb-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  #mb-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    position: relative;
+    z-index: 2;
+  }
+  #mb-list::-webkit-scrollbar { width: 6px; }
+  #mb-list::-webkit-scrollbar-track { background: transparent; }
+  #mb-list::-webkit-scrollbar-thumb {
+    background: rgba(160, 120, 60, 0.25);
+    border-radius: 3px;
+  }
+  .mission-card {
+    background: rgba(50, 40, 25, 0.6);
+    border: 1px solid rgba(160, 120, 60, 0.15);
+    border-left: 3px solid rgba(160, 120, 60, 0.4);
+    border-radius: 3px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .mission-card::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, rgba(200,160,60,0.04), transparent 60%);
+    pointer-events: none;
+  }
+  .mission-card:hover {
+    background: rgba(70, 55, 30, 0.7);
+    border-color: rgba(200, 160, 80, 0.35);
+    transform: translateX(3px);
+  }
+  .mission-card.active-card {
+    border-left-color: rgba(100, 220, 80, 0.7);
+    border-left-width: 4px;
+    background: rgba(40, 55, 30, 0.5);
+    box-shadow: inset 0 0 20px rgba(80, 200, 60, 0.08);
+  }
+  .mission-card.active-card .mc-name::before {
+    content: '\25B6  ';
+    color: rgba(100, 220, 80, 0.8);
+    font-size: 10px;
+  }
+  .mc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .mc-name {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(230, 200, 140, 0.95);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .mc-type {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .mc-type.delivery { background: rgba(60, 140, 220, 0.2); color: rgba(100, 180, 255, 0.9); }
+  .mc-type.race { background: rgba(220, 60, 60, 0.2); color: rgba(255, 100, 100, 0.9); }
+  .mc-type.scavenge { background: rgba(180, 160, 40, 0.2); color: rgba(230, 210, 80, 0.9); }
+  .mc-type.survival { background: rgba(200, 100, 40, 0.2); color: rgba(255, 150, 70, 0.9); }
+  .mc-type.exploration { background: rgba(80, 180, 120, 0.2); color: rgba(120, 230, 160, 0.9); }
+  .mc-desc {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 12px;
+    color: rgba(200, 180, 140, 0.6);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .mc-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .mc-stars {
+    font-size: 13px;
+    color: rgba(220, 180, 60, 0.8);
+    letter-spacing: 2px;
+  }
+  .mc-stars .empty { color: rgba(100, 80, 40, 0.4); }
+  .mc-reward {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: rgba(100, 220, 80, 0.8);
+    letter-spacing: 1px;
+  }
+  .mc-dist {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 1px;
+  }
+
+  /* Mission Detail Panel */
+  #mb-detail {
+    display: none;
+    padding: 18px 22px;
+    border-top: 2px solid rgba(160, 120, 60, 0.2);
+    background: rgba(30, 24, 15, 0.9);
+    position: relative;
+    z-index: 2;
+  }
+  #mb-detail.open { display: block; }
+  #md-title {
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 900;
+    color: rgba(230, 200, 140, 0.95);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  #md-obj {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    color: rgba(200, 180, 140, 0.7);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  #md-info {
+    display: flex; gap: 20px;
+    margin-bottom: 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: rgba(200, 180, 140, 0.5);
+    letter-spacing: 1px;
+  }
+  #md-accept {
+    background: rgba(100, 180, 60, 0.2);
+    border: 1px solid rgba(100, 180, 60, 0.4);
+    color: rgba(120, 230, 80, 0.95);
+    font-family: 'Courier New', monospace;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 10px 28px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  #md-accept:hover {
+    background: rgba(100, 180, 60, 0.35);
+    border-color: rgba(120, 230, 80, 0.6);
+  }
+  #md-cancel {
+    background: rgba(180, 60, 60, 0.15);
+    border: 1px solid rgba(180, 60, 60, 0.3);
+    color: rgba(230, 100, 80, 0.85);
+    font-family: 'Courier New', monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background 0.15s;
+    display: none;
+  }
+  #md-cancel:hover {
+    background: rgba(180, 60, 60, 0.3);
+  }
+
+  /* MISSION ACTIVE HUD */
+  #mission-hud {
+    position: fixed;
+    top: 170px;
+    right: 20px;
+    width: 240px;
+    font-family: 'Courier New', monospace;
+    pointer-events: none;
+    user-select: none;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  #mission-hud.active { opacity: 1; }
+  #mission-hud-panel {
+    background: rgba(15, 12, 8, 0.75);
+    border: 1px solid rgba(160, 120, 60, 0.25);
+    border-left: 3px solid rgba(200, 160, 60, 0.5);
+    border-radius: 4px;
+    padding: 10px 14px;
+    backdrop-filter: blur(6px);
+  }
+  #mh-name {
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(230, 200, 140, 0.95);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #mh-objective {
+    font-size: 11px;
+    color: rgba(200, 180, 140, 0.6);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  #mh-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  #mh-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(200,160,60,0.8), rgba(100,220,80,0.8));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s;
+  }
+  #mh-status {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: rgba(200, 180, 140, 0.5);
+    letter-spacing: 1px;
+  }
+  #mh-timer {
+    color: rgba(255, 180, 60, 0.85);
+    font-weight: 700;
+  }
+  #mh-dist {
+    color: rgba(150, 200, 255, 0.7);
+  }
+
+  /* MISSION XP / REP HUD */
+  #mission-rep-hud {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Courier New', monospace;
+    pointer-events: none;
+    user-select: none;
+    z-index: 90;
+    display: none;
+  }
+  #mission-rep-hud.visible { display: block; }
+  #mrh-inner {
+    background: rgba(15, 12, 8, 0.6);
+    border: 1px solid rgba(160, 120, 60, 0.2);
+    border-radius: 4px;
+    padding: 4px 14px;
+    backdrop-filter: blur(4px);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .mrh-stat {
+    font-size: 10px;
+    color: rgba(200, 180, 140, 0.6);
+    letter-spacing: 2px;
+  }
+  .mrh-stat span {
+    color: rgba(230, 200, 120, 0.95);
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  /* MISSION COMPLETION / FAILURE OVERLAY */
+  #mission-result-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: 8500;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  #mission-result-overlay.open {
+    display: flex;
+    opacity: 1;
+  }
+  #mission-result-panel {
+    background: linear-gradient(145deg, rgba(35, 28, 18, 0.96), rgba(22, 18, 12, 0.98));
+    border: 2px solid rgba(160, 120, 60, 0.35);
+    border-radius: 4px;
+    width: min(420px, 90vw);
+    padding: 30px 28px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+    animation: mb-in 0.3s ease both;
+    position: relative;
+  }
+  #mr-title {
+    font-family: 'Courier New', monospace;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  #mr-title.success {
+    color: rgba(100, 230, 80, 0.95);
+    text-shadow: 0 0 20px rgba(80, 200, 60, 0.4);
+  }
+  #mr-title.failure {
+    color: rgba(230, 80, 60, 0.95);
+    text-shadow: 0 0 20px rgba(200, 60, 40, 0.4);
+  }
+  #mr-mission-name {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: rgba(230, 200, 140, 0.8);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  #mr-stats {
+    margin-bottom: 20px;
+  }
+  .mr-stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+  }
+  .mr-stat-label { color: rgba(200, 180, 140, 0.5); letter-spacing: 1px; }
+  .mr-stat-value { color: rgba(230, 200, 140, 0.9); font-weight: 700; }
+  .mr-stat-value.xp { color: rgba(100, 230, 80, 0.95); }
+  #mr-btn {
+    background: rgba(100, 180, 60, 0.2);
+    border: 1px solid rgba(100, 180, 60, 0.4);
+    color: rgba(120, 230, 80, 0.95);
+    font-family: 'Courier New', monospace;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 10px 28px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s;
+    pointer-events: auto;
+  }
+  #mr-btn:hover {
+    background: rgba(100, 180, 60, 0.35);
+  }
+  #mr-btn.retry {
+    background: rgba(220, 140, 40, 0.2);
+    border-color: rgba(220, 140, 40, 0.4);
+    color: rgba(255, 180, 60, 0.95);
+  }
+  #mr-btn.retry:hover {
+    background: rgba(220, 140, 40, 0.35);
+  }
+  /* XP float text */
+  .xp-float {
+    position: fixed;
+    pointer-events: none; user-select: none;
+    font-family: 'Courier New', monospace;
+    font-size: 24px; font-weight: 900;
+    color: rgba(100, 230, 80, 0.95);
+    text-shadow: 0 0 12px rgba(80, 200, 60, 0.5);
+    letter-spacing: 3px;
+    z-index: 9000;
+  }
+  @keyframes xp-float-up {
+    0% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -80px); }
+  }
+  /* Mission board hint */
+  #mission-hint {
+    position: fixed;
+    bottom: 220px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(220, 180, 100, 0.8);
+    text-shadow: 0 0 8px rgba(200,150,50,0.4);
+    letter-spacing: 2px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(160,120,60,0.25);
+    border-radius: 6px;
+    padding: 6px 16px;
+    backdrop-filter: blur(6px);
+    pointer-events: none; user-select: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+    z-index: 100;
+  }
+  #mission-hint.visible { opacity: 1; }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     VEHICLE CUSTOMIZATION OVERLAY
+     ═══════════════════════════════════════════════════════════════════════ */
+  #customize-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(12px);
+    z-index: 8500;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  #customize-overlay.open {
+    display: flex;
+    opacity: 1;
+  }
+  #customize-panel {
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: min(480px, 40vw);
+    background: linear-gradient(180deg, rgba(22, 18, 14, 0.96) 0%, rgba(14, 12, 10, 0.98) 100%);
+    border-left: 2px solid rgba(180, 120, 40, 0.25);
+    box-shadow: -8px 0 40px rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #customize-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+      rgba(180,80,20,0.0) 0%,
+      rgba(200,120,40,0.8) 15%,
+      rgba(220,160,60,0.9) 50%,
+      rgba(200,120,40,0.8) 85%,
+      rgba(180,80,20,0.0) 100%
+    );
+  }
+  #customize-header {
+    padding: 20px 24px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #customize-header h2 {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+    font-weight: 900;
+    color: rgba(220, 180, 80, 0.95);
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(220,180,80,0.3);
+  }
+  #customize-close {
+    background: none; border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.5);
+    font-size: 20px; cursor: pointer; padding: 4px 10px;
+    border-radius: 6px; transition: background 0.15s, color 0.15s;
+    font-family: 'Courier New', monospace;
+  }
+  #customize-close:hover { background: rgba(255,80,60,0.15); color: #ff6644; border-color: rgba(255,80,60,0.3); }
+  #customize-currency {
+    padding: 10px 24px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: rgba(255, 220, 100, 0.9);
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(255,200,50,0.3);
+  }
+  #customize-currency span {
+    font-weight: 900;
+    font-size: 18px;
+  }
+  #customize-tabs {
+    display: flex;
+    gap: 0;
+    padding: 14px 24px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .customize-tab {
+    background: none; border: none;
+    color: rgba(255,255,255,0.35);
+    font-family: 'Courier New', monospace;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+    border-bottom: 2px solid transparent;
+    flex: 1;
+    text-align: center;
+  }
+  .customize-tab:hover { color: rgba(255,255,255,0.65); background: rgba(255,255,255,0.03); }
+  .customize-tab.active {
+    color: rgba(220, 180, 80, 0.95);
+    background: rgba(220, 180, 80, 0.06);
+    border-bottom: 2px solid rgba(220, 180, 80, 0.7);
+  }
+  #customize-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px 24px;
+  }
+  #customize-content::-webkit-scrollbar { width: 5px; }
+  #customize-content::-webkit-scrollbar-track { background: transparent; }
+  #customize-content::-webkit-scrollbar-thumb {
+    background: rgba(220,180,80,0.2);
+    border-radius: 3px;
+  }
+  .customize-section { display: none; }
+  .customize-section.active { display: block; }
+  .paint-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .paint-swatch {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.08);
+    position: relative;
+    transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+  }
+  .paint-swatch:hover {
+    transform: scale(1.08);
+    border-color: rgba(255,255,255,0.25);
+    box-shadow: 0 0 12px rgba(255,255,255,0.1);
+  }
+  .paint-swatch.selected {
+    border-color: rgba(220, 180, 80, 0.9);
+    box-shadow: 0 0 16px rgba(220,180,80,0.4), inset 0 0 8px rgba(220,180,80,0.2);
+    transform: scale(1.05);
+  }
+  .paint-swatch .paint-label {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 8px;
+    color: rgba(255,255,255,0.8);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    text-align: center;
+    padding: 3px 2px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .upgrade-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+  }
+  .upgrade-card:hover {
+    border-color: rgba(220,180,80,0.2);
+  }
+  .upgrade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .upgrade-name {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .upgrade-level {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: rgba(220,180,80,0.8);
+    letter-spacing: 1px;
+  }
+  .upgrade-level-pips {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .upgrade-pip {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    flex: 1;
+  }
+  .upgrade-pip.filled {
+    background: linear-gradient(90deg, rgba(220,180,80,0.7), rgba(255,200,60,0.9));
+    box-shadow: 0 0 6px rgba(220,180,80,0.3);
+  }
+  .upgrade-stats {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .upgrade-stats .stat-arrow {
+    color: rgba(100,220,80,0.8);
+    font-weight: 700;
+  }
+  .upgrade-stats .stat-new {
+    color: rgba(100,220,80,0.9);
+    font-weight: 700;
+  }
+  .upgrade-btn {
+    width: 100%;
+    padding: 8px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: 1px solid rgba(220,180,80,0.3);
+    border-radius: 6px;
+    background: linear-gradient(180deg, rgba(220,180,80,0.12) 0%, rgba(180,120,40,0.08) 100%);
+    color: rgba(220,180,80,0.9);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upgrade-btn:hover:not(:disabled) {
+    background: linear-gradient(180deg, rgba(220,180,80,0.25) 0%, rgba(180,120,40,0.15) 100%);
+    border-color: rgba(220,180,80,0.6);
+    color: rgba(255,220,100,1);
+    box-shadow: 0 0 12px rgba(220,180,80,0.2);
+  }
+  .upgrade-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+    border-color: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.3);
+  }
+  .upgrade-btn.maxed {
+    border-color: rgba(100,220,80,0.3);
+    color: rgba(100,220,80,0.7);
+    background: rgba(100,220,80,0.05);
+  }
+  .attachment-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    transition: border-color 0.2s;
+  }
+  .attachment-card:hover {
+    border-color: rgba(220,180,80,0.2);
+  }
+  .attachment-info {
+    flex: 1;
+  }
+  .attachment-name {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .attachment-desc {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+    letter-spacing: 1px;
+  }
+  .attachment-toggle {
+    position: relative;
+    width: 44px; height: 24px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.25s;
+    flex-shrink: 0;
+    margin-left: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .attachment-toggle.on {
+    background: rgba(220, 180, 80, 0.45);
+    border-color: rgba(220,180,80,0.4);
+  }
+  .attachment-toggle .att-knob {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50%;
+    transition: left 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .attachment-toggle.on .att-knob { left: 22px; }
+  #turbo-hud {
+    position: fixed;
+    bottom: 115px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    user-select: none;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #turbo-hud.visible { opacity: 1; }
+  #turbo-bar-container {
+    width: 180px;
+    height: 8px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(60,140,255,0.25);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  #turbo-bar {
+    height: 100%;
+    width: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, rgba(40,100,255,0.8), rgba(80,180,255,0.9), rgba(140,220,255,1));
+    transition: width 0.05s;
+    box-shadow: 0 0 8px rgba(60,140,255,0.4);
+  }
+  #turbo-bar.cooldown {
+    background: linear-gradient(90deg, rgba(100,100,100,0.5), rgba(140,140,140,0.6));
+    box-shadow: none;
+  }
+  #turbo-label {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(80,180,255,0.8);
+    letter-spacing: 3px;
+    text-align: center;
+    margin-bottom: 3px;
+    text-shadow: 0 0 6px rgba(60,140,255,0.4);
+  }
+  #turbo-label.cooldown {
+    color: rgba(180,180,180,0.5);
+    text-shadow: none;
+  }
+  @keyframes turbo-flash {
+    0%, 100% { box-shadow: 0 0 8px rgba(60,140,255,0.4); }
+    50% { box-shadow: 0 0 16px rgba(60,140,255,0.8), 0 0 24px rgba(100,200,255,0.3); }
+  }
+  #turbo-bar.active {
+    animation: turbo-flash 0.3s ease-in-out infinite;
+  }
 </style>
 </head>
 <body>
@@ -668,11 +1513,13 @@
   <span class="key">W</span> <span class="key">S</span> Accel / Brake<br>
   <span class="key">A</span> <span class="key">D</span> Steer<br>
   <span class="key">Space</span> Handbrake<br>
-  <span class="key">T</span> Reset &nbsp; <span class="key">C</span> Camera<br>
+  <span class="key">T</span> Reset &nbsp; <span class="key">V</span> Camera<br>
+  <span class="key">C</span> Customize &nbsp; <span class="key">Shift</span> Turbo<br>
   <span class="key">F</span> Switch Vehicle &nbsp; <span class="key">E</span> Refuel<br>
   <span class="key">R</span> Radio &nbsp; <span class="key">-</span><span class="key">+</span> Volume<br>
   <span class="key">P</span> Photo Mode &nbsp;
-  <span class="key">F5</span> Save &nbsp; <span class="key">F9</span> Load<br>
+  <span class="key">M</span> Missions<br>
+  <span class="key">F5</span> Save &nbsp; <span class="key">F9</span> Load &nbsp;
   <span class="key">`</span> Debug &nbsp; <span class="key">Esc</span> Settings
 </div>
 <div id="fuel-warning">OUT OF FUEL</div>
@@ -692,6 +1539,85 @@
 <div id="radio-volume-indicator"></div>
 <div id="save-toast"></div>
 <div id="save-indicator"></div>
+
+<!-- Turbo HUD -->
+<div id="turbo-hud">
+  <div id="turbo-label">TURBO</div>
+  <div id="turbo-bar-container"><div id="turbo-bar"></div></div>
+</div>
+
+<!-- Vehicle Customization Overlay -->
+<div id="customize-overlay">
+  <div id="customize-panel">
+    <div id="customize-header">
+      <h2>Garage</h2>
+      <button id="customize-close">&times;</button>
+    </div>
+    <div id="customize-currency">SCRAP: <span id="currency-amount">500</span></div>
+    <div id="customize-tabs">
+      <button class="customize-tab active" data-tab="paint">PAINT</button>
+      <button class="customize-tab" data-tab="upgrades">UPGRADES</button>
+      <button class="customize-tab" data-tab="attachments">ATTACHMENTS</button>
+    </div>
+    <div id="customize-content">
+      <div class="customize-section active" id="section-paint"></div>
+      <div class="customize-section" id="section-upgrades"></div>
+      <div class="customize-section" id="section-attachments"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Mission System UI -->
+<div id="mission-board-overlay">
+  <div id="mission-board">
+    <div id="mb-header">
+      <h2>MISSION BOARD</h2>
+      <div id="mb-rep"></div>
+      <button id="mb-close">[X]</button>
+    </div>
+    <div id="mb-list"></div>
+    <div id="mb-detail">
+      <div id="md-title"></div>
+      <div id="md-obj"></div>
+      <div id="md-info"></div>
+      <div>
+        <button id="md-accept">ACCEPT MISSION</button>
+        <button id="md-cancel">ABANDON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="mission-hud">
+  <div id="mission-hud-panel">
+    <div id="mh-name">--</div>
+    <div id="mh-objective">--</div>
+    <div id="mh-progress-bar"><div id="mh-progress-fill"></div></div>
+    <div id="mh-status">
+      <span id="mh-timer"></span>
+      <span id="mh-dist"></span>
+    </div>
+  </div>
+</div>
+
+<div id="mission-rep-hud">
+  <div id="mrh-inner">
+    <div class="mrh-stat">XP: <span id="mrh-xp">0</span></div>
+    <div class="mrh-stat">RANK: <span id="mrh-rank">DRIFTER</span></div>
+    <div class="mrh-stat">DONE: <span id="mrh-done">0</span></div>
+  </div>
+</div>
+
+<div id="mission-result-overlay">
+  <div id="mission-result-panel">
+    <div id="mr-title">MISSION COMPLETE</div>
+    <div id="mr-mission-name"></div>
+    <div id="mr-stats"></div>
+    <button id="mr-btn">CONTINUE</button>
+  </div>
+</div>
+
+<div id="mission-hint">Press M for MISSIONS</div>
 
 <div id="vehicle-name" style="
   position: fixed; top: 76px; left: 20px;
@@ -6183,6 +7109,10 @@ function createVehicle(typeKey, position, rotation) {
           e.contact.ni.x, e.contact.ni.z);
       }
       playImpactSound(impact);
+      // 3D positional crash sound
+      if (typeof soundManager !== 'undefined' && soundManager.initialized) {
+        soundManager.playPositionalCrash(worldPt.x, worldPt.y, worldPt.z, impact);
+      }
     }
   });
 
@@ -6293,6 +7223,376 @@ function rebindVehicleAliases() {
   tlMat = currentVehicle.refs.tlMat;
   origPaintColor = currentVehicle.refs.origPaintColor;
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// VEHICLE CUSTOMIZATION SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Customization State ──
+const customizeState = {
+  open: false,
+  currency: 500,
+  vehicles: {},
+};
+
+function getVehicleCustomData(typeKey) {
+  if (!customizeState.vehicles[typeKey]) {
+    customizeState.vehicles[typeKey] = {
+      paintIndex: -1,
+      upgrades: { engine: 0, suspension: 0, brakes: 0, tires: 0, turbo: 0 },
+      attachments: { bullBar: false, roofRack: false, lightBar: false, snorkel: false, antenna: false, exhaustStacks: false },
+    };
+  }
+  return customizeState.vehicles[typeKey];
+}
+
+const PAINT_COLORS = [
+  { name: 'Rust Red',    hex: '#8B2500', color: 0x8B2500, roughness: 0.45, metalness: 0.5 },
+  { name: 'Military',    hex: '#3B4A2B', color: 0x3B4A2B, roughness: 0.55, metalness: 0.3 },
+  { name: 'Desert Tan',  hex: '#C4A35A', color: 0xC4A35A, roughness: 0.5,  metalness: 0.3 },
+  { name: 'Matte Black', hex: '#1A1A1A', color: 0x1A1A1A, roughness: 0.85, metalness: 0.1 },
+  { name: 'Primer Gray', hex: '#6B6B6B', color: 0x6B6B6B, roughness: 0.7,  metalness: 0.2 },
+  { name: 'Faded Blue',  hex: '#4A6B8A', color: 0x4A6B8A, roughness: 0.5,  metalness: 0.35 },
+  { name: 'Burnt Orange', hex: '#CC5500', color: 0xCC5500, roughness: 0.4,  metalness: 0.45 },
+  { name: 'Apocalypse',  hex: '#D8D0C0', color: 0xD8D0C0, roughness: 0.6,  metalness: 0.2 },
+  { name: 'Toxic Green', hex: '#44BB22', color: 0x44BB22, roughness: 0.35, metalness: 0.5 },
+  { name: 'Blood Red',   hex: '#880011', color: 0x880011, roughness: 0.3,  metalness: 0.6 },
+  { name: 'Steel Blue',  hex: '#4682B4', color: 0x4682B4, roughness: 0.2,  metalness: 0.7 },
+  { name: 'Mud Brown',   hex: '#5C4033', color: 0x5C4033, roughness: 0.65, metalness: 0.2 },
+  { name: 'Chrome',      hex: '#C0C0C0', color: 0xC0C0C0, roughness: 0.05, metalness: 0.95 },
+  { name: 'Gunmetal',    hex: '#2C3539', color: 0x2C3539, roughness: 0.15, metalness: 0.85 },
+  { name: 'Camo',        hex: '#556B2F', color: 0x556B2F, roughness: 0.6,  metalness: 0.25 },
+  { name: 'Hazard',      hex: '#FFD700', color: 0xFFD700, roughness: 0.35, metalness: 0.5 },
+];
+
+const UPGRADE_DEFS = {
+  engine: { name: 'Engine', maxLevel: 3, costs: [80, 150, 300], desc: 'Increases max engine force',
+    getStat: (vtype, level) => Math.round(vtype.maxForce * (1 + level * 0.15)), getLabel: () => 'Max Force' },
+  suspension: { name: 'Suspension', maxLevel: 3, costs: [60, 120, 240], desc: 'Improves handling and stability',
+    getStat: (vtype, level) => +(vtype.suspensionStiffness * (1 + level * 0.12)).toFixed(1), getLabel: () => 'Stiffness' },
+  brakes: { name: 'Brakes', maxLevel: 3, costs: [50, 100, 200], desc: 'Increases braking power',
+    getStat: (vtype, level) => Math.round(vtype.maxBrake * (1 + level * 0.2)), getLabel: () => 'Brake Force' },
+  tires: { name: 'Tires', maxLevel: 3, costs: [70, 140, 280], desc: 'Better grip on all surfaces',
+    getStat: (vtype, level) => +(vtype.frictionSlip * (1 + level * 0.12)).toFixed(2), getLabel: () => 'Friction' },
+  turbo: { name: 'Turbo', maxLevel: 3, costs: [100, 200, 400], desc: 'Hold SHIFT for speed boost',
+    getStat: (vtype, level) => level === 0 ? 'None' : (1.0 + level * 0.25).toFixed(2) + 'x boost', getLabel: () => 'Boost Power' },
+};
+
+const ATTACHMENT_DEFS = {
+  bullBar:      { name: 'Bull Bar',      desc: 'Front bumper guard for ramming', cost: 60 },
+  roofRack:     { name: 'Roof Rack',     desc: 'Cargo rack on the roof', cost: 40 },
+  lightBar:     { name: 'Light Bar',     desc: 'LED bar - emits light at night', cost: 80 },
+  snorkel:      { name: 'Snorkel',       desc: 'Air intake for deep water', cost: 50 },
+  antenna:      { name: 'Antenna',       desc: 'Whip antenna on the rear', cost: 20 },
+  exhaustStacks:{ name: 'Exhaust Stacks', desc: 'Vertical pipes with smoke', cost: 70 },
+};
+
+const turboState = {
+  available: false, level: 0, meter: 1.0, active: false, cooldown: false,
+  boostDuration: 3.0, cooldownDuration: 8.0, timer: 0, boostMultiplier: 1.0,
+};
+
+function applyUpgradesToVehicle(vehObj) {
+  const data = getVehicleCustomData(vehObj.typeKey);
+  const vtype = vehObj.vtype;
+  const v = vehObj.vehicle;
+  const suspMult = 1 + data.upgrades.suspension * 0.12;
+  const dampMult = 1 - data.upgrades.suspension * 0.08;
+  for (let w = 0; w < 4; w++) {
+    v.wheelInfos[w].suspensionStiffness = vtype.suspensionStiffness * suspMult;
+    v.wheelInfos[w].dampingRelaxation = vtype.dampingRelaxation * Math.max(0.5, dampMult);
+  }
+  const tireMult = 1 + data.upgrades.tires * 0.12;
+  v.wheelInfos[0].frictionSlip = vtype.frontGrip * tireMult;
+  v.wheelInfos[1].frictionSlip = vtype.frontGrip * tireMult;
+  v.wheelInfos[2].frictionSlip = vtype.rearGrip * tireMult;
+  v.wheelInfos[3].frictionSlip = vtype.rearGrip * tireMult;
+  turboState.level = data.upgrades.turbo;
+  turboState.available = data.upgrades.turbo > 0;
+  turboState.boostMultiplier = 1.0 + data.upgrades.turbo * 0.25;
+  const turboHud = document.getElementById('turbo-hud');
+  if (turboHud) turboHud.classList.toggle('visible', turboState.available);
+}
+
+function getEffectiveMaxForce() {
+  const data = getVehicleCustomData(currentVehicle.typeKey);
+  return currentVehicle.vtype.maxForce * (1 + data.upgrades.engine * 0.15);
+}
+function getEffectiveMaxBrake() {
+  const data = getVehicleCustomData(currentVehicle.typeKey);
+  return currentVehicle.vtype.maxBrake * (1 + data.upgrades.brakes * 0.2);
+}
+
+function buildAttachmentMesh(attachKey, vehObj) {
+  const vtype = vehObj.vtype;
+  const CW = vtype.chassisWidth, CL = vtype.chassisLength;
+  const metalMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.4, metalness: 0.7 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5, metalness: 0.5 });
+  let mesh;
+  switch (attachKey) {
+    case 'bullBar': {
+      const g = new THREE.Group();
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(CW * 0.9, 0.08, 0.08), metalMat);
+      bar.position.set(0, 0.2, -CL/2 - 0.2); g.add(bar);
+      const bar2 = new THREE.Mesh(new THREE.BoxGeometry(CW * 0.8, 0.06, 0.06), metalMat);
+      bar2.position.set(0, 0.45, -CL/2 - 0.18); g.add(bar2);
+      [-0.35, 0.35].forEach(x => {
+        const strut = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.32, 0.06), metalMat);
+        strut.position.set(x, 0.33, -CL/2 - 0.19); g.add(strut);
+      });
+      mesh = g; break;
+    }
+    case 'roofRack': {
+      const g = new THREE.Group();
+      const rackMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5, metalness: 0.6 });
+      [-0.55, 0.55].forEach(x => { const rail = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, CL * 0.45), rackMat); rail.position.set(x, 1.25, -0.1); g.add(rail); });
+      [-0.5, 0, 0.5].forEach(z => { const xbar = new THREE.Mesh(new THREE.BoxGeometry(1.14, 0.04, 0.04), rackMat); xbar.position.set(0, 1.25, -0.1 + z * CL * 0.35); g.add(xbar); });
+      [[-0.55, -0.5], [0.55, -0.5], [-0.55, 0.5], [0.55, 0.5]].forEach(([x, z]) => { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.03), rackMat); leg.position.set(x, 1.19, -0.1 + z * CL * 0.35); g.add(leg); });
+      mesh = g; break;
+    }
+    case 'lightBar': {
+      const g = new THREE.Group();
+      const barMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3, metalness: 0.8 });
+      const lensMat = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: 0xffffcc, emissiveIntensity: 0.8, roughness: 0.1, metalness: 0.3 });
+      const housing = new THREE.Mesh(new THREE.BoxGeometry(CW * 0.7, 0.1, 0.12), barMat);
+      housing.position.set(0, 1.3, -CL * 0.2); g.add(housing);
+      for (let i = -3; i <= 3; i++) { const led = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.02), lensMat); led.position.set(i * 0.12, 1.3, -CL * 0.2 - 0.07); g.add(led); }
+      const spot = new THREE.SpotLight(0xffffcc, 0, 40, Math.PI * 0.35, 0.5, 1.5);
+      spot.position.set(0, 1.35, -CL * 0.2 - 0.1); spot.target.position.set(0, 0, -CL * 2);
+      g.add(spot); g.add(spot.target); g.userData.spotLight = spot;
+      mesh = g; break;
+    }
+    case 'snorkel': {
+      const g = new THREE.Group();
+      const pipeMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6, metalness: 0.4 });
+      const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.1, 8), pipeMat); pipe.position.set(CW/2 + 0.05, 0.75, -CL * 0.15); g.add(pipe);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.15, 8), pipeMat); cap.position.set(CW/2 + 0.05, 1.32, -CL * 0.15); cap.rotation.z = 0.3; g.add(cap);
+      const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.06), metalMat); bracket.position.set(CW/2 + 0.02, 0.5, -CL * 0.15); g.add(bracket);
+      mesh = g; break;
+    }
+    case 'antenna': {
+      const g = new THREE.Group();
+      const antMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.3, metalness: 0.8 });
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.015, 1.4, 6), antMat); rod.position.set(-CW/2 + 0.15, 1.0, CL * 0.25); g.add(rod);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.06, 8), darkMat); base.position.set(-CW/2 + 0.15, 0.3, CL * 0.25); g.add(base);
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 6), antMat); tip.position.set(-CW/2 + 0.15, 1.7, CL * 0.25); g.add(tip);
+      g.userData.antennaRod = rod; mesh = g; break;
+    }
+    case 'exhaustStacks': {
+      const g = new THREE.Group();
+      const pipeMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.35, metalness: 0.75 });
+      [-0.3, 0.3].forEach(x => {
+        const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 1.0, 8), pipeMat); pipe.position.set(x, 0.8, CL/2 - 0.1); g.add(pipe);
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.015, 8, 12), pipeMat); rim.position.set(x, 1.3, CL/2 - 0.1); rim.rotation.x = Math.PI / 2; g.add(rim);
+      });
+      mesh = g; break;
+    }
+  }
+  return mesh;
+}
+
+function syncAttachments(vehObj) {
+  const data = getVehicleCustomData(vehObj.typeKey);
+  if (!vehObj._attachmentMeshes) vehObj._attachmentMeshes = {};
+  for (const [key, enabled] of Object.entries(data.attachments)) {
+    const existing = vehObj._attachmentMeshes[key];
+    if (enabled && !existing) {
+      const mesh = buildAttachmentMesh(key, vehObj);
+      if (mesh) { vehObj.carGroup.add(mesh); vehObj._attachmentMeshes[key] = mesh; }
+    } else if (!enabled && existing) {
+      vehObj.carGroup.remove(existing);
+      existing.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) { if (Array.isArray(child.material)) child.material.forEach(m => m.dispose()); else child.material.dispose(); } });
+      delete vehObj._attachmentMeshes[key];
+    }
+  }
+  updateLightBarIntensity(vehObj);
+}
+
+function updateLightBarIntensity(vehObj) {
+  if (!vehObj._attachmentMeshes || !vehObj._attachmentMeshes.lightBar) return;
+  const lb = vehObj._attachmentMeshes.lightBar;
+  if (lb.userData.spotLight) {
+    const gt = typeof gameTime !== 'undefined' ? gameTime : 12;
+    const isNight = gt < 6 || gt > 19;
+    const isDusk = (gt >= 17 && gt <= 19) || (gt >= 5 && gt <= 7);
+    lb.userData.spotLight.intensity = isNight ? 15 : (isDusk ? 8 : 0);
+  }
+}
+
+function applyPaintToVehicle(vehObj, paintIndex) {
+  const mat = vehObj.refs.paintMat;
+  if (paintIndex < 0 || paintIndex >= PAINT_COLORS.length) {
+    mat.color.copy(vehObj.refs.origPaintColor); mat.roughness = 0.25; mat.metalness = 0.7;
+  } else {
+    const p = PAINT_COLORS[paintIndex]; mat.color.setHex(p.color); mat.roughness = p.roughness; mat.metalness = p.metalness;
+  }
+  mat.needsUpdate = true;
+}
+
+let garageOrbitAngle = 0, garageActive = false, savedCameraPos = null, savedCameraTarget = null, savedCameraMode = null;
+function startGarageCamera() { garageActive = true; garageOrbitAngle = 0; savedCameraMode = cameraMode; savedCameraPos = camera.position.clone(); }
+function stopGarageCamera() { garageActive = false; if (savedCameraMode) { cameraMode = savedCameraMode; if (cameraMode === 'orbit') orbitControls.enabled = true; } }
+function updateGarageCamera(dt) {
+  if (!garageActive) return;
+  garageOrbitAngle += dt * 0.3;
+  const target = new THREE.Vector3(chassisBody.position.x, chassisBody.position.y + 1.0, chassisBody.position.z);
+  camera.position.set(target.x + Math.cos(garageOrbitAngle) * 7, target.y + 3, target.z + Math.sin(garageOrbitAngle) * 7);
+  camera.lookAt(target);
+}
+
+let customizeMenuOpen = false;
+function openCustomizeMenu() {
+  if (customizeMenuOpen) return;
+  customizeMenuOpen = true; customizeState.open = true; gamePaused = true;
+  const overlay = document.getElementById('customize-overlay');
+  overlay.style.display = 'flex'; overlay.offsetHeight; overlay.classList.add('open');
+  startGarageCamera(); buildCustomizeUI();
+}
+function closeCustomizeMenu() {
+  if (!customizeMenuOpen) return;
+  customizeMenuOpen = false; customizeState.open = false; gamePaused = false;
+  const overlay = document.getElementById('customize-overlay');
+  overlay.classList.remove('open'); setTimeout(() => { overlay.style.display = 'none'; }, 350);
+  stopGarageCamera();
+}
+function toggleCustomizeMenu() { if (customizeMenuOpen) closeCustomizeMenu(); else openCustomizeMenu(); }
+
+function buildCustomizeUI() {
+  buildPaintUI(); buildUpgradesUI(); buildAttachmentsUI(); updateCurrencyDisplay();
+  document.querySelectorAll('.customize-tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.customize-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.customize-section').forEach(s => s.classList.remove('active'));
+      tab.classList.add('active'); document.getElementById('section-' + tab.dataset.tab).classList.add('active');
+    };
+  });
+  document.getElementById('customize-close').onclick = closeCustomizeMenu;
+}
+function updateCurrencyDisplay() { const el = document.getElementById('currency-amount'); if (el) el.textContent = customizeState.currency; }
+
+function buildPaintUI() {
+  const container = document.getElementById('section-paint');
+  const data = getVehicleCustomData(currentVehicle.typeKey);
+  let html = '<div class="paint-grid">';
+  PAINT_COLORS.forEach((p, i) => {
+    const selected = data.paintIndex === i ? ' selected' : '';
+    let bgStyle = `background: ${p.hex};`;
+    if (p.metalness > 0.7) bgStyle = `background: linear-gradient(135deg, ${p.hex} 0%, ${lightenHex(p.hex, 40)} 50%, ${p.hex} 100%);`;
+    html += `<div class="paint-swatch${selected}" data-paint="${i}" style="${bgStyle}"><div class="paint-label">${p.name}</div></div>`;
+  });
+  html += '</div>'; container.innerHTML = html;
+  container.querySelectorAll('.paint-swatch').forEach(swatch => {
+    swatch.onclick = () => {
+      const idx = parseInt(swatch.dataset.paint); data.paintIndex = idx;
+      applyPaintToVehicle(currentVehicle, idx);
+      container.querySelectorAll('.paint-swatch').forEach(s => s.classList.remove('selected'));
+      swatch.classList.add('selected');
+    };
+  });
+}
+function lightenHex(hex, amount) {
+  hex = hex.replace('#', '');
+  const r = Math.min(255, parseInt(hex.substr(0,2), 16) + amount);
+  const g = Math.min(255, parseInt(hex.substr(2,2), 16) + amount);
+  const b = Math.min(255, parseInt(hex.substr(4,2), 16) + amount);
+  return '#' + [r,g,b].map(c => c.toString(16).padStart(2,'0')).join('');
+}
+
+function buildUpgradesUI() {
+  const container = document.getElementById('section-upgrades');
+  const data = getVehicleCustomData(currentVehicle.typeKey);
+  const vtype = currentVehicle.vtype;
+  let html = '';
+  for (const [key, def] of Object.entries(UPGRADE_DEFS)) {
+    const level = data.upgrades[key]; const isMaxed = level >= def.maxLevel;
+    const cost = isMaxed ? 0 : def.costs[level]; const canAfford = customizeState.currency >= cost;
+    const currentStat = def.getStat(vtype, level); const nextStat = isMaxed ? currentStat : def.getStat(vtype, level + 1);
+    let pips = ''; for (let i = 0; i < def.maxLevel; i++) pips += `<div class="upgrade-pip${i < level ? ' filled' : ''}"></div>`;
+    let statsHtml = `<span>${def.getLabel()}: ${currentStat}</span>`;
+    if (!isMaxed) statsHtml += ` <span class="stat-arrow">&rarr;</span> <span class="stat-new">${nextStat}</span>`;
+    let btnText, btnClass, btnDisabled;
+    if (isMaxed) { btnText = 'MAX LEVEL'; btnClass = 'upgrade-btn maxed'; btnDisabled = 'disabled'; }
+    else if (!canAfford) { btnText = `UPGRADE - ${cost} SCRAP (need more)`; btnClass = 'upgrade-btn'; btnDisabled = 'disabled'; }
+    else { btnText = `UPGRADE - ${cost} SCRAP`; btnClass = 'upgrade-btn'; btnDisabled = ''; }
+    html += `<div class="upgrade-card" data-upgrade="${key}"><div class="upgrade-header"><span class="upgrade-name">${def.name}</span><span class="upgrade-level">LV ${level}/${def.maxLevel}</span></div><div class="upgrade-level-pips">${pips}</div><div class="upgrade-stats">${statsHtml}</div><button class="${btnClass}" data-upgrade-key="${key}" ${btnDisabled}>${btnText}</button></div>`;
+  }
+  container.innerHTML = html;
+  container.querySelectorAll('.upgrade-btn').forEach(btn => {
+    btn.onclick = () => {
+      const key = btn.dataset.upgradeKey; const def = UPGRADE_DEFS[key]; const level = data.upgrades[key];
+      if (level >= def.maxLevel) return; const cost = def.costs[level]; if (customizeState.currency < cost) return;
+      customizeState.currency -= cost; data.upgrades[key]++; applyUpgradesToVehicle(currentVehicle); buildUpgradesUI(); updateCurrencyDisplay();
+    };
+  });
+}
+
+function buildAttachmentsUI() {
+  const container = document.getElementById('section-attachments');
+  const data = getVehicleCustomData(currentVehicle.typeKey);
+  let html = '';
+  for (const [key, def] of Object.entries(ATTACHMENT_DEFS)) {
+    const enabled = data.attachments[key];
+    html += `<div class="attachment-card"><div class="attachment-info"><div class="attachment-name">${def.name}</div><div class="attachment-desc">${def.desc}${!enabled ? ` - ${def.cost} SCRAP` : ''}</div></div><div class="attachment-toggle${enabled ? ' on' : ''}" data-attach="${key}"><div class="att-knob"></div></div></div>`;
+  }
+  container.innerHTML = html;
+  container.querySelectorAll('.attachment-toggle').forEach(toggle => {
+    toggle.onclick = () => {
+      const key = toggle.dataset.attach; const isOn = data.attachments[key];
+      if (!isOn) { const cost = ATTACHMENT_DEFS[key].cost; if (customizeState.currency < cost) return; customizeState.currency -= cost; data.attachments[key] = true; }
+      else { data.attachments[key] = false; }
+      syncAttachments(currentVehicle); buildAttachmentsUI(); updateCurrencyDisplay();
+    };
+  });
+}
+
+function updateTurboBoost(dt, accel) {
+  if (!turboState.available) return 1.0;
+  const turboBar = document.getElementById('turbo-bar');
+  const turboLabel = document.getElementById('turbo-label');
+  const shiftHeld = keys['ShiftLeft'] || keys['ShiftRight'];
+  if (turboState.cooldown) {
+    turboState.timer -= dt; turboState.meter = Math.max(0, 1 - (turboState.timer / turboState.cooldownDuration));
+    if (turboState.timer <= 0) { turboState.cooldown = false; turboState.meter = 1.0; turboState.timer = 0; }
+    turboBar.style.width = (turboState.meter * 100) + '%'; turboBar.className = 'cooldown'; turboLabel.className = 'cooldown'; turboLabel.textContent = 'RECHARGING';
+    turboState.active = false; return 1.0;
+  }
+  if (shiftHeld && accel && turboState.meter > 0) {
+    turboState.active = true; turboState.meter -= dt / turboState.boostDuration;
+    if (turboState.meter <= 0) { turboState.meter = 0; turboState.cooldown = true; turboState.timer = turboState.cooldownDuration; turboState.active = false; }
+    turboBar.style.width = (turboState.meter * 100) + '%'; turboBar.className = 'active'; turboLabel.className = ''; turboLabel.textContent = 'TURBO';
+    return turboState.boostMultiplier;
+  } else {
+    turboState.active = false; if (turboState.meter < 1.0) turboState.meter = Math.min(1.0, turboState.meter + dt * 0.05);
+    turboBar.style.width = (turboState.meter * 100) + '%'; turboBar.className = ''; turboLabel.className = ''; turboLabel.textContent = 'TURBO';
+    return 1.0;
+  }
+}
+
+function updateExhaustSmoke(vehObj, dt, accel, turboActive) {
+  if (!vehObj._attachmentMeshes || !vehObj._attachmentMeshes.exhaustStacks) return;
+  if (typeof emitTireSmoke !== 'function') return;
+  const stacks = vehObj._attachmentMeshes.exhaustStacks;
+  const worldPos = new THREE.Vector3();
+  stacks.children.forEach((child, i) => {
+    if (i % 2 === 0) {
+      child.getWorldPosition(worldPos);
+      const intensity = turboActive ? 3 : (accel ? 1 : 0);
+      if (intensity > 0 && Math.random() < 0.3 * intensity) emitTireSmoke(worldPos.x, worldPos.y + 0.5, worldPos.z, intensity, 0, 0);
+    }
+  });
+}
+function updateAntennaSway(vehObj, dt) {
+  if (!vehObj._attachmentMeshes || !vehObj._attachmentMeshes.antenna) return;
+  const ant = vehObj._attachmentMeshes.antenna;
+  if (ant.userData.antennaRod) {
+    const speed = chassisBody.velocity.length();
+    ant.userData.antennaRod.rotation.x = Math.sin(performance.now() * 0.005) * 0.06 * Math.min(1, speed * 0.1);
+    ant.userData.antennaRod.rotation.z = Math.sin(performance.now() * 0.003) * 0.04;
+  }
+}
+
+applyUpgradesToVehicle(currentVehicle);
+syncAttachments(currentVehicle);
 
 // ═══════════════════════════════════════════════════════════════════════
 // FINDABLE VEHICLES SYSTEM
@@ -6477,6 +7777,14 @@ function switchToVehicle(findableEntry) {
   // Update HUD
   vehicleNameEl.textContent = currentVehicle.vtype.name.toUpperCase();
   damageBarEl.style.width = '100%';
+
+  // Apply customization to new vehicle
+  const cdata = getVehicleCustomData(currentVehicle.typeKey);
+  if (cdata.paintIndex >= 0) {
+    applyPaintToVehicle(currentVehicle, cdata.paintIndex);
+  }
+  applyUpgradesToVehicle(currentVehicle);
+  syncAttachments(currentVehicle);
 
   // Reset camera
   camInit = false;
@@ -6885,6 +8193,7 @@ function initAudio(){
   engineFilter.connect(engineGain);engineGain.connect(audioCtx.destination);
   engineOsc1.start();engineOsc2.start();audioStarted=true;
   initSurfaceSounds();
+  soundManager.init();
 }
 function updateAudio(speed,throttle){
   if(!audioStarted)return;
@@ -7098,6 +8407,1087 @@ function updateSurfaceSounds(speed, lateralSpeed, avgOnRoad, isDriftingNow, brak
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// 3D POSITIONAL AUDIO SYSTEM (SoundManager)
+// ═══════════════════════════════════════════════════════════════════════
+
+const soundManager = (() => {
+  // ── State ──
+  let initialized = false;
+  let listener = null;         // THREE.AudioListener
+  let masterGainNode = null;   // Web Audio gain for master
+  let sfxGainNode = null;      // Web Audio gain for SFX category
+  let ambientGainNode = null;  // Web Audio gain for Ambient category
+
+  // Positional audio pools
+  const activeSources = [];    // track all positional sources for cleanup
+  const MAX_CONCURRENT = 20;
+
+  // Ambient sound state
+  const cricketSources = [];   // PositionalAudio objects for crickets
+  const birdSources = [];      // PositionalAudio objects for birds
+  const waterSources = [];     // PositionalAudio objects for water bodies
+  const structureWindSources = [];  // PositionalAudio for structure wind
+  const structureCreakTimers = [];  // timers for random creaks
+  const turbineHumSources = [];     // PositionalAudio for turbine hum
+
+  // Wind (non-positional, attached to camera)
+  let ambientWindNode = null;
+  let ambientWindGain = null;
+  let ambientWindFilter = null;
+
+  // NPC engine sounds
+  const npcEngineSources = [];
+
+  // Noise buffer (reused)
+  let noiseBuffer = null;
+  let brownNoiseBuffer = null;
+
+  // UI sound cooldowns
+  let lastUISound = 0;
+  let lowFuelBeepActive = false;
+  let lowFuelBeepOsc = null;
+  let lowFuelBeepGainNode = null;
+  let lowFuelBeepInterval = null;
+
+  // Creak timer
+  let creakTimer = 0;
+  let nextCreakTime = 5 + Math.random() * 10;
+
+  // ── Helpers ──
+  function createNoiseBuffer(duration) {
+    if (!audioCtx) return null;
+    const len = Math.floor(audioCtx.sampleRate * duration);
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    return buf;
+  }
+
+  function createBrownNoiseBuffer(duration) {
+    if (!audioCtx) return null;
+    const len = Math.floor(audioCtx.sampleRate * duration);
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      data[i] = last * 3.5;
+    }
+    return buf;
+  }
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  // Compute sun altitude from gameTime (mirrors getSunPosition)
+  function getSunAltitude() {
+    const t = (typeof gameTime === 'number') ? gameTime : 12;
+    const sunAngle = ((t - 6) / 12) * Math.PI;
+    return Math.sin(sunAngle);
+  }
+
+  // Determine if it's night (sun below horizon or near it)
+  function isNight() { return getSunAltitude() < 0.05; }
+  function isDay() { return getSunAltitude() > 0.15; }
+
+  // Day/night blend factors for crossfading
+  function nightFactor() {
+    const alt = getSunAltitude();
+    if (alt < -0.05) return 1.0;
+    if (alt > 0.15) return 0.0;
+    return 1.0 - (alt + 0.05) / 0.2;
+  }
+  function dayFactor() {
+    const alt = getSunAltitude();
+    if (alt > 0.25) return 1.0;
+    if (alt < 0.05) return 0.0;
+    return (alt - 0.05) / 0.2;
+  }
+
+  // Get weather intensity
+  function getWeatherIntensity() {
+    if (typeof weatherState !== 'undefined' && weatherState.type === 'dust_storm') {
+      return weatherState.intensity || 0;
+    }
+    return 0;
+  }
+
+  // ── Initialization ──
+  function init() {
+    if (initialized || !audioCtx) return;
+    initialized = true;
+
+    // Create THREE.AudioListener and attach to camera
+    listener = new THREE.AudioListener();
+    // Sync contexts: use existing audioCtx
+    // THREE.AudioListener creates its own AudioContext; we override it
+    // by setting the listener's context to our audioCtx
+    if (listener.context !== audioCtx) {
+      // THREE r170: listener.context is read-only, but we can still wire
+      // things through our audioCtx. We'll create gain nodes on our context.
+    }
+    camera.add(listener);
+
+    // Master gain chain: sources -> category gain -> master gain -> destination
+    masterGainNode = audioCtx.createGain();
+    masterGainNode.gain.value = currentSettings.masterVolume;
+    masterGainNode.connect(audioCtx.destination);
+
+    sfxGainNode = audioCtx.createGain();
+    sfxGainNode.gain.value = currentSettings.sfxVolume;
+    sfxGainNode.connect(masterGainNode);
+
+    ambientGainNode = audioCtx.createGain();
+    ambientGainNode.gain.value = currentSettings.ambientVolume;
+    ambientGainNode.connect(masterGainNode);
+
+    // Pre-generate noise buffers
+    noiseBuffer = createNoiseBuffer(2);
+    brownNoiseBuffer = createBrownNoiseBuffer(2);
+
+    // Initialize subsystems
+    initAmbientWind();
+    initCrickets();
+    initBirds();
+    initWaterAmbiance();
+    initStructureSounds();
+    initTurbineHum();
+    initNPCEngineSounds();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // AMBIENT WIND (non-positional, varies with speed/altitude/weather)
+  // ═══════════════════════════════════════════════════════════════════
+  function initAmbientWind() {
+    if (!noiseBuffer) return;
+    ambientWindNode = audioCtx.createBufferSource();
+    ambientWindNode.buffer = noiseBuffer;
+    ambientWindNode.loop = true;
+
+    ambientWindFilter = audioCtx.createBiquadFilter();
+    ambientWindFilter.type = 'bandpass';
+    ambientWindFilter.frequency.value = 800;
+    ambientWindFilter.Q.value = 0.7;
+
+    ambientWindGain = audioCtx.createGain();
+    ambientWindGain.gain.value = 0;
+
+    ambientWindNode.connect(ambientWindFilter);
+    ambientWindFilter.connect(ambientWindGain);
+    ambientWindGain.connect(ambientGainNode);
+    ambientWindNode.start();
+  }
+
+  function updateAmbientWind(speed, camY) {
+    if (!ambientWindGain) return;
+    const kmh = speed * 3.6;
+    // Base wind level
+    let windVol = 0.005;
+    // Speed contribution (Doppler-like)
+    windVol += clamp(kmh * 0.0003, 0, 0.04);
+    // Altitude contribution (windier at higher terrain)
+    const altFactor = clamp((camY - 5) / 40, 0, 1);
+    windVol += altFactor * 0.015;
+    // Weather (dust storm = very windy)
+    const stormInt = getWeatherIntensity();
+    windVol += stormInt * 0.04;
+
+    const targetFreq = 600 + kmh * 3 + stormInt * 400;
+    ambientWindGain.gain.value += (windVol - ambientWindGain.gain.value) * 0.05;
+    ambientWindFilter.frequency.value += (targetFreq - ambientWindFilter.frequency.value) * 0.05;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // CRICKETS / INSECTS (night only, positional)
+  // ═══════════════════════════════════════════════════════════════════
+  let cricketOscillators = [];
+  let cricketGains = [];
+  let cricketTimers = [];
+  const CRICKET_COUNT = 6;
+
+  function initCrickets() {
+    for (let i = 0; i < CRICKET_COUNT; i++) {
+      // Create oscillator-based chirp system
+      // We use gain node scheduling for on/off chirps
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 4000 + Math.random() * 2000;
+
+      const chirpGain = audioCtx.createGain();
+      chirpGain.gain.value = 0;
+
+      // Panner for 3D positioning
+      const panner = audioCtx.createPanner();
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = 3;
+      panner.maxDistance = 40;
+      panner.rolloffFactor = 1.5;
+      panner.coneOuterGain = 0.4;
+
+      // Position randomly around origin (will be relocated each frame)
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 20 + Math.random() * 20;
+      panner.positionX.value = Math.cos(angle) * dist;
+      panner.positionY.value = 0.5;
+      panner.positionZ.value = Math.sin(angle) * dist;
+
+      osc.connect(chirpGain);
+      chirpGain.connect(panner);
+      panner.connect(ambientGainNode);
+      osc.start();
+
+      cricketOscillators.push(osc);
+      cricketGains.push(chirpGain);
+      cricketSources.push(panner);
+      cricketTimers.push({ nextChirp: Math.random() * 2, chirping: false, chirpEnd: 0 });
+    }
+  }
+
+  function updateCrickets(dt, camPos) {
+    const nf = nightFactor();
+    for (let i = 0; i < CRICKET_COUNT; i++) {
+      const timer = cricketTimers[i];
+      const gain = cricketGains[i];
+      const panner = cricketSources[i];
+
+      // Relocate near camera
+      const px = panner.positionX.value;
+      const pz = panner.positionZ.value;
+      const dx = px - camPos.x;
+      const dz = pz - camPos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist > 45) {
+        // Reposition within 20-40 units of camera
+        const angle = Math.random() * Math.PI * 2;
+        const r = 20 + Math.random() * 20;
+        panner.positionX.value = camPos.x + Math.cos(angle) * r;
+        panner.positionZ.value = camPos.z + Math.sin(angle) * r;
+        const th = (typeof getTerrainHeight === 'function') ?
+          getTerrainHeight(panner.positionX.value, panner.positionZ.value) : 0;
+        panner.positionY.value = th + 0.3 + Math.random() * 0.5;
+      }
+
+      // Chirp scheduling
+      if (nf < 0.01) {
+        // Daytime: silence crickets
+        gain.gain.value *= 0.95;
+        continue;
+      }
+
+      timer.nextChirp -= dt;
+      if (timer.nextChirp <= 0 && !timer.chirping) {
+        // Start chirp
+        timer.chirping = true;
+        timer.chirpEnd = 0.05 + Math.random() * 0.08;
+        const vol = 0.015 + Math.random() * 0.015;
+        gain.gain.setTargetAtTime(vol * nf, audioCtx.currentTime, 0.005);
+        // Vary frequency slightly each chirp
+        cricketOscillators[i].frequency.value = 4000 + Math.random() * 2000;
+      }
+
+      if (timer.chirping) {
+        timer.chirpEnd -= dt;
+        if (timer.chirpEnd <= 0) {
+          timer.chirping = false;
+          gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.01);
+          // Random interval between chirps (sometimes clustered)
+          timer.nextChirp = 0.1 + Math.random() * (Math.random() < 0.3 ? 0.2 : 1.5);
+        }
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // BIRDS (day only, positional, FM-synthesized chirps)
+  // ═══════════════════════════════════════════════════════════════════
+  let birdCarriers = [];
+  let birdModulators = [];
+  let birdModGains = [];
+  let birdGains = [];
+  let birdPanners = [];
+  let birdTimers = [];
+  const BIRD_COUNT = 4;
+
+  function initBirds() {
+    for (let i = 0; i < BIRD_COUNT; i++) {
+      // FM synthesis: carrier osc modulated by modulator osc
+      const carrier = audioCtx.createOscillator();
+      carrier.type = 'sine';
+      carrier.frequency.value = 1500 + Math.random() * 1000;
+
+      const modulator = audioCtx.createOscillator();
+      modulator.type = 'sine';
+      modulator.frequency.value = 5 + Math.random() * 15;
+
+      const modGain = audioCtx.createGain();
+      modGain.gain.value = 0; // FM depth — will be set during call
+
+      const birdGain = audioCtx.createGain();
+      birdGain.gain.value = 0;
+
+      const panner = audioCtx.createPanner();
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = 5;
+      panner.maxDistance = 60;
+      panner.rolloffFactor = 1.2;
+
+      // Initial position
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 15 + Math.random() * 25;
+      panner.positionX.value = Math.cos(angle) * dist;
+      panner.positionY.value = 5 + Math.random() * 10;
+      panner.positionZ.value = Math.sin(angle) * dist;
+
+      modulator.connect(modGain);
+      modGain.connect(carrier.frequency);
+      carrier.connect(birdGain);
+      birdGain.connect(panner);
+      panner.connect(ambientGainNode);
+
+      carrier.start();
+      modulator.start();
+
+      birdCarriers.push(carrier);
+      birdModulators.push(modulator);
+      birdModGains.push(modGain);
+      birdGains.push(birdGain);
+      birdPanners.push(panner);
+      birdTimers.push({
+        nextCall: 1 + Math.random() * 4,
+        calling: false,
+        callEnd: 0,
+        burstCount: 0,
+        burstRemaining: 0
+      });
+    }
+  }
+
+  function updateBirds(dt, camPos) {
+    const df = dayFactor();
+    for (let i = 0; i < BIRD_COUNT; i++) {
+      const timer = birdTimers[i];
+      const gain = birdGains[i];
+      const panner = birdPanners[i];
+      const carrier = birdCarriers[i];
+      const modGain = birdModGains[i];
+
+      // Relocate near camera
+      const px = panner.positionX.value;
+      const pz = panner.positionZ.value;
+      const dx = px - camPos.x;
+      const dz = pz - camPos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist > 65) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = 15 + Math.random() * 25;
+        panner.positionX.value = camPos.x + Math.cos(angle) * r;
+        panner.positionZ.value = camPos.z + Math.sin(angle) * r;
+        panner.positionY.value = 5 + Math.random() * 15;
+      }
+
+      if (df < 0.01) {
+        gain.gain.value *= 0.95;
+        continue;
+      }
+
+      timer.nextCall -= dt;
+      if (timer.nextCall <= 0 && !timer.calling) {
+        // Start a bird call
+        timer.calling = true;
+        timer.callEnd = 0.1 + Math.random() * 0.15;
+        // Frequency sweep (bird chirp)
+        const baseFreq = 1000 + Math.random() * 2000;
+        carrier.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+        carrier.frequency.linearRampToValueAtTime(
+          baseFreq + 500 + Math.random() * 1000,
+          audioCtx.currentTime + timer.callEnd
+        );
+        // FM modulation depth
+        modGain.gain.setValueAtTime(200 + Math.random() * 400, audioCtx.currentTime);
+        gain.gain.setTargetAtTime(0.012 * df, audioCtx.currentTime, 0.008);
+
+        // Burst clustering: birds call in groups
+        if (timer.burstRemaining <= 0) {
+          timer.burstRemaining = 2 + Math.floor(Math.random() * 4);
+        }
+      }
+
+      if (timer.calling) {
+        timer.callEnd -= dt;
+        if (timer.callEnd <= 0) {
+          timer.calling = false;
+          gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.02);
+          modGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.02);
+          timer.burstRemaining--;
+          if (timer.burstRemaining > 0) {
+            timer.nextCall = 0.15 + Math.random() * 0.4; // quick follow-up
+          } else {
+            timer.nextCall = 3 + Math.random() * 8; // long pause between bursts
+          }
+        }
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // WATER AMBIANCE (positional, near water bodies)
+  // ═══════════════════════════════════════════════════════════════════
+  let waterNodes = [];
+  let waterGainNodes = [];
+
+  function initWaterAmbiance() {
+    if (!brownNoiseBuffer || typeof waterBodies === 'undefined') return;
+    const maxWater = Math.min(waterBodies.length, 3);
+    for (let i = 0; i < maxWater; i++) {
+      const wb = waterBodies[i];
+      if (!wb || !wb.center) continue;
+
+      // Low rumble: brown noise through lowpass
+      const src = audioCtx.createBufferSource();
+      src.buffer = brownNoiseBuffer;
+      src.loop = true;
+
+      const lpf = audioCtx.createBiquadFilter();
+      lpf.type = 'lowpass';
+      lpf.frequency.value = 400;
+      lpf.Q.value = 0.5;
+
+      const wGain = audioCtx.createGain();
+      wGain.gain.value = 0.02;
+
+      const panner = audioCtx.createPanner();
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = 8;
+      panner.maxDistance = 60;
+      panner.rolloffFactor = 1.5;
+      panner.positionX.value = wb.center.x;
+      panner.positionY.value = (wb.waterLevel || 0) + 0.5;
+      panner.positionZ.value = wb.center.z;
+
+      src.connect(lpf);
+      lpf.connect(wGain);
+      wGain.connect(panner);
+      panner.connect(ambientGainNode);
+      src.start();
+
+      waterNodes.push(src);
+      waterGainNodes.push(wGain);
+      waterSources.push(panner);
+    }
+  }
+
+  function updateWaterAmbiance(camPos) {
+    // Adjust water sound volume based on distance (natural panner handles most of it)
+    // We just ensure gain is reasonable
+    for (let i = 0; i < waterSources.length; i++) {
+      const panner = waterSources[i];
+      const dx = panner.positionX.value - camPos.x;
+      const dz = panner.positionZ.value - camPos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      // Boost slightly when close for immersion
+      const vol = dist < 15 ? 0.03 : 0.02;
+      if (waterGainNodes[i]) {
+        waterGainNodes[i].gain.value += (vol - waterGainNodes[i].gain.value) * 0.05;
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // STRUCTURE SOUNDS (wind whistle, creaking near buildings/ruins)
+  // ═══════════════════════════════════════════════════════════════════
+  let structureWindOscs = [];
+  let structureWindLFOs = [];
+  let structureWindGains = [];
+  let structureWindPanners = [];
+
+  function initStructureSounds() {
+    if (typeof buildingPositions === 'undefined' || buildingPositions.length === 0) return;
+    // Pick up to 5 structures for wind sounds
+    const maxStruct = Math.min(buildingPositions.length, 5);
+    const chosen = [];
+    const tempPositions = [...buildingPositions];
+    for (let i = 0; i < maxStruct && tempPositions.length > 0; i++) {
+      const idx = Math.floor(Math.random() * tempPositions.length);
+      chosen.push(tempPositions.splice(idx, 1)[0]);
+    }
+
+    for (let i = 0; i < chosen.length; i++) {
+      const bp = chosen[i];
+      // Eerie wind whistle: low-frequency oscillator with slow LFO
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 80 + Math.random() * 60;
+
+      const lfo = audioCtx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.15 + Math.random() * 0.2;
+
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 20 + Math.random() * 20;
+
+      const sGain = audioCtx.createGain();
+      sGain.gain.value = 0;
+
+      const panner = audioCtx.createPanner();
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = 5;
+      panner.maxDistance = 30;
+      panner.rolloffFactor = 2.0;
+      panner.positionX.value = bp.x;
+      panner.positionY.value = (bp.y || 0) + 3;
+      panner.positionZ.value = bp.z;
+
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      osc.connect(sGain);
+      sGain.connect(panner);
+      panner.connect(ambientGainNode);
+
+      osc.start();
+      lfo.start();
+
+      structureWindOscs.push(osc);
+      structureWindLFOs.push(lfo);
+      structureWindGains.push(sGain);
+      structureWindPanners.push(panner);
+    }
+  }
+
+  function updateStructureSounds(camPos) {
+    for (let i = 0; i < structureWindPanners.length; i++) {
+      const p = structureWindPanners[i];
+      const dx = p.positionX.value - camPos.x;
+      const dz = p.positionZ.value - camPos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      // Only audible within 30 units
+      const vol = dist < 30 ? 0.012 * (1 - dist / 30) : 0;
+      structureWindGains[i].gain.value += (vol - structureWindGains[i].gain.value) * 0.05;
+    }
+  }
+
+  // Metallic creaking (periodic, near structures)
+  function playCreak(camPos) {
+    if (!audioCtx || structureWindPanners.length === 0) return;
+    // Pick a structure that's nearby
+    let nearest = null;
+    let nearestDist = Infinity;
+    for (let i = 0; i < structureWindPanners.length; i++) {
+      const p = structureWindPanners[i];
+      const dx = p.positionX.value - camPos.x;
+      const dz = p.positionZ.value - camPos.z;
+      const d = Math.sqrt(dx * dx + dz * dz);
+      if (d < nearestDist) { nearestDist = d; nearest = p; }
+    }
+    if (!nearest || nearestDist > 35) return;
+
+    // FM synthesis metallic creak
+    const creakCarrier = audioCtx.createOscillator();
+    creakCarrier.type = 'sine';
+    creakCarrier.frequency.value = 300 + Math.random() * 200;
+
+    const creakMod = audioCtx.createOscillator();
+    creakMod.type = 'sine';
+    creakMod.frequency.value = 50 + Math.random() * 100;
+
+    const creakModGain = audioCtx.createGain();
+    creakModGain.gain.value = 150 + Math.random() * 200;
+
+    const creakEnv = audioCtx.createGain();
+    const vol = 0.01 * clamp(1 - nearestDist / 35, 0, 1);
+    creakEnv.gain.setValueAtTime(0, audioCtx.currentTime);
+    creakEnv.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.05);
+    creakEnv.gain.linearRampToValueAtTime(vol * 0.3, audioCtx.currentTime + 0.15);
+    creakEnv.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+
+    const creakPanner = audioCtx.createPanner();
+    creakPanner.panningModel = 'HRTF';
+    creakPanner.distanceModel = 'inverse';
+    creakPanner.refDistance = 4;
+    creakPanner.maxDistance = 35;
+    creakPanner.rolloffFactor = 1.5;
+    creakPanner.positionX.value = nearest.positionX.value + (Math.random() - 0.5) * 4;
+    creakPanner.positionY.value = nearest.positionY.value + Math.random() * 3;
+    creakPanner.positionZ.value = nearest.positionZ.value + (Math.random() - 0.5) * 4;
+
+    creakMod.connect(creakModGain);
+    creakModGain.connect(creakCarrier.frequency);
+    creakCarrier.connect(creakEnv);
+    creakEnv.connect(creakPanner);
+    creakPanner.connect(sfxGainNode);
+
+    const now = audioCtx.currentTime;
+    creakCarrier.start(now);
+    creakMod.start(now);
+    creakCarrier.stop(now + 0.5);
+    creakMod.stop(now + 0.5);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // WIND TURBINE HUM (50/60 Hz, positional near turbines)
+  // ═══════════════════════════════════════════════════════════════════
+  let turbineOscs = [];
+  let turbineGains = [];
+  let turbinePanners = [];
+
+  function initTurbineHum() {
+    if (typeof windTurbineBlades === 'undefined' || windTurbineBlades.length === 0) return;
+    for (let i = 0; i < windTurbineBlades.length; i++) {
+      const tb = windTurbineBlades[i];
+      if (!tb.userData) continue;
+
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 55; // low hum between 50-60Hz
+
+      // Add harmonics with a second oscillator
+      const osc2 = audioCtx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.value = 110; // 2nd harmonic
+
+      const g1 = audioCtx.createGain();
+      g1.gain.value = 0.6;
+      const g2 = audioCtx.createGain();
+      g2.gain.value = 0.2;
+
+      const tGain = audioCtx.createGain();
+      tGain.gain.value = 0;
+
+      const panner = audioCtx.createPanner();
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = 5;
+      panner.maxDistance = 50;
+      panner.rolloffFactor = 1.8;
+      panner.positionX.value = tb.userData.baseX;
+      panner.positionY.value = 10;
+      panner.positionZ.value = tb.userData.baseZ;
+
+      osc.connect(g1);
+      osc2.connect(g2);
+      g1.connect(tGain);
+      g2.connect(tGain);
+      tGain.connect(panner);
+      panner.connect(ambientGainNode);
+
+      osc.start();
+      osc2.start();
+
+      turbineOscs.push(osc);
+      turbineGains.push(tGain);
+      turbinePanners.push(panner);
+    }
+  }
+
+  function updateTurbineHum(camPos) {
+    for (let i = 0; i < turbinePanners.length; i++) {
+      const p = turbinePanners[i];
+      const dx = p.positionX.value - camPos.x;
+      const dz = p.positionZ.value - camPos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const vol = dist < 50 ? 0.015 * (1 - dist / 50) : 0;
+      turbineGains[i].gain.value += (vol - turbineGains[i].gain.value) * 0.05;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // NPC VEHICLE ENGINE SOUNDS (positional, per AI traffic vehicle)
+  // ═══════════════════════════════════════════════════════════════════
+  let npcEngineOscs = [];
+  let npcEngineGains = [];
+  let npcEnginePanners = [];
+  let npcEngineFilters = [];
+
+  function initNPCEngineSounds() {
+    if (typeof aiTrafficNPCs === 'undefined') return;
+    const count = Math.min(aiTrafficNPCs.length, 5);
+    for (let i = 0; i < count; i++) {
+      // Simple engine: single sawtooth oscillator through lowpass
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = 50;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 150;
+      filter.Q.value = 2;
+
+      const eGain = audioCtx.createGain();
+      eGain.gain.value = 0;
+
+      const panner = audioCtx.createPanner();
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = 5;
+      panner.maxDistance = 80;
+      panner.rolloffFactor = 1.5;
+
+      osc.connect(filter);
+      filter.connect(eGain);
+      eGain.connect(panner);
+      panner.connect(sfxGainNode);
+      osc.start();
+
+      npcEngineOscs.push(osc);
+      npcEngineGains.push(eGain);
+      npcEnginePanners.push(panner);
+      npcEngineFilters.push(filter);
+    }
+  }
+
+  function updateNPCEngineSounds() {
+    if (typeof aiTrafficNPCs === 'undefined') return;
+    const count = Math.min(aiTrafficNPCs.length, npcEngineOscs.length);
+    for (let i = 0; i < count; i++) {
+      const npc = aiTrafficNPCs[i];
+      if (!npc || !npc.mesh || !npc.mesh.visible) {
+        npcEngineGains[i].gain.value *= 0.9;
+        continue;
+      }
+      // Update panner position to NPC mesh position
+      npcEnginePanners[i].positionX.value = npc.mesh.position.x;
+      npcEnginePanners[i].positionY.value = npc.mesh.position.y + 0.5;
+      npcEnginePanners[i].positionZ.value = npc.mesh.position.z;
+
+      // Pitch varies with NPC speed
+      const npcSpeed = npc.speed || 10;
+      const rpm = 400 + npcSpeed * 30;
+      npcEngineOscs[i].frequency.value += ((rpm / 8) - npcEngineOscs[i].frequency.value) * 0.1;
+      npcEngineFilters[i].frequency.value = 100 + npcSpeed * 8;
+
+      // Volume
+      const targetVol = 0.015 + Math.min(npcSpeed * 0.001, 0.02);
+      npcEngineGains[i].gain.value += (targetVol - npcEngineGains[i].gain.value) * 0.08;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ENHANCED TIRE SOUNDS (surface-dependent positional)
+  // ═══════════════════════════════════════════════════════════════════
+  let tireSurfaceNode = null;
+  let tireSurfaceFilter = null;
+  let tireSurfaceGain = null;
+  let tireSurfaceInitialized = false;
+
+  function initTireSurface() {
+    if (!noiseBuffer || tireSurfaceInitialized) return;
+    tireSurfaceInitialized = true;
+
+    tireSurfaceNode = audioCtx.createBufferSource();
+    tireSurfaceNode.buffer = noiseBuffer;
+    tireSurfaceNode.loop = true;
+
+    tireSurfaceFilter = audioCtx.createBiquadFilter();
+    tireSurfaceFilter.type = 'lowpass';
+    tireSurfaceFilter.frequency.value = 300;
+    tireSurfaceFilter.Q.value = 0.7;
+
+    tireSurfaceGain = audioCtx.createGain();
+    tireSurfaceGain.gain.value = 0;
+
+    tireSurfaceNode.connect(tireSurfaceFilter);
+    tireSurfaceFilter.connect(tireSurfaceGain);
+    tireSurfaceGain.connect(sfxGainNode);
+    tireSurfaceNode.start();
+  }
+
+  function updateTireSurface(speed, carX, carZ) {
+    if (!tireSurfaceGain) {
+      initTireSurface();
+      return;
+    }
+    const kmh = speed * 3.6;
+    if (kmh < 5) {
+      tireSurfaceGain.gain.value *= 0.9;
+      return;
+    }
+    const surfType = (typeof getSurfaceType === 'function') ? getSurfaceType(carX, carZ) : 'road';
+    let targetVol = 0;
+    let targetFreq = 300;
+
+    if (surfType === 'road') {
+      // Smooth hum
+      targetVol = clamp(kmh * 0.00015, 0, 0.012);
+      targetFreq = 200 + kmh * 1.5;
+      tireSurfaceFilter.type = 'lowpass';
+    } else if (surfType === 'dirt' || surfType === 'grass') {
+      // Crunchy gravel
+      targetVol = clamp(kmh * 0.0003, 0, 0.025);
+      targetFreq = 600 + kmh * 3;
+      tireSurfaceFilter.type = 'bandpass';
+      tireSurfaceFilter.Q.value = 1.5;
+    } else if (surfType === 'water' || surfType === 'mud') {
+      // Sloshing
+      targetVol = clamp(kmh * 0.0004, 0, 0.03);
+      targetFreq = 150 + kmh * 1;
+      tireSurfaceFilter.type = 'lowpass';
+      tireSurfaceFilter.Q.value = 2.0;
+    }
+
+    tireSurfaceGain.gain.value += (targetVol - tireSurfaceGain.gain.value) * 0.08;
+    tireSurfaceFilter.frequency.value += (targetFreq - tireSurfaceFilter.frequency.value) * 0.08;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ENHANCED CRASH / IMPACT SOUNDS (positional with debris)
+  // ═══════════════════════════════════════════════════════════════════
+  function playPositionalCrash(x, y, z, intensity) {
+    if (!audioCtx || !sfxGainNode) return;
+
+    // Metal crunch: short burst of filtered noise, pitch envelope high->low
+    const bufLen = Math.floor(audioCtx.sampleRate * 0.2);
+    const buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < bufLen; i++) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.05 * white) / 1.05;
+      const env = Math.exp(-i / (audioCtx.sampleRate * 0.05));
+      data[i] = last * 18 * env;
+    }
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    // Pitch envelope via playbackRate
+    src.playbackRate.setValueAtTime(2.0, audioCtx.currentTime);
+    src.playbackRate.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.15);
+
+    const lpf = audioCtx.createBiquadFilter();
+    lpf.type = 'lowpass';
+    lpf.frequency.value = 500 + intensity * 30;
+
+    const g = audioCtx.createGain();
+    g.gain.value = clamp(intensity * 0.02, 0, 0.25);
+
+    const panner = audioCtx.createPanner();
+    panner.panningModel = 'HRTF';
+    panner.distanceModel = 'inverse';
+    panner.refDistance = 3;
+    panner.maxDistance = 60;
+    panner.rolloffFactor = 1.5;
+    panner.positionX.value = x;
+    panner.positionY.value = y;
+    panner.positionZ.value = z;
+
+    src.connect(lpf);
+    lpf.connect(g);
+    g.connect(panner);
+    panner.connect(sfxGainNode);
+    src.start();
+    src.stop(audioCtx.currentTime + 0.25);
+
+    // Debris clatter (delayed secondary sounds)
+    if (intensity > 5) {
+      const delay = 0.08 + Math.random() * 0.1;
+      setTimeout(() => {
+        if (!audioCtx) return;
+        const dLen = Math.floor(audioCtx.sampleRate * 0.1);
+        const dBuf = audioCtx.createBuffer(1, dLen, audioCtx.sampleRate);
+        const dd = dBuf.getChannelData(0);
+        for (let i = 0; i < dLen; i++) {
+          dd[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.03)) * 0.5;
+        }
+        const dSrc = audioCtx.createBufferSource();
+        dSrc.buffer = dBuf;
+        dSrc.playbackRate.value = 0.8 + Math.random() * 0.6;
+        const dG = audioCtx.createGain();
+        dG.gain.value = clamp(intensity * 0.008, 0, 0.08);
+        const dP = audioCtx.createPanner();
+        dP.panningModel = 'HRTF';
+        dP.distanceModel = 'inverse';
+        dP.refDistance = 3;
+        dP.maxDistance = 40;
+        dP.rolloffFactor = 1.5;
+        dP.positionX.value = x + (Math.random() - 0.5) * 3;
+        dP.positionY.value = y;
+        dP.positionZ.value = z + (Math.random() - 0.5) * 3;
+        dSrc.connect(dG);
+        dG.connect(dP);
+        dP.connect(sfxGainNode);
+        dSrc.start();
+        dSrc.stop(audioCtx.currentTime + 0.15);
+      }, delay * 1000);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // UI SOUNDS
+  // ═══════════════════════════════════════════════════════════════════
+  function playMenuOpenClose() {
+    if (!audioCtx || !sfxGainNode) return;
+    const now = audioCtx.currentTime;
+    // Subtle click/whoosh
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.linearRampToValueAtTime(400, now + 0.08);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.03, now);
+    g.gain.linearRampToValueAtTime(0, now + 0.1);
+    osc.connect(g);
+    g.connect(sfxGainNode);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+
+  function playMissionAccept() {
+    if (!audioCtx || !sfxGainNode) return;
+    const now = audioCtx.currentTime;
+    // Confirmation chime: two ascending tones
+    const osc1 = audioCtx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = 523; // C5
+    const g1 = audioCtx.createGain();
+    g1.gain.setValueAtTime(0.04, now);
+    g1.gain.linearRampToValueAtTime(0, now + 0.15);
+    osc1.connect(g1);
+    g1.connect(sfxGainNode);
+    osc1.start(now);
+    osc1.stop(now + 0.2);
+
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = 659; // E5
+    const g2 = audioCtx.createGain();
+    g2.gain.setValueAtTime(0, now);
+    g2.gain.setValueAtTime(0.04, now + 0.1);
+    g2.gain.linearRampToValueAtTime(0, now + 0.25);
+    osc2.connect(g2);
+    g2.connect(sfxGainNode);
+    osc2.start(now);
+    osc2.stop(now + 0.3);
+  }
+
+  function playItemPickup() {
+    if (!audioCtx || !sfxGainNode) return;
+    const now = audioCtx.currentTime;
+    // Short bright tone
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.linearRampToValueAtTime(1200, now + 0.06);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.04, now);
+    g.gain.linearRampToValueAtTime(0, now + 0.1);
+    osc.connect(g);
+    g.connect(sfxGainNode);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+
+  function playLowFuelWarning() {
+    if (!audioCtx || !sfxGainNode) return;
+    const now = audioCtx.currentTime;
+    // Rhythmic beep
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 600;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.035, now);
+    g.gain.linearRampToValueAtTime(0, now + 0.1);
+    osc.connect(g);
+    g.connect(sfxGainNode);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // VOLUME CONTROL / SETTINGS INTEGRATION
+  // ═══════════════════════════════════════════════════════════════════
+  function applyVolumes() {
+    if (!initialized) return;
+    if (masterGainNode) masterGainNode.gain.value = currentSettings.masterVolume;
+    if (sfxGainNode) sfxGainNode.gain.value = currentSettings.sfxVolume;
+    if (ambientGainNode) ambientGainNode.gain.value = currentSettings.ambientVolume;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // MAIN UPDATE (called each frame from game loop)
+  // ═══════════════════════════════════════════════════════════════════
+  function update(dt) {
+    if (!initialized || !audioCtx) return;
+
+    // Ensure volumes match settings
+    applyVolumes();
+
+    // Mute/reduce when paused
+    if (typeof gamePaused !== 'undefined' && gamePaused) {
+      if (ambientGainNode) ambientGainNode.gain.value *= 0.3;
+      return;
+    }
+
+    const camPos = camera.position;
+    const speed = (typeof chassisBody !== 'undefined') ? chassisBody.velocity.length() : 0;
+    const carX = (typeof chassisBody !== 'undefined') ? chassisBody.position.x : 0;
+    const carZ = (typeof chassisBody !== 'undefined') ? chassisBody.position.z : 0;
+
+    // Update listener position/orientation (THREE.AudioListener handles this
+    // automatically when attached to camera, but we update our PannerNode
+    // listener manually since we use raw Web Audio panners)
+    if (audioCtx.listener) {
+      const l = audioCtx.listener;
+      if (l.positionX) {
+        l.positionX.value = camPos.x;
+        l.positionY.value = camPos.y;
+        l.positionZ.value = camPos.z;
+      } else if (l.setPosition) {
+        l.setPosition(camPos.x, camPos.y, camPos.z);
+      }
+      // Orientation: camera forward and up
+      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+      if (l.forwardX) {
+        l.forwardX.value = fwd.x;
+        l.forwardY.value = fwd.y;
+        l.forwardZ.value = fwd.z;
+        l.upX.value = up.x;
+        l.upY.value = up.y;
+        l.upZ.value = up.z;
+      } else if (l.setOrientation) {
+        l.setOrientation(fwd.x, fwd.y, fwd.z, up.x, up.y, up.z);
+      }
+    }
+
+    // Update all subsystems
+    updateAmbientWind(speed, camPos.y);
+    updateCrickets(dt, camPos);
+    updateBirds(dt, camPos);
+    updateWaterAmbiance(camPos);
+    updateStructureSounds(camPos);
+    updateTurbineHum(camPos);
+    updateNPCEngineSounds();
+    updateTireSurface(speed, carX, carZ);
+
+    // Periodic creaking
+    creakTimer += dt;
+    if (creakTimer >= nextCreakTime) {
+      creakTimer = 0;
+      nextCreakTime = 5 + Math.random() * 10;
+      playCreak(camPos);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PUBLIC API
+  // ═══════════════════════════════════════════════════════════════════
+  return {
+    init,
+    update,
+    applyVolumes,
+    playPositionalCrash,
+    playMenuOpenClose,
+    playMissionAccept,
+    playItemPickup,
+    playLowFuelWarning,
+    get initialized() { return initialized; },
+  };
+})();
+window.soundManager = soundManager;
+
+
+// ═══════════════════════════════════════════════════════════════════════
 // CONTROLS
 // ═══════════════════════════════════════════════════════════════════════
 const keys={};
@@ -7106,8 +9496,8 @@ window.addEventListener('keydown',e=>{
   // F5 = quick save, F9 = quick load — intercept before browser default
   if (e.code === 'F5') { e.preventDefault(); if (typeof saveGame === 'function') saveGame(); return; }
   if (e.code === 'F9') { e.preventDefault(); if (typeof loadGame === 'function') loadGame(); return; }
-  // Allow Escape and Backquote even when paused
-  if (gamePaused && e.code !== 'Escape' && e.code !== 'Backquote') return;
+  // Allow Escape, Backquote, C (customize), and M (missions) even when paused
+  if (gamePaused && e.code !== 'Escape' && e.code !== 'Backquote' && e.code !== 'KeyC' && e.code !== 'KeyM') return;
   // Photo mode key tracking (separate from game keys)
   if (photoMode.active) {
     photoMode.freeCamKeys[e.code] = true;
@@ -7144,16 +9534,32 @@ window.addEventListener('keyup',e=>{
     ov.style.display=(ov.style.display==='none'||!ov.style.display)?'block':'none';
     return;
   }
-  // ── Escape toggles settings (pause) ──
+  // ── Escape: close mission board / customize menu first, then settings ──
   if(e.code==='Escape'){
+    if(typeof missionSystem !== 'undefined' && missionSystem.isOpen()){
+      missionSystem.toggleBoard();
+      return;
+    }
+    if(customizeMenuOpen) { closeCustomizeMenu(); return; }
     gamePaused=!gamePaused;
     const ov=document.getElementById('settings-overlay');
     if(gamePaused){ov.classList.add('open');ov.style.display='flex';if(typeof buildSettingsUI==='function')buildSettingsUI();}
     else{ov.classList.remove('open');ov.style.display='none';}
+    if(typeof soundManager!=='undefined'&&soundManager.initialized)soundManager.playMenuOpenClose();
     return;
   }
+  // ── M toggles mission board (even when paused by mission board) ──
+  if(e.code==='KeyM' && typeof missionSystem !== 'undefined') {
+    if(missionSystem.isOpen()) { missionSystem.toggleBoard(); return; }
+    if(!gamePaused) { missionSystem.toggleBoard(); return; }
+  }
+  // ── C toggles customization menu (even when paused by customize) ──
+  if(e.code==='KeyC'){
+    if(customizeMenuOpen) { closeCustomizeMenu(); return; }
+    else if(!gamePaused) { toggleCustomizeMenu(); return; }
+  }
   if(gamePaused) return;
-  if(e.code==='KeyC')toggleCamera();
+  if(e.code==='KeyV')toggleCamera();
   // ── P toggles photo mode ──
   if(e.code==='KeyP'){ photoMode.toggle(); return; }
   if(e.code==='KeyT')resetVehicle();
@@ -7197,8 +9603,13 @@ function resetVehicle(){
     const orig = origPartData.get(p);
     if (orig) { p.position.copy(orig.pos); p.rotation.copy(orig.rot); }
   });
-  // Reset paint
-  paintMat.color.copy(origPaintColor); paintMat.roughness = 0.25; paintMat.metalness = 0.7;
+  // Reset paint (respect customization if any)
+  const _cdata = getVehicleCustomData(currentVehicle.typeKey);
+  if (_cdata.paintIndex >= 0) {
+    applyPaintToVehicle(currentVehicle, _cdata.paintIndex);
+  } else {
+    paintMat.color.copy(origPaintColor); paintMat.roughness = 0.25; paintMat.metalness = 0.7;
+  }
   // Clean up debris
   currentVehicle.debrisList.forEach(d => { scene.remove(d.mesh); world.removeBody(d.body); });
   currentVehicle.debrisList.length = 0;
@@ -8866,6 +11277,276 @@ function updateWaterSystem(dt, elapsedT, carPos, carSpeed) {
 // ═══════════════════════════════════════════════════════════════════════
 
 
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// FOG PARTICLES (Low-Lying Ground Mist) + DUST MOTES IN GOD RAYS
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Soft circle texture for fog particles ──
+const fogParticleCanvas = document.createElement('canvas');
+fogParticleCanvas.width = 64;
+fogParticleCanvas.height = 64;
+const fogParticleCtx = fogParticleCanvas.getContext('2d');
+const fogGrad = fogParticleCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+fogGrad.addColorStop(0, 'rgba(255,255,255,0.5)');
+fogGrad.addColorStop(0.4, 'rgba(255,255,255,0.2)');
+fogGrad.addColorStop(1, 'rgba(255,255,255,0.0)');
+fogParticleCtx.fillStyle = fogGrad;
+fogParticleCtx.fillRect(0, 0, 64, 64);
+const fogParticleTexture = new THREE.CanvasTexture(fogParticleCanvas);
+
+// ── Ground fog particles ──
+const FOG_PARTICLE_COUNT = 250;
+const fogParticlePositions = new Float32Array(FOG_PARTICLE_COUNT * 3);
+const fogParticleAlphas = new Float32Array(FOG_PARTICLE_COUNT);
+const fogParticleSizes = new Float32Array(FOG_PARTICLE_COUNT);
+const fogParticleVelocities = []; // { vx, vy, vz }
+
+function initFogParticle(i, camPos) {
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 10 + Math.random() * 80;
+  fogParticlePositions[i * 3] = camPos.x + Math.cos(angle) * radius;
+  fogParticlePositions[i * 3 + 1] = Math.random() * 4; // below y=5
+  fogParticlePositions[i * 3 + 2] = camPos.z + Math.sin(angle) * radius;
+  fogParticleAlphas[i] = 0.05 + Math.random() * 0.15;
+  fogParticleSizes[i] = 8 + Math.random() * 20;
+  if (!fogParticleVelocities[i]) {
+    fogParticleVelocities[i] = { vx: 0, vy: 0, vz: 0 };
+  }
+  fogParticleVelocities[i].vx = (Math.random() - 0.5) * 0.5;
+  fogParticleVelocities[i].vy = (Math.random() - 0.5) * 0.05;
+  fogParticleVelocities[i].vz = (Math.random() - 0.5) * 0.5;
+}
+
+const fogParticleGeom = new THREE.BufferGeometry();
+fogParticleGeom.setAttribute('position', new THREE.BufferAttribute(fogParticlePositions, 3));
+fogParticleGeom.setAttribute('alpha', new THREE.BufferAttribute(fogParticleAlphas, 1));
+fogParticleGeom.setAttribute('size', new THREE.BufferAttribute(fogParticleSizes, 1));
+
+const fogParticleMat = new THREE.ShaderMaterial({
+  uniforms: {
+    map: { value: fogParticleTexture },
+    globalOpacity: { value: 0.6 },
+  },
+  vertexShader: `
+    attribute float alpha;
+    attribute float size;
+    varying float vAlpha;
+    void main() {
+      vAlpha = alpha;
+      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * (200.0 / -mvPos.z);
+      gl_Position = projectionMatrix * mvPos;
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D map;
+    uniform float globalOpacity;
+    varying float vAlpha;
+    void main() {
+      vec4 tex = texture2D(map, gl_PointCoord);
+      gl_FragColor = vec4(vec3(0.85, 0.83, 0.78), tex.a * vAlpha * globalOpacity);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.NormalBlending,
+});
+
+const fogParticleSystem = new THREE.Points(fogParticleGeom, fogParticleMat);
+fogParticleSystem.frustumCulled = false;
+scene.add(fogParticleSystem);
+
+// Initialize fog particles
+for (let i = 0; i < FOG_PARTICLE_COUNT; i++) {
+  initFogParticle(i, { x: 0, z: 0 });
+}
+
+// ── Dust motes in god rays ──
+const DUST_MOTE_COUNT = 150;
+const dustMotePositions = new Float32Array(DUST_MOTE_COUNT * 3);
+const dustMoteAlphas = new Float32Array(DUST_MOTE_COUNT);
+const dustMoteSizes = new Float32Array(DUST_MOTE_COUNT);
+const dustMoteVelocities = [];
+
+function initDustMote(i, camPos, sunDir) {
+  // Spawn in a cone toward the sun direction
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 5 + Math.random() * 40;
+  const height = 2 + Math.random() * 15;
+  dustMotePositions[i * 3] = camPos.x + Math.cos(angle) * radius;
+  dustMotePositions[i * 3 + 1] = height;
+  dustMotePositions[i * 3 + 2] = camPos.z + Math.sin(angle) * radius;
+  dustMoteAlphas[i] = 0.1 + Math.random() * 0.4;
+  dustMoteSizes[i] = 1.0 + Math.random() * 2.5;
+  if (!dustMoteVelocities[i]) {
+    dustMoteVelocities[i] = { vx: 0, vy: 0, vz: 0 };
+  }
+  dustMoteVelocities[i].vx = (Math.random() - 0.5) * 0.3;
+  dustMoteVelocities[i].vy = (Math.random() - 0.5) * 0.1;
+  dustMoteVelocities[i].vz = (Math.random() - 0.5) * 0.3;
+}
+
+const dustMoteGeom = new THREE.BufferGeometry();
+dustMoteGeom.setAttribute('position', new THREE.BufferAttribute(dustMotePositions, 3));
+dustMoteGeom.setAttribute('alpha', new THREE.BufferAttribute(dustMoteAlphas, 1));
+dustMoteGeom.setAttribute('size', new THREE.BufferAttribute(dustMoteSizes, 1));
+
+const dustMoteMat = new THREE.ShaderMaterial({
+  uniforms: {
+    globalOpacity: { value: 0.0 },
+  },
+  vertexShader: `
+    attribute float alpha;
+    attribute float size;
+    varying float vAlpha;
+    void main() {
+      vAlpha = alpha;
+      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * (150.0 / -mvPos.z);
+      gl_Position = projectionMatrix * mvPos;
+    }
+  `,
+  fragmentShader: `
+    uniform float globalOpacity;
+    varying float vAlpha;
+    void main() {
+      // Soft dot
+      float dist = length(gl_PointCoord - vec2(0.5));
+      float soft = 1.0 - smoothstep(0.0, 0.5, dist);
+      gl_FragColor = vec4(vec3(1.0, 0.95, 0.85), soft * vAlpha * globalOpacity);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+});
+
+const dustMoteSystem = new THREE.Points(dustMoteGeom, dustMoteMat);
+dustMoteSystem.frustumCulled = false;
+scene.add(dustMoteSystem);
+
+// Initialize dust motes
+for (let i = 0; i < DUST_MOTE_COUNT; i++) {
+  initDustMote(i, { x: 0, z: 0 }, { x: 0.5, y: 0.5, z: 0 });
+}
+
+// ── Update function for fog particles and dust motes ──
+function updateVolumetricParticles(dt, camPos, sunDir, sunAltitude, windAngle) {
+  const vfxSetting = currentSettings.volumetricEffects || 'high';
+  if (vfxSetting === 'off') {
+    fogParticleSystem.visible = false;
+    dustMoteSystem.visible = false;
+    return;
+  }
+
+  // ── Ground fog particles ──
+  fogParticleSystem.visible = true;
+  const windX = Math.cos(windAngle || 0) * 0.8;
+  const windZ = Math.sin(windAngle || 0) * 0.8;
+
+  // Fog thickness: more at dawn/dusk, less at noon
+  let fogParticleOpacity = 0.5;
+  if (sunAltitude > 0.3) {
+    fogParticleOpacity = 0.25; // thin during day
+  } else if (sunAltitude > 0) {
+    fogParticleOpacity = 0.25 + (1 - sunAltitude / 0.3) * 0.35; // thick at dawn/dusk
+  } else {
+    fogParticleOpacity = 0.4; // moderate at night
+  }
+  // Weather: fog weather increases particles
+  if (weatherState.type === 'fog') fogParticleOpacity += 0.3 * weatherState.intensity;
+  if (weatherState.type === 'rain') fogParticleOpacity += 0.15 * weatherState.intensity;
+
+  fogParticleMat.uniforms.globalOpacity.value = fogParticleOpacity;
+
+  const posAttr = fogParticleGeom.attributes.position;
+  const alphaAttr = fogParticleGeom.attributes.alpha;
+
+  for (let i = 0; i < FOG_PARTICLE_COUNT; i++) {
+    const v = fogParticleVelocities[i];
+    // Drift with wind
+    posAttr.array[i * 3] += (v.vx + windX) * dt;
+    posAttr.array[i * 3 + 1] += v.vy * dt;
+    posAttr.array[i * 3 + 2] += (v.vz + windZ) * dt;
+
+    // Keep below y=5
+    if (posAttr.array[i * 3 + 1] > 5) posAttr.array[i * 3 + 1] = 5;
+    if (posAttr.array[i * 3 + 1] < -0.5) posAttr.array[i * 3 + 1] = 0;
+
+    // Distance from camera
+    const dx = posAttr.array[i * 3] - camPos.x;
+    const dz = posAttr.array[i * 3 + 2] - camPos.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    // Fade with distance
+    const baseFade = Math.max(0, 1 - dist / 90);
+    alphaAttr.array[i] = (0.05 + Math.random() * 0.02) * baseFade;
+
+    // Respawn if too far
+    if (dist > 100) {
+      initFogParticle(i, camPos);
+    }
+  }
+  posAttr.needsUpdate = true;
+  alphaAttr.needsUpdate = true;
+
+  // ── Dust motes (only when god rays are active, i.e. daytime) ──
+  const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  const sunDotCamera = lookDir.dot(sunDir);
+  const lookingTowardSun = sunDotCamera > 0.1;
+
+  let dustOpacity = 0.0;
+  if (sunAltitude > 0.05 && lookingTowardSun) {
+    // Stronger when looking more directly at sun
+    dustOpacity = Math.min(0.8, sunAltitude * 2) * Math.min(1, (sunDotCamera - 0.1) / 0.5);
+    // Reduce during rain, increase in dust storms
+    if (weatherState.type === 'rain') dustOpacity *= 0.3;
+    if (weatherState.type === 'dust_storm') dustOpacity *= 1.5;
+  }
+
+  if (vfxSetting === 'low') dustOpacity *= 0.5;
+
+  dustMoteMat.uniforms.globalOpacity.value = dustOpacity;
+  dustMoteSystem.visible = dustOpacity > 0.01;
+
+  if (dustMoteSystem.visible) {
+    const dPosAttr = dustMoteGeom.attributes.position;
+    const dAlphaAttr = dustMoteGeom.attributes.alpha;
+
+    for (let i = 0; i < DUST_MOTE_COUNT; i++) {
+      const v = dustMoteVelocities[i];
+      // Very slow random drift
+      dPosAttr.array[i * 3] += v.vx * dt;
+      dPosAttr.array[i * 3 + 1] += v.vy * dt;
+      dPosAttr.array[i * 3 + 2] += v.vz * dt;
+
+      // Slight random perturbation
+      v.vx += (Math.random() - 0.5) * 0.1 * dt;
+      v.vy += (Math.random() - 0.5) * 0.05 * dt;
+      v.vz += (Math.random() - 0.5) * 0.1 * dt;
+
+      // Clamp velocity
+      v.vx = Math.max(-0.5, Math.min(0.5, v.vx));
+      v.vy = Math.max(-0.15, Math.min(0.15, v.vy));
+      v.vz = Math.max(-0.5, Math.min(0.5, v.vz));
+
+      // Distance from camera
+      const dx = dPosAttr.array[i * 3] - camPos.x;
+      const dz = dPosAttr.array[i * 3 + 2] - camPos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      // Respawn if too far
+      if (dist > 50) {
+        initDustMote(i, camPos, sunDir);
+      }
+    }
+    dPosAttr.needsUpdate = true;
+    dAlphaAttr.needsUpdate = true;
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // POST-PROCESSING PIPELINE
 
@@ -8873,6 +11554,204 @@ function updateWaterSystem(dt, elapsedT, carPos, carSpeed) {
 const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
+
+// --- Depth Render Target (for volumetric fog depth reconstruction) ---
+const depthRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+  minFilter: THREE.NearestFilter,
+  magFilter: THREE.NearestFilter,
+});
+const depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
+depthTexture.format = THREE.DepthFormat;
+depthTexture.type = THREE.UnsignedIntType;
+depthRenderTarget.depthTexture = depthTexture;
+
+// ═══════════════════════════════════════════════════════════════════════
+// GOD RAYS (Volumetric Light Scattering) POST-PROCESSING PASS
+// ═══════════════════════════════════════════════════════════════════════
+
+// Half-resolution render target for god rays (performance optimization)
+const godRaysRT = new THREE.WebGLRenderTarget(
+  Math.floor(window.innerWidth / 2),
+  Math.floor(window.innerHeight / 2),
+  { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat }
+);
+
+const GodRaysShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    sunScreenPos: { value: new THREE.Vector2(0.5, 0.5) },
+    density: { value: 0.96 },
+    weight: { value: 0.4 },
+    decay: { value: 0.97 },
+    exposure: { value: 0.35 },
+    numSamples: { value: 30 },
+    godRayIntensity: { value: 0.0 },
+    rayColor: { value: new THREE.Vector3(1.0, 0.95, 0.8) },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 sunScreenPos;
+    uniform float density;
+    uniform float weight;
+    uniform float decay;
+    uniform float exposure;
+    uniform int numSamples;
+    uniform float godRayIntensity;
+    uniform vec3 rayColor;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+
+      if (godRayIntensity < 0.01) {
+        gl_FragColor = texel;
+        return;
+      }
+
+      // Direction from pixel toward sun in screen space
+      vec2 deltaUV = (vUv - sunScreenPos);
+      float dist = length(deltaUV);
+      deltaUV *= 1.0 / float(numSamples) * density;
+
+      // Occlusion: bright pixels near sun become ray sources
+      // Use luminance threshold to detect bright sky/sun areas
+      vec2 sampleUV = vUv;
+      float illumination = 0.0;
+      float sampleDecay = 1.0;
+
+      for (int i = 0; i < 50; i++) {
+        if (i >= numSamples) break;
+        sampleUV -= deltaUV;
+        vec4 samp = texture2D(tDiffuse, clamp(sampleUV, 0.0, 1.0));
+        float lum = dot(samp.rgb, vec3(0.2126, 0.7152, 0.0722));
+        // Accumulate from bright pixels (sky/sun threshold) - lower threshold for dawn/dusk
+        float brightMask = smoothstep(0.15, 0.6, lum);
+        illumination += brightMask * sampleDecay * weight;
+        sampleDecay *= decay;
+      }
+
+      illumination *= exposure;
+
+      // Distance falloff from sun position (rays weaker far from sun)
+      float distFalloff = 1.0 - smoothstep(0.0, 1.2, dist);
+
+      vec3 rays = rayColor * illumination * distFalloff * godRayIntensity;
+
+      // Additive blend
+      gl_FragColor = vec4(texel.rgb + rays, texel.a);
+    }
+  `
+};
+
+const godRaysPass = new ShaderPass(GodRaysShader);
+godRaysPass.enabled = true;
+composer.addPass(godRaysPass);
+
+// ═══════════════════════════════════════════════════════════════════════
+// VOLUMETRIC FOG (Height Fog + Distance Fog) POST-PROCESSING PASS
+// ═══════════════════════════════════════════════════════════════════════
+
+const VolumetricFogShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    tDepth: { value: depthTexture },
+    fogColor: { value: new THREE.Vector3(0.75, 0.72, 0.66) },
+    fogDensity: { value: 0.002 },
+    heightFalloff: { value: 0.05 },
+    fogTop: { value: 30.0 },
+    cameraPosWorld: { value: new THREE.Vector3() },
+    viewMatrixInverse: { value: new THREE.Matrix4() },
+    projMatrixInverse: { value: new THREE.Matrix4() },
+    cameraNear: { value: 0.5 },
+    cameraFar: { value: 1200.0 },
+    fogIntensity: { value: 1.0 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform sampler2D tDepth;
+    uniform vec3 fogColor;
+    uniform float fogDensity;
+    uniform float heightFalloff;
+    uniform float fogTop;
+    uniform vec3 cameraPosWorld;
+    uniform mat4 viewMatrixInverse;
+    uniform mat4 projMatrixInverse;
+    uniform float cameraNear;
+    uniform float cameraFar;
+    uniform float fogIntensity;
+    varying vec2 vUv;
+
+    float linearizeDepth(float d) {
+      return cameraNear * cameraFar / (cameraFar - d * (cameraFar - cameraNear));
+    }
+
+    vec3 reconstructWorldPos(vec2 uv, float depth) {
+      // Convert to NDC (-1 to 1)
+      vec4 ndc = vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+      // Unproject to view space
+      vec4 viewPos = projMatrixInverse * ndc;
+      viewPos /= viewPos.w;
+      // Transform to world space
+      vec4 worldPos = viewMatrixInverse * viewPos;
+      return worldPos.xyz;
+    }
+
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+
+      if (fogIntensity < 0.01) {
+        gl_FragColor = texel;
+        return;
+      }
+
+      float rawDepth = texture2D(tDepth, vUv).r;
+
+      // Skip sky pixels (depth ~= 1.0)
+      if (rawDepth > 0.9999) {
+        gl_FragColor = texel;
+        return;
+      }
+
+      vec3 worldPos = reconstructWorldPos(vUv, rawDepth);
+
+      // Distance fog (exponential squared for more natural falloff)
+      float dist = length(worldPos - cameraPosWorld);
+      float distFog = 1.0 - exp(-dist * dist * fogDensity * fogDensity);
+
+      // Height fog: denser below fogTop, exponential falloff
+      float heightFog = 0.0;
+      if (worldPos.y < fogTop) {
+        float heightFactor = exp(-heightFalloff * max(worldPos.y, 0.0));
+        heightFog = heightFactor * (1.0 - exp(-dist * fogDensity * 0.8));
+      }
+
+      // Combine: blend distance and height fog
+      float fogAmount = (distFog * 0.4 + heightFog * 0.6) * fogIntensity;
+      fogAmount = clamp(fogAmount, 0.0, 0.88);
+
+      vec3 finalColor = mix(texel.rgb, fogColor, fogAmount);
+      gl_FragColor = vec4(finalColor, texel.a);
+    }
+  `
+};
+
+const volumetricFogPass = new ShaderPass(VolumetricFogShader);
+volumetricFogPass.enabled = true;
+composer.addPass(volumetricFogPass);
 
 // --- Bloom Pass (UnrealBloomPass) ---
 const bloomPass = new UnrealBloomPass(
@@ -9112,6 +11991,8 @@ const SETTINGS_DEFAULTS = {
   // Audio
   masterVolume: 1.0,
   engineVolume: 1.0,
+  sfxVolume: 1.0,
+  ambientVolume: 1.0,
   // Camera
   fov: 60,
   chaseDist: 1.0,              // multiplier
@@ -9119,6 +12000,7 @@ const SETTINGS_DEFAULTS = {
   particleDensity: 1.0,
   filmGrain: 0.015,
   fogDensity: 1.0,             // multiplier on computed fog
+  volumetricEffects: 'high',   // 'high', 'low', 'off' — god rays, volumetric fog, particles
 };
 
 const SETTINGS_DEFS = [
@@ -9133,13 +12015,18 @@ const SETTINGS_DEFS = [
   { tab: 'Gameplay', key: 'fogDensity',     label: 'Fog Density',      desc: 'Atmospheric fog multiplier', type: 'slider', min: 0.0, max: 3.0, step: 0.1 },
   { tab: 'Audio',    key: 'masterVolume',   label: 'Master Volume',    desc: 'Overall game volume', type: 'slider', min: 0.0, max: 1.0, step: 0.05 },
   { tab: 'Audio',    key: 'engineVolume',   label: 'Engine Volume',    desc: 'Vehicle engine sounds', type: 'slider', min: 0.0, max: 1.0, step: 0.05 },
+  { tab: 'Audio',    key: 'sfxVolume',      label: 'SFX Volume',       desc: 'Sound effects (impacts, UI, tires)', type: 'slider', min: 0.0, max: 1.0, step: 0.05 },
+  { tab: 'Audio',    key: 'ambientVolume',  label: 'Ambient Volume',   desc: 'Environmental sounds (wind, insects, water)', type: 'slider', min: 0.0, max: 1.0, step: 0.05 },
   { tab: 'Camera',   key: 'fov',            label: 'Field of View',    desc: 'Camera FOV in degrees', type: 'slider', min: 40, max: 110, step: 1 },
   { tab: 'Camera',   key: 'chaseDist',      label: 'Chase Distance',   desc: 'How far camera sits behind car', type: 'slider', min: 0.5, max: 2.5, step: 0.1 },
   { tab: 'Effects',  key: 'particleDensity',label: 'Particle Density', desc: 'Dust, smoke, rain particle count', type: 'slider', min: 0.0, max: 2.0, step: 0.1 },
   { tab: 'Effects',  key: 'filmGrain',      label: 'Film Grain',       desc: 'Overlay grain intensity', type: 'slider', min: 0.0, max: 0.06, step: 0.005 },
+  { tab: 'Effects',  key: 'volumetricEffects', label: 'Volumetric Effects', desc: 'God rays, volumetric fog, dust motes', type: 'dropdown', options: ['high', 'low', 'off'] },
 ];
 
 let currentSettings = { ...SETTINGS_DEFAULTS };
+window.SETTINGS_DEFS = SETTINGS_DEFS;
+window.currentSettings = currentSettings;
 
 function saveSettings() {
   try { localStorage.setItem('drivingSandboxSettings', JSON.stringify(currentSettings)); } catch(e) {}
@@ -9178,12 +12065,22 @@ function applySettings() {
   vignettePass.enabled = s.postProcessing;
   filmGrainSpeedPass.enabled = s.postProcessing;
 
+  // Volumetric effects
+  const vfx = s.volumetricEffects || 'high';
+  godRaysPass.enabled = s.postProcessing && vfx !== 'off';
+  volumetricFogPass.enabled = s.postProcessing && vfx !== 'off';
+
   // FOV
   camera.fov = s.fov;
   camera.updateProjectionMatrix();
 
   // Film grain base
   // (actual grain updated per-frame in animate; this sets the base)
+
+  // Audio volumes
+  if (typeof soundManager !== 'undefined' && soundManager.initialized) {
+    soundManager.applyVolumes();
+  }
 
   saveSettings();
 }
@@ -10232,6 +13129,11 @@ function gatherSaveData() {
       position: { x: fv.position.x, y: fv.position.y, z: fv.position.z },
       rotation: fv.rotation,
     })),
+    missionData: (typeof missionSystem !== 'undefined') ? missionSystem.getSaveData() : null,
+    customization: {
+      currency: customizeState.currency,
+      vehicles: JSON.parse(JSON.stringify(customizeState.vehicles)),
+    },
   };
   return saveData;
 }
@@ -10364,6 +13266,23 @@ function applySaveData(data) {
     }
   }
 
+  // -- Restore customization data --
+  if (data.customization) {
+    customizeState.currency = data.customization.currency || 500;
+    if (data.customization.vehicles) {
+      Object.assign(customizeState.vehicles, data.customization.vehicles);
+    }
+    const cdata = getVehicleCustomData(currentVehicle.typeKey);
+    if (cdata.paintIndex >= 0) applyPaintToVehicle(currentVehicle, cdata.paintIndex);
+    applyUpgradesToVehicle(currentVehicle);
+    syncAttachments(currentVehicle);
+  }
+
+  // Restore mission system data
+  if (data.missionData && typeof missionSystem !== 'undefined') {
+    missionSystem.loadSaveData(data.missionData);
+  }
+
   smoothedEngineForce = 0;
 }
 
@@ -10409,6 +13328,10 @@ function animate(){
 
   // ── Pause guard: skip physics/game updates when paused, still render ──
   if (gamePaused) {
+    // Garage camera orbit when customization menu is open
+    if (garageActive) {
+      updateGarageCamera(dt);
+    }
     // Still render the scene so it's visible behind the settings overlay
     if (currentSettings.postProcessing) { composer.render(); }
     else { renderer.render(scene, camera); }
@@ -10435,9 +13358,10 @@ function animate(){
   const steerR=keys['KeyD']||keys['ArrowRight'];
   const handbrake=keys['Space'];
 
-  // Per-vehicle driving params
-  const MAX_ENGINE = currentVehicle.vtype.maxForce;
-  const MAX_BRAKE = currentVehicle.vtype.maxBrake;
+  // Per-vehicle driving params (with upgrade multipliers)
+  const turboMult = updateTurboBoost(dt, accel);
+  const MAX_ENGINE = getEffectiveMaxForce() * turboMult;
+  const MAX_BRAKE = getEffectiveMaxBrake();
   const HANDBRAKE_F = currentVehicle.vtype.handbrakeForce;
   const MAX_STEER = currentVehicle.vtype.maxSteer;
   const BODY_DROP = currentVehicle.vtype.bodyDrop;
@@ -10574,6 +13498,7 @@ function animate(){
           fuelState.current = Math.min(fuelState.max, fuelState.current + addFuel);
           if (fuelState.current > 0) fuelState.outOfFuel = false;
           playFuelPickupSound();
+          if(typeof soundManager!=='undefined'&&soundManager.initialized)soundManager.playItemPickup();
           showFuelPickupText('+' + Math.round(addFuel) + ' FUEL');
         }
       } else {
@@ -11016,6 +13941,20 @@ function animate(){
   if(cameraMode==='chase')updateChaseCamera(dt);
   else{orbitControls.target.set(chassisBody.position.x,chassisBody.position.y+1,chassisBody.position.z);orbitControls.update();}
 
+  // ── Update customization attachments ──
+  updateExhaustSmoke(currentVehicle, dt, accel, turboState.active);
+  updateAntennaSway(currentVehicle, dt);
+  updateLightBarIntensity(currentVehicle);
+
+  // ── Turbo visual effects ──
+  if (turboState.active) {
+    camera.fov = THREE.MathUtils.lerp(camera.fov, 68, 0.1);
+    camera.updateProjectionMatrix();
+  } else if (camera.fov > 60.1) {
+    camera.fov = THREE.MathUtils.lerp(camera.fov, 60, 0.05);
+    camera.updateProjectionMatrix();
+  }
+
   // ── Update all systems ──
   updateShadowCam();updateHUD(speed);updateAudio(speed,accel);
   updateSurfaceSounds(speed, lateralSpeed, avgSurfaceBlend, isDrifting, brakingHard);
@@ -11025,9 +13964,12 @@ function animate(){
   // ── Water bodies system update ──
   updateWaterSystem(dt, clock.elapsedTime, chassisBody.position, speed);
   if (typeof updateAITraffic === 'function') updateAITraffic(dt);
+  if (typeof missionSystem !== 'undefined') missionSystem.update(dt);
   minimapSystem.update();
   // ── Radio system update ──
   radioSystem.update(dt);
+  // ── 3D Positional Audio update ──
+  if (soundManager.initialized) soundManager.update(dt);
 
   // ── Post-Processing Uniform Updates ──
   const elapsedTime = clock.elapsedTime;
@@ -11047,6 +13989,132 @@ function animate(){
   const kmhSpeed = speed * 3.6;
   const speedLinesFactor = Math.max(0, Math.min(1.0, (kmhSpeed - 100) / 100));
   filmGrainSpeedPass.uniforms.speedFactor.value = speedLinesFactor;
+
+  // ── Volumetric Effects Uniform Updates ──
+  const vfxSetting = currentSettings.volumetricEffects || 'high';
+  if (vfxSetting !== 'off' && currentSettings.postProcessing) {
+    const sunPos = getSunPosition(gameTime);
+    const sunAltitude = sunPos.y;
+
+    // === GOD RAYS ===
+    // Project sun position to screen space
+    const sunWorldPos = sunPos.clone().multiplyScalar(500); // far point along sun direction
+    const sunScreen = sunWorldPos.clone().project(camera);
+    const sunScreenX = (sunScreen.x + 1) * 0.5;
+    const sunScreenY = (sunScreen.y + 1) * 0.5;
+    godRaysPass.uniforms.sunScreenPos.value.set(sunScreenX, sunScreenY);
+
+    // God ray intensity based on sun altitude (strongest at sunrise/sunset)
+    let godRayIntensity = 0.0;
+    if (sunAltitude > 0.02) {
+      // Low sun = dramatic rays, high sun = subtle
+      if (sunAltitude < 0.3) {
+        // Dawn/dusk: ramp up dramatically
+        godRayIntensity = (sunAltitude - 0.02) / 0.28; // 0 to 1
+        godRayIntensity = Math.pow(godRayIntensity, 0.5); // ease-in for quicker onset
+      } else if (sunAltitude < 0.6) {
+        // Mid-day: taper off
+        godRayIntensity = 1.0 - (sunAltitude - 0.3) / 0.3 * 0.6; // 1.0 down to 0.4
+      } else {
+        // High noon: subtle
+        godRayIntensity = 0.4;
+      }
+    }
+
+    // Weather reduces god rays
+    if (weatherState.type === 'rain') godRayIntensity *= Math.max(0, 1 - weatherState.intensity * 0.8);
+    if (weatherState.type === 'fog') godRayIntensity *= Math.max(0, 1 - weatherState.intensity * 0.6);
+    if (weatherState.type === 'dust_storm') godRayIntensity *= Math.max(0, 1 - weatherState.intensity * 0.5);
+
+    // Quality setting
+    if (vfxSetting === 'low') {
+      godRayIntensity *= 0.6;
+      godRaysPass.uniforms.numSamples.value = 20;
+    } else {
+      godRaysPass.uniforms.numSamples.value = 30;
+    }
+
+    godRaysPass.uniforms.godRayIntensity.value = godRayIntensity;
+
+    // Ray color: warm at sunrise/sunset, white at noon
+    if (sunAltitude > 0 && sunAltitude < 0.2) {
+      // Dawn/dusk: warm golden-orange
+      const t = sunAltitude / 0.2;
+      godRaysPass.uniforms.rayColor.value.set(
+        1.0,
+        0.6 + t * 0.3,
+        0.3 + t * 0.4
+      );
+    } else if (sunAltitude >= 0.2) {
+      // Day: warm white
+      const t = Math.min(1, (sunAltitude - 0.2) / 0.4);
+      godRaysPass.uniforms.rayColor.value.set(
+        1.0,
+        0.9 + t * 0.1,
+        0.7 + t * 0.3
+      );
+    }
+
+    // === VOLUMETRIC FOG ===
+    volumetricFogPass.uniforms.tDepth.value = depthTexture;
+    volumetricFogPass.uniforms.cameraPosWorld.value.copy(camera.position);
+    volumetricFogPass.uniforms.viewMatrixInverse.value.copy(camera.matrixWorld);
+    volumetricFogPass.uniforms.projMatrixInverse.value.copy(camera.projectionMatrixInverse);
+    volumetricFogPass.uniforms.cameraNear.value = camera.near;
+    volumetricFogPass.uniforms.cameraFar.value = camera.far;
+
+    // Fog density varies with time of day
+    let vfogDensity = 0.0015;
+    if (sunAltitude > 0.3) {
+      vfogDensity = 0.0008; // light during day
+    } else if (sunAltitude > 0) {
+      vfogDensity = 0.0008 + (1 - sunAltitude / 0.3) * 0.001; // slightly heavier at dawn/dusk
+    } else {
+      vfogDensity = 0.0015; // moderate at night
+    }
+
+    // Weather multiplier
+    const wFogMult = getWeatherFogMultiplier();
+    vfogDensity *= wFogMult;
+    // Settings multiplier
+    vfogDensity *= (currentSettings.fogDensity || 1.0);
+
+    volumetricFogPass.uniforms.fogDensity.value = vfogDensity;
+
+    // Fog color from sky horizon color
+    const skyColors = lerpSkyColors(gameTime);
+    volumetricFogPass.uniforms.fogColor.value.set(skyColors.hz.r, skyColors.hz.g, skyColors.hz.b);
+
+    // Apply weather fog tint
+    const fogTint = getWeatherFogColorTint();
+    if (fogTint.amount > 0) {
+      const fc = volumetricFogPass.uniforms.fogColor.value;
+      fc.x = fc.x + (fogTint.color.r - fc.x) * fogTint.amount;
+      fc.y = fc.y + (fogTint.color.g - fc.y) * fogTint.amount;
+      fc.z = fc.z + (fogTint.color.b - fc.z) * fogTint.amount;
+    }
+
+    volumetricFogPass.uniforms.fogIntensity.value = vfxSetting === 'low' ? 0.6 : 1.0;
+
+    // === PARTICLES ===
+    updateVolumetricParticles(dt, camera.position, sunPos, sunAltitude, _weather.windAngle);
+  } else {
+    // Disable volumetric effects
+    godRaysPass.uniforms.godRayIntensity.value = 0;
+    volumetricFogPass.uniforms.fogIntensity.value = 0;
+    fogParticleSystem.visible = false;
+    dustMoteSystem.visible = false;
+  }
+
+  // ── Depth Pre-Pass for Volumetric Fog ──
+  if (currentSettings.postProcessing && (currentSettings.volumetricEffects || 'high') !== 'off') {
+    // Render scene to depth render target to capture depth buffer
+    renderer.setRenderTarget(depthRenderTarget);
+    renderer.render(scene, camera);
+    renderer.setRenderTarget(null);
+    // Update fog pass depth texture
+    volumetricFogPass.uniforms.tDepth.value = depthRenderTarget.depthTexture;
+  }
 
   // Render via composer (or direct if post-processing disabled)
   if (currentSettings.postProcessing) { composer.render(); }
@@ -11074,6 +14142,9 @@ window.addEventListener('resize',()=>{
   renderer.setSize(window.innerWidth,window.innerHeight);
   composer.setSize(window.innerWidth,window.innerHeight);
   bloomPass.resolution.set(window.innerWidth,window.innerHeight);
+  // Resize depth render target and god rays RT
+  depthRenderTarget.setSize(window.innerWidth, window.innerHeight);
+  godRaysRT.setSize(Math.floor(window.innerWidth / 2), Math.floor(window.innerHeight / 2));
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -11467,6 +14538,11 @@ const minimapSystem = (() => {
         ctx.lineWidth = 1;
         ctx.stroke();
       }
+    }
+
+    // ── Draw mission markers on minimap ──
+    if (typeof missionSystem !== 'undefined') {
+      missionSystem.drawOnMinimap(ctx, worldToMinimap, playerX, playerZ, cosA, sinA, inCircle, CX, CY);
     }
 
     // ── Draw player arrow (always centered, pointing up) ──
@@ -11909,6 +14985,1090 @@ function updateAITraffic(dt) {
     npc.mesh.rotation.x = npc.mesh.rotation.x + (pitchAngle - npc.mesh.rotation.x) * Math.min(1, 3 * dt);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// MISSION / QUEST SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+const missionSystem = (() => {
+  // ── State ──
+  let missions = [];          // available missions
+  let activeMission = null;   // currently active mission
+  let missionBoardOpen = false;
+  let missionResultShown = false;
+  let selectedMissionIdx = -1;
+
+  // Progression
+  let totalXP = 0;
+  let totalCompleted = 0;
+  let missionStartTime = 0;
+
+  // 3D markers
+  const waypointMarkers = [];   // { mesh, glowMesh, type, missionId }
+  const checkpointGates = [];
+  const scavengeItems = [];
+  const explorationMarkers = [];
+
+  // Particle pool for pickup effects
+  const pickupParticles = [];
+
+  // DOM refs
+  const boardOverlay = document.getElementById('mission-board-overlay');
+  const boardEl = document.getElementById('mission-board');
+  const listEl = document.getElementById('mb-list');
+  const detailEl = document.getElementById('mb-detail');
+  const detailTitle = document.getElementById('md-title');
+  const detailObj = document.getElementById('md-obj');
+  const detailInfo = document.getElementById('md-info');
+  const acceptBtn = document.getElementById('md-accept');
+  const cancelBtn = document.getElementById('md-cancel');
+  const repEl = document.getElementById('mb-rep');
+  const closeBtn = document.getElementById('mb-close');
+
+  const hudEl = document.getElementById('mission-hud');
+  const mhName = document.getElementById('mh-name');
+  const mhObj = document.getElementById('mh-objective');
+  const mhFill = document.getElementById('mh-progress-fill');
+  const mhTimer = document.getElementById('mh-timer');
+  const mhDist = document.getElementById('mh-dist');
+
+  const repHud = document.getElementById('mission-rep-hud');
+  const mrhXP = document.getElementById('mrh-xp');
+  const mrhRank = document.getElementById('mrh-rank');
+  const mrhDone = document.getElementById('mrh-done');
+
+  const resultOverlay = document.getElementById('mission-result-overlay');
+  const mrTitle = document.getElementById('mr-title');
+  const mrName = document.getElementById('mr-mission-name');
+  const mrStats = document.getElementById('mr-stats');
+  const mrBtn = document.getElementById('mr-btn');
+
+  const hintEl = document.getElementById('mission-hint');
+
+  // ── Rank table ──
+  const RANKS = [
+    { xp: 0,    name: 'DRIFTER' },
+    { xp: 200,  name: 'RUNNER' },
+    { xp: 500,  name: 'SCOUT' },
+    { xp: 1000, name: 'VETERAN' },
+    { xp: 2000, name: 'LEGEND' },
+    { xp: 4000, name: 'WASTELAND ACE' },
+  ];
+  function getRank(xp) {
+    let r = RANKS[0].name;
+    for (const rank of RANKS) { if (xp >= rank.xp) r = rank.name; }
+    return r;
+  }
+
+  // ── Mission name parts ──
+  const nameAdj = ['Dusty', 'Burning', 'Broken', 'Iron', 'Ghost', 'Lost', 'Red', 'Dead', 'Last', 'Hollow', 'Rusted', 'Scorched'];
+  const nameNoun = ['Run', 'Haul', 'Trail', 'Path', 'Circuit', 'Crossing', 'Pass', 'Route', 'Crawl', 'Drop', 'Sweep', 'Dash'];
+  function randomName() {
+    return nameAdj[Math.floor(Math.random() * nameAdj.length)] + ' ' + nameNoun[Math.floor(Math.random() * nameNoun.length)];
+  }
+
+  // ── Helpers ──
+  function distXZ(a, b) {
+    return Math.hypot(a.x - b.x, a.z - b.z);
+  }
+  function playerPos() {
+    return { x: chassisBody.position.x, z: chassisBody.position.z };
+  }
+  function randomPointNearRoad(minDistFromCenter) {
+    minDistFromCenter = minDistFromCenter || 30;
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const road = allRoads[Math.floor(Math.random() * allRoads.length)];
+      if (road.length < 10) continue;
+      const idx = 5 + Math.floor(Math.random() * (road.length - 10));
+      const rp = road[idx];
+      if (Math.abs(rp.x) > TSIZE * 0.42 || Math.abs(rp.z) > TSIZE * 0.42) continue;
+      if (Math.hypot(rp.x, rp.z) < minDistFromCenter) continue;
+      // Offset from road slightly
+      const offX = (Math.random() - 0.5) * 12;
+      const offZ = (Math.random() - 0.5) * 12;
+      return { x: rp.x + offX, z: rp.z + offZ };
+    }
+    return { x: 60, z: 60 };
+  }
+
+  function pointNearTown() {
+    if (townCenters.length === 0) return randomPointNearRoad(20);
+    const tc = townCenters[Math.floor(Math.random() * townCenters.length)];
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 5 + Math.random() * (tc.radius * 0.6);
+    return { x: tc.x + Math.cos(angle) * dist, z: tc.z + Math.sin(angle) * dist };
+  }
+
+  function pointNearBuilding() {
+    if (buildingPositions.length === 0) return randomPointNearRoad(20);
+    const bp = buildingPositions[Math.floor(Math.random() * buildingPositions.length)];
+    return { x: bp.x + (Math.random() - 0.5) * 8, z: bp.z + (Math.random() - 0.5) * 8 };
+  }
+
+  // ── 3D Marker Creation ──
+  const markerMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffaa22, emissive: 0xffaa22, emissiveIntensity: 0.6,
+    roughness: 0.3, metalness: 0.5, transparent: true, opacity: 0.85
+  });
+  const markerGlowMat = new THREE.MeshBasicMaterial({
+    color: 0xffcc44, transparent: true, opacity: 0.2, side: THREE.DoubleSide
+  });
+  const diamondGeo = new THREE.OctahedronGeometry(0.6, 0);
+  const glowGeo = new THREE.SphereGeometry(1.8, 8, 8);
+
+  // Checkpoint gate materials
+  const gatePoleGeo = new THREE.CylinderGeometry(0.15, 0.15, 6, 6);
+  const gatePoleMat = new THREE.MeshStandardMaterial({ color: 0xaa4422, roughness: 0.8, metalness: 0.2 });
+  const gateBannerGeo = new THREE.PlaneGeometry(5.5, 1.2);
+  const gateBannerMat = new THREE.MeshStandardMaterial({
+    color: 0xff6622, emissive: 0xff4400, emissiveIntensity: 0.3,
+    roughness: 0.5, side: THREE.DoubleSide, transparent: true, opacity: 0.8
+  });
+
+  // Scavenge item
+  const crateGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+  const crateMat = new THREE.MeshStandardMaterial({
+    color: 0xccaa44, emissive: 0xccaa44, emissiveIntensity: 0.4,
+    roughness: 0.5, metalness: 0.3
+  });
+  const crateGlowMat = new THREE.MeshBasicMaterial({
+    color: 0xffdd66, transparent: true, opacity: 0.15
+  });
+
+  // Survival safe zone marker
+  const safeZoneGeo = new THREE.TorusGeometry(2, 0.15, 8, 24);
+  const safeZoneMat = new THREE.MeshStandardMaterial({
+    color: 0x44ff88, emissive: 0x44ff88, emissiveIntensity: 0.5,
+    roughness: 0.3, transparent: true, opacity: 0.7
+  });
+
+  function createWaypointMarker(x, z, color) {
+    const y = getTerrainHeight(x, z) + 5;
+    const mat = markerMaterial.clone();
+    if (color) { mat.color.set(color); mat.emissive.set(color); }
+    const mesh = new THREE.Mesh(diamondGeo, mat);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    scene.add(mesh);
+    const gm = new THREE.Mesh(glowGeo, markerGlowMat.clone());
+    if (color) gm.material.color.set(color);
+    gm.position.copy(mesh.position);
+    scene.add(gm);
+    return { mesh, glowMesh: gm };
+  }
+
+  function createCheckpointGate(x, z, dirX, dirZ) {
+    const y = getTerrainHeight(x, z);
+    const group = new THREE.Group();
+    // Two poles perpendicular to direction
+    const perpX = -dirZ, perpZ = dirX;
+    const halfW = 2.75;
+    const poleL = new THREE.Mesh(gatePoleGeo, gatePoleMat);
+    poleL.position.set(x + perpX * halfW, y + 3, z + perpZ * halfW);
+    poleL.castShadow = true;
+    group.add(poleL);
+    const poleR = new THREE.Mesh(gatePoleGeo, gatePoleMat);
+    poleR.position.set(x - perpX * halfW, y + 3, z - perpZ * halfW);
+    poleR.castShadow = true;
+    group.add(poleR);
+    // Banner between poles
+    const banner = new THREE.Mesh(gateBannerGeo, gateBannerMat.clone());
+    banner.position.set(x, y + 5.5, z);
+    banner.lookAt(x + dirX, y + 5.5, z + dirZ);
+    group.add(banner);
+    // Top diamond marker
+    const dm = new THREE.Mesh(diamondGeo, markerMaterial.clone());
+    dm.material.color.set(0xff4422);
+    dm.material.emissive.set(0xff4422);
+    dm.position.set(x, y + 7, z);
+    group.add(dm);
+    scene.add(group);
+    return { group, center: { x, z }, dirX, dirZ, passed: false, topDiamond: dm };
+  }
+
+  function createScavengeItem(x, z) {
+    const y = getTerrainHeight(x, z) + 0.6;
+    const mesh = new THREE.Mesh(crateGeo, crateMat.clone());
+    mesh.position.set(x, y, z);
+    mesh.castShadow = true;
+    scene.add(mesh);
+    const gm = new THREE.Mesh(glowGeo, crateGlowMat.clone());
+    gm.scale.setScalar(0.6);
+    gm.position.copy(mesh.position);
+    scene.add(gm);
+    return { mesh, glowMesh: gm, collected: false, pos: { x, z } };
+  }
+
+  function createExplorationMarker(x, z) {
+    const y = getTerrainHeight(x, z) + 4;
+    const mat = markerMaterial.clone();
+    mat.color.set(0x44ddaa);
+    mat.emissive.set(0x44ddaa);
+    const mesh = new THREE.Mesh(diamondGeo, mat);
+    mesh.position.set(x, y, z);
+    scene.add(mesh);
+    const gm = new THREE.Mesh(glowGeo, markerGlowMat.clone());
+    gm.material.color.set(0x44ddaa);
+    gm.position.copy(mesh.position);
+    scene.add(gm);
+    return { mesh, glowMesh: gm, discovered: false, pos: { x, z } };
+  }
+
+  // ── Pickup particle effect ──
+  function spawnPickupParticles(x, y, z, color) {
+    const count = 12;
+    const geo = new THREE.SphereGeometry(0.12, 4, 4);
+    const mat = new THREE.MeshBasicMaterial({ color: color || 0xffcc44, transparent: true, opacity: 1 });
+    for (let i = 0; i < count; i++) {
+      const m = new THREE.Mesh(geo, mat.clone());
+      m.position.set(x, y, z);
+      const vx = (Math.random() - 0.5) * 6;
+      const vy = Math.random() * 4 + 2;
+      const vz = (Math.random() - 0.5) * 6;
+      scene.add(m);
+      pickupParticles.push({ mesh: m, vx, vy, vz, life: 1.0 });
+    }
+  }
+
+  // ── Clear all mission 3D objects ──
+  function clearMission3D() {
+    for (const w of waypointMarkers) {
+      scene.remove(w.mesh); scene.remove(w.glowMesh);
+    }
+    waypointMarkers.length = 0;
+    for (const g of checkpointGates) {
+      scene.remove(g.group);
+    }
+    checkpointGates.length = 0;
+    for (const s of scavengeItems) {
+      scene.remove(s.mesh); scene.remove(s.glowMesh);
+    }
+    scavengeItems.length = 0;
+    for (const e of explorationMarkers) {
+      scene.remove(e.mesh); scene.remove(e.glowMesh);
+    }
+    explorationMarkers.length = 0;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // MISSION GENERATION
+  // ═══════════════════════════════════════════════════════════════════
+  function generateMissions() {
+    missions = [];
+    const pp = playerPos();
+
+    // ── DELIVERY MISSIONS (2-3) ──
+    const numDelivery = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < numDelivery; i++) {
+      const pickup = pointNearBuilding();
+      let dropoff;
+      for (let a = 0; a < 30; a++) {
+        dropoff = pointNearBuilding();
+        if (distXZ(pickup, dropoff) > 40 && distXZ(pickup, dropoff) < 200) break;
+      }
+      if (!dropoff) dropoff = randomPointNearRoad(40);
+      const dist = distXZ(pickup, dropoff);
+      const timeLimitSec = Math.max(60, Math.round(dist * 1.2 + 30));
+      const difficulty = dist > 120 ? 3 : dist > 70 ? 2 : 1;
+      const xpReward = 50 * difficulty + Math.floor(Math.random() * 30);
+      missions.push({
+        id: 'del_' + i + '_' + Date.now(),
+        type: 'delivery',
+        name: randomName(),
+        description: 'Pick up cargo and deliver it to the drop zone before time runs out.',
+        difficulty,
+        xpReward,
+        timeLimit: timeLimitSec,
+        pickup,
+        dropoff,
+        phase: 'pickup', // 'pickup' -> 'deliver' -> done
+        distance: Math.round(dist),
+      });
+    }
+
+    // ── RACE MISSIONS (2) ──
+    for (let i = 0; i < 2; i++) {
+      // Pick a road and place checkpoints along it
+      let roadIdx = Math.floor(Math.random() * allRoads.length);
+      let road = allRoads[roadIdx];
+      let tries = 0;
+      while (road.length < 40 && tries < 20) { roadIdx = Math.floor(Math.random() * allRoads.length); road = allRoads[roadIdx]; tries++; }
+      const checkpoints = [];
+      const startIdx = Math.floor(road.length * 0.1);
+      const endIdx = Math.floor(road.length * 0.9);
+      const numCPs = 4 + Math.floor(Math.random() * 3); // 4-6 checkpoints
+      const step = Math.floor((endIdx - startIdx) / numCPs);
+      for (let ci = 0; ci < numCPs; ci++) {
+        const idx = Math.min(startIdx + ci * step, road.length - 2);
+        const pt = road[idx];
+        const next = road[Math.min(idx + 1, road.length - 1)];
+        const dx = next.x - pt.x, dz = next.z - pt.z;
+        const len = Math.hypot(dx, dz) || 1;
+        checkpoints.push({ x: pt.x, z: pt.z, dirX: dx / len, dirZ: dz / len });
+      }
+      // Calculate total race distance
+      let totalDist = 0;
+      for (let ci = 1; ci < checkpoints.length; ci++) {
+        totalDist += distXZ(checkpoints[ci - 1], checkpoints[ci]);
+      }
+      const timeLimitSec = Math.max(45, Math.round(totalDist * 0.8 + 20));
+      const difficulty = totalDist > 150 ? 3 : totalDist > 80 ? 2 : 1;
+      const xpReward = 60 * difficulty + Math.floor(Math.random() * 40);
+      missions.push({
+        id: 'race_' + i + '_' + Date.now(),
+        type: 'race',
+        name: randomName(),
+        description: 'Drive through all checkpoint gates along the route. Beat the clock!',
+        difficulty,
+        xpReward,
+        timeLimit: timeLimitSec,
+        checkpoints,
+        currentCheckpoint: 0,
+        distance: Math.round(totalDist),
+      });
+    }
+
+    // ── SCAVENGE MISSIONS (2) ──
+    for (let i = 0; i < 2; i++) {
+      const center = randomPointNearRoad(35);
+      const numItems = 3 + Math.floor(Math.random() * 3); // 3-5
+      const items = [];
+      for (let j = 0; j < numItems; j++) {
+        let ix, iz;
+        for (let a = 0; a < 30; a++) {
+          ix = center.x + (Math.random() - 0.5) * 60;
+          iz = center.z + (Math.random() - 0.5) * 60;
+          if (Math.abs(ix) < TSIZE * 0.42 && Math.abs(iz) < TSIZE * 0.42) break;
+        }
+        items.push({ x: ix, z: iz, collected: false });
+      }
+      const difficulty = numItems >= 5 ? 3 : numItems >= 4 ? 2 : 1;
+      const xpReward = 40 * difficulty + Math.floor(Math.random() * 25);
+      missions.push({
+        id: 'scav_' + i + '_' + Date.now(),
+        type: 'scavenge',
+        name: randomName(),
+        description: 'Search the area and collect ' + numItems + ' supply crates scattered off the road.',
+        difficulty,
+        xpReward,
+        timeLimit: 0, // no time limit
+        items,
+        collected: 0,
+        totalItems: numItems,
+        distance: Math.round(distXZ(pp, center)),
+      });
+    }
+
+    // ── SURVIVAL MISSIONS (1-2) ──
+    const numSurvival = 1 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < numSurvival; i++) {
+      const start = randomPointNearRoad(40);
+      let end;
+      for (let a = 0; a < 30; a++) {
+        end = randomPointNearRoad(40);
+        if (distXZ(start, end) > 60 && distXZ(start, end) < 180) break;
+      }
+      if (!end) end = randomPointNearRoad(40);
+      const dist = distXZ(start, end);
+      const timeLimitSec = Math.max(60, Math.round(dist * 1.0 + 25));
+      const difficulty = dist > 120 ? 3 : dist > 70 ? 2 : 1;
+      const xpReward = 55 * difficulty + Math.floor(Math.random() * 30);
+      missions.push({
+        id: 'surv_' + i + '_' + Date.now(),
+        type: 'survival',
+        name: randomName(),
+        description: 'Drive through the hazard zone to reach the safe point before time expires.',
+        difficulty,
+        xpReward,
+        timeLimit: timeLimitSec,
+        start,
+        end,
+        reachedStart: false,
+        distance: Math.round(dist),
+      });
+    }
+
+    // ── EXPLORATION MISSIONS (1-2) ──
+    const numExplore = 1 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < numExplore; i++) {
+      const numPoints = 3 + Math.floor(Math.random() * 3); // 3-5
+      const points = [];
+      for (let j = 0; j < numPoints; j++) {
+        points.push(randomPointNearRoad(35));
+      }
+      const difficulty = numPoints >= 5 ? 3 : numPoints >= 4 ? 2 : 1;
+      const xpReward = 45 * difficulty + Math.floor(Math.random() * 20);
+      missions.push({
+        id: 'expl_' + i + '_' + Date.now(),
+        type: 'exploration',
+        name: randomName(),
+        description: 'Discover ' + numPoints + ' uncharted locations in the wasteland.',
+        difficulty,
+        xpReward,
+        timeLimit: 0,
+        points,
+        discovered: 0,
+        totalPoints: numPoints,
+        distance: Math.round(distXZ(pp, points[0] || pp)),
+      });
+    }
+
+    // Shuffle missions
+    for (let i = missions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [missions[i], missions[j]] = [missions[j], missions[i]];
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // MISSION BOARD UI
+  // ═══════════════════════════════════════════════════════════════════
+  function renderMissionList() {
+    listEl.innerHTML = '';
+    const pp = playerPos();
+
+    missions.forEach((m, idx) => {
+      const card = document.createElement('div');
+      card.className = 'mission-card' + (activeMission && activeMission.id === m.id ? ' active-card' : '');
+      const stars = [];
+      for (let s = 0; s < 3; s++) {
+        stars.push(s < m.difficulty ? '\u2605' : '<span class="empty">\u2606</span>');
+      }
+      const dist = activeMission && activeMission.id === m.id
+        ? '--'
+        : Math.round(distXZ(pp, getFirstObjective(m))) + 'm';
+      card.innerHTML =
+        '<div class="mc-top">' +
+          '<span class="mc-name">' + m.name + '</span>' +
+          '<span class="mc-type ' + m.type + '">' + m.type + '</span>' +
+        '</div>' +
+        '<div class="mc-desc">' + m.description + '</div>' +
+        '<div class="mc-bottom">' +
+          '<span class="mc-stars">' + stars.join('') + '</span>' +
+          '<span class="mc-reward">+' + m.xpReward + ' XP</span>' +
+          '<span class="mc-dist">' + dist + '</span>' +
+        '</div>';
+      card.addEventListener('click', () => selectMission(idx));
+      listEl.appendChild(card);
+    });
+    repEl.textContent = 'XP: ' + totalXP + '  |  ' + getRank(totalXP);
+  }
+
+  function getFirstObjective(m) {
+    switch (m.type) {
+      case 'delivery': return m.phase === 'deliver' ? m.dropoff : m.pickup;
+      case 'race': return m.checkpoints[m.currentCheckpoint] || m.checkpoints[0];
+      case 'scavenge': {
+        const uncollected = m.items.filter(it => !it.collected);
+        return uncollected[0] || m.items[0];
+      }
+      case 'survival': return m.reachedStart ? m.end : m.start;
+      case 'exploration': {
+        const undiscovered = m.points.filter((p, i) => i >= m.discovered);
+        return undiscovered[0] || m.points[0];
+      }
+      default: return { x: 0, z: 0 };
+    }
+  }
+
+  function selectMission(idx) {
+    selectedMissionIdx = idx;
+    const m = missions[idx];
+    detailEl.classList.add('open');
+    detailTitle.textContent = m.name;
+    detailObj.textContent = m.description;
+    const timeStr = m.timeLimit > 0 ? ('TIME: ' + Math.floor(m.timeLimit / 60) + 'm ' + (m.timeLimit % 60) + 's') : 'NO TIME LIMIT';
+    detailInfo.innerHTML =
+      '<span>TYPE: ' + m.type.toUpperCase() + '</span>' +
+      '<span>DIFFICULTY: ' + '\u2605'.repeat(m.difficulty) + '</span>' +
+      '<span>' + timeStr + '</span>' +
+      '<span>REWARD: +' + m.xpReward + ' XP</span>';
+
+    if (activeMission && activeMission.id === m.id) {
+      acceptBtn.style.display = 'none';
+      cancelBtn.style.display = 'inline-block';
+    } else if (activeMission) {
+      acceptBtn.textContent = 'ALREADY ON A MISSION';
+      acceptBtn.style.display = 'inline-block';
+      acceptBtn.style.opacity = '0.4';
+      acceptBtn.style.pointerEvents = 'none';
+      cancelBtn.style.display = 'none';
+    } else {
+      acceptBtn.textContent = 'ACCEPT MISSION';
+      acceptBtn.style.display = 'inline-block';
+      acceptBtn.style.opacity = '1';
+      acceptBtn.style.pointerEvents = 'auto';
+      cancelBtn.style.display = 'none';
+    }
+  }
+
+  // ── Accept mission ──
+  acceptBtn.addEventListener('click', () => {
+    if (selectedMissionIdx < 0 || activeMission) return;
+    const m = missions[selectedMissionIdx];
+    activeMission = m;
+    missionStartTime = performance.now();
+    m._timer = m.timeLimit;
+    setupMission3D(m);
+    closeMissionBoard();
+    updateMissionHUD();
+    hudEl.classList.add('active');
+    repHud.classList.add('visible');
+  });
+
+  // ── Cancel/abandon mission ──
+  cancelBtn.addEventListener('click', () => {
+    if (!activeMission) return;
+    clearMission3D();
+    activeMission = null;
+    hudEl.classList.remove('active');
+    closeMissionBoard();
+  });
+
+  closeBtn.addEventListener('click', () => closeMissionBoard());
+
+  // ── Setup 3D markers for active mission ──
+  function setupMission3D(m) {
+    clearMission3D();
+    switch (m.type) {
+      case 'delivery': {
+        const target = m.phase === 'deliver' ? m.dropoff : m.pickup;
+        const w = createWaypointMarker(target.x, target.z, m.phase === 'deliver' ? 0x44aaff : 0xffaa22);
+        waypointMarkers.push({ ...w, missionId: m.id });
+        break;
+      }
+      case 'race': {
+        for (let ci = 0; ci < m.checkpoints.length; ci++) {
+          const cp = m.checkpoints[ci];
+          const gate = createCheckpointGate(cp.x, cp.z, cp.dirX, cp.dirZ);
+          gate.idx = ci;
+          gate.passed = ci < m.currentCheckpoint;
+          if (gate.passed) {
+            gate.group.visible = false;
+          }
+          checkpointGates.push(gate);
+        }
+        break;
+      }
+      case 'scavenge': {
+        for (const item of m.items) {
+          if (!item.collected) {
+            const si = createScavengeItem(item.x, item.z);
+            scavengeItems.push(si);
+          }
+        }
+        break;
+      }
+      case 'survival': {
+        const target = m.reachedStart ? m.end : m.start;
+        const color = m.reachedStart ? 0x44ff88 : 0xff8844;
+        const w = createWaypointMarker(target.x, target.z, color);
+        waypointMarkers.push({ ...w, missionId: m.id });
+        break;
+      }
+      case 'exploration': {
+        for (let pi = 0; pi < m.points.length; pi++) {
+          if (pi >= m.discovered) {
+            const em = createExplorationMarker(m.points[pi].x, m.points[pi].z);
+            explorationMarkers.push(em);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // OPEN / CLOSE
+  // ═══════════════════════════════════════════════════════════════════
+  function openMissionBoard() {
+    if (missionResultShown) return;
+    missionBoardOpen = true;
+    gamePaused = true;
+    renderMissionList();
+    boardOverlay.classList.add('open');
+    boardOverlay.style.display = 'flex';
+    detailEl.classList.remove('open');
+    selectedMissionIdx = -1;
+  }
+  function closeMissionBoard() {
+    missionBoardOpen = false;
+    gamePaused = false;
+    boardOverlay.classList.remove('open');
+    boardOverlay.style.display = 'none';
+  }
+  function toggleMissionBoard() {
+    if (missionBoardOpen) closeMissionBoard();
+    else openMissionBoard();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // HUD UPDATE
+  // ═══════════════════════════════════════════════════════════════════
+  function updateMissionHUD() {
+    if (!activeMission) {
+      hudEl.classList.remove('active');
+      return;
+    }
+    const m = activeMission;
+    mhName.textContent = m.name;
+
+    const pp = playerPos();
+    const obj = getFirstObjective(m);
+    const dist = Math.round(distXZ(pp, obj));
+
+    switch (m.type) {
+      case 'delivery':
+        mhObj.textContent = m.phase === 'pickup' ? 'Pick up cargo' : 'Deliver cargo';
+        mhFill.style.width = (m.phase === 'deliver' ? '50%' : '0%');
+        break;
+      case 'race':
+        mhObj.textContent = 'Checkpoint ' + (m.currentCheckpoint + 1) + '/' + m.checkpoints.length;
+        mhFill.style.width = Math.round((m.currentCheckpoint / m.checkpoints.length) * 100) + '%';
+        break;
+      case 'scavenge':
+        mhObj.textContent = 'Collected: ' + m.collected + '/' + m.totalItems;
+        mhFill.style.width = Math.round((m.collected / m.totalItems) * 100) + '%';
+        break;
+      case 'survival':
+        mhObj.textContent = m.reachedStart ? 'Reach safe point' : 'Enter hazard zone';
+        mhFill.style.width = m.reachedStart ? '50%' : '0%';
+        break;
+      case 'exploration':
+        mhObj.textContent = 'Found: ' + m.discovered + '/' + m.totalPoints;
+        mhFill.style.width = Math.round((m.discovered / m.totalPoints) * 100) + '%';
+        break;
+    }
+
+    if (m.timeLimit > 0 && m._timer !== undefined) {
+      const t = Math.max(0, Math.ceil(m._timer));
+      const mins = Math.floor(t / 60);
+      const secs = t % 60;
+      mhTimer.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+      if (t < 15) mhTimer.style.color = 'rgba(255, 80, 60, 0.95)';
+      else mhTimer.style.color = 'rgba(255, 180, 60, 0.85)';
+    } else {
+      mhTimer.textContent = '';
+    }
+    mhDist.textContent = dist + 'm';
+
+    // Rep HUD
+    mrhXP.textContent = totalXP;
+    mrhRank.textContent = getRank(totalXP);
+    mrhDone.textContent = totalCompleted;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // MISSION COMPLETION / FAILURE
+  // ═══════════════════════════════════════════════════════════════════
+  function completeMission() {
+    if (!activeMission) return;
+    const m = activeMission;
+    const elapsed = (performance.now() - missionStartTime) / 1000;
+    totalXP += m.xpReward;
+    totalCompleted++;
+    clearMission3D();
+
+    // Remove from list
+    missions = missions.filter(mi => mi.id !== m.id);
+    activeMission = null;
+    hudEl.classList.remove('active');
+
+    // Show result
+    showResult(true, m, elapsed);
+
+    // Check if all missions done → regenerate
+    if (missions.length === 0) {
+      setTimeout(() => generateMissions(), 2000);
+    }
+
+    // XP float
+    spawnXPFloat('+' + m.xpReward + ' XP');
+  }
+
+  function failMission(reason) {
+    if (!activeMission) return;
+    const m = activeMission;
+    const elapsed = (performance.now() - missionStartTime) / 1000;
+    clearMission3D();
+
+    // Reset mission state
+    if (m.type === 'delivery') m.phase = 'pickup';
+    if (m.type === 'race') m.currentCheckpoint = 0;
+    if (m.type === 'scavenge') { m.collected = 0; m.items.forEach(it => it.collected = false); }
+    if (m.type === 'survival') m.reachedStart = false;
+    if (m.type === 'exploration') m.discovered = 0;
+
+    activeMission = null;
+    hudEl.classList.remove('active');
+
+    showResult(false, m, elapsed, reason);
+  }
+
+  function showResult(success, m, elapsed, reason) {
+    missionResultShown = true;
+    gamePaused = true;
+    mrTitle.textContent = success ? 'MISSION COMPLETE' : 'MISSION FAILED';
+    mrTitle.className = success ? 'success' : 'failure';
+    mrName.textContent = m.name;
+
+    const mins = Math.floor(elapsed / 60);
+    const secs = Math.floor(elapsed % 60);
+    let statsHTML =
+      '<div class="mr-stat-row"><span class="mr-stat-label">TIME</span><span class="mr-stat-value">' + mins + 'm ' + secs + 's</span></div>' +
+      '<div class="mr-stat-row"><span class="mr-stat-label">TYPE</span><span class="mr-stat-value">' + m.type.toUpperCase() + '</span></div>';
+    if (success) {
+      statsHTML += '<div class="mr-stat-row"><span class="mr-stat-label">XP EARNED</span><span class="mr-stat-value xp">+' + m.xpReward + '</span></div>';
+      statsHTML += '<div class="mr-stat-row"><span class="mr-stat-label">TOTAL XP</span><span class="mr-stat-value">' + totalXP + '</span></div>';
+      statsHTML += '<div class="mr-stat-row"><span class="mr-stat-label">RANK</span><span class="mr-stat-value">' + getRank(totalXP) + '</span></div>';
+    } else {
+      statsHTML += '<div class="mr-stat-row"><span class="mr-stat-label">REASON</span><span class="mr-stat-value" style="color:rgba(230,80,60,0.9)">' + (reason || 'Time expired') + '</span></div>';
+    }
+    mrStats.innerHTML = statsHTML;
+
+    mrBtn.textContent = success ? 'CONTINUE' : 'RETRY';
+    mrBtn.className = success ? '' : 'retry';
+
+    // Store reference for retry
+    mrBtn._mission = success ? null : m;
+    resultOverlay.classList.add('open');
+    resultOverlay.style.display = 'flex';
+  }
+
+  mrBtn.addEventListener('click', () => {
+    missionResultShown = false;
+    gamePaused = false;
+    resultOverlay.classList.remove('open');
+    resultOverlay.style.display = 'none';
+    if (mrBtn._mission) {
+      // Retry: re-accept the mission
+      const m = mrBtn._mission;
+      activeMission = m;
+      missionStartTime = performance.now();
+      m._timer = m.timeLimit;
+      setupMission3D(m);
+      hudEl.classList.add('active');
+      repHud.classList.add('visible');
+      mrBtn._mission = null;
+    }
+  });
+
+  function spawnXPFloat(text) {
+    const el = document.createElement('div');
+    el.className = 'xp-float';
+    el.textContent = text;
+    el.style.left = '50%';
+    el.style.top = '40%';
+    el.style.animation = 'xp-float-up 1.5s ease-out forwards';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1600);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PER-FRAME UPDATE
+  // ═══════════════════════════════════════════════════════════════════
+  function update(dt) {
+    if (!activeMission) return;
+    const m = activeMission;
+    const pp = playerPos();
+    const t = performance.now() * 0.001;
+
+    // ── Timer countdown ──
+    if (m.timeLimit > 0 && m._timer !== undefined) {
+      m._timer -= dt;
+      if (m._timer <= 0) {
+        failMission('Time expired');
+        return;
+      }
+    }
+
+    // ── Type-specific logic ──
+    switch (m.type) {
+      case 'delivery': {
+        if (m.phase === 'pickup') {
+          if (distXZ(pp, m.pickup) < 8) {
+            m.phase = 'deliver';
+            clearMission3D();
+            setupMission3D(m);
+            showToast('CARGO PICKED UP');
+          }
+        } else {
+          if (distXZ(pp, m.dropoff) < 8) {
+            completeMission();
+            return;
+          }
+        }
+        break;
+      }
+      case 'race': {
+        const cp = m.checkpoints[m.currentCheckpoint];
+        if (cp && distXZ(pp, cp) < 7) {
+          // Pass through checkpoint
+          if (checkpointGates[m.currentCheckpoint]) {
+            checkpointGates[m.currentCheckpoint].passed = true;
+            checkpointGates[m.currentCheckpoint].group.visible = false;
+          }
+          m.currentCheckpoint++;
+          spawnPickupParticles(cp.x, getTerrainHeight(cp.x, cp.z) + 3, cp.z, 0xff6622);
+          if (m.currentCheckpoint >= m.checkpoints.length) {
+            completeMission();
+            return;
+          }
+        }
+        break;
+      }
+      case 'scavenge': {
+        for (let si = 0; si < scavengeItems.length; si++) {
+          const item = scavengeItems[si];
+          if (item.collected) continue;
+          if (distXZ(pp, item.pos) < 5) {
+            item.collected = true;
+            m.items[si].collected = true;
+            m.collected++;
+            spawnPickupParticles(item.mesh.position.x, item.mesh.position.y, item.mesh.position.z, 0xffcc44);
+            scene.remove(item.mesh);
+            scene.remove(item.glowMesh);
+            showToast('CRATE ' + m.collected + '/' + m.totalItems);
+            if (m.collected >= m.totalItems) {
+              completeMission();
+              return;
+            }
+          }
+        }
+        break;
+      }
+      case 'survival': {
+        if (!m.reachedStart) {
+          if (distXZ(pp, m.start) < 10) {
+            m.reachedStart = true;
+            clearMission3D();
+            setupMission3D(m);
+            showToast('HAZARD ZONE ENTERED');
+          }
+        } else {
+          if (distXZ(pp, m.end) < 10) {
+            completeMission();
+            return;
+          }
+        }
+        break;
+      }
+      case 'exploration': {
+        const nextPt = m.points[m.discovered];
+        if (nextPt && distXZ(pp, nextPt) < 10) {
+          m.discovered++;
+          // Remove the discovered marker
+          if (explorationMarkers.length > 0) {
+            const em = explorationMarkers.shift();
+            spawnPickupParticles(em.mesh.position.x, em.mesh.position.y, em.mesh.position.z, 0x44ddaa);
+            scene.remove(em.mesh);
+            scene.remove(em.glowMesh);
+          }
+          showToast('LOCATION ' + m.discovered + '/' + m.totalPoints);
+          if (m.discovered >= m.totalPoints) {
+            completeMission();
+            return;
+          }
+        }
+        break;
+      }
+    }
+
+    // ── Animate 3D markers ──
+    const bobY = Math.sin(t * 2.5) * 0.4;
+    const rot = t * 1.5;
+    for (const w of waypointMarkers) {
+      w.mesh.rotation.y = rot;
+      w.mesh.position.y = getTerrainHeight(w.mesh.position.x, w.mesh.position.z) + 5 + bobY;
+      w.glowMesh.position.y = w.mesh.position.y;
+      const pulse = 0.15 + Math.sin(t * 3) * 0.1;
+      w.glowMesh.material.opacity = pulse;
+      w.glowMesh.scale.setScalar(1 + Math.sin(t * 2) * 0.15);
+    }
+    for (const g of checkpointGates) {
+      if (g.passed) continue;
+      g.topDiamond.rotation.y = rot;
+      g.topDiamond.position.y = getTerrainHeight(g.center.x, g.center.z) + 7 + bobY * 0.5;
+    }
+    for (const s of scavengeItems) {
+      if (s.collected) continue;
+      s.mesh.rotation.y = rot * 0.7;
+      s.mesh.position.y = getTerrainHeight(s.pos.x, s.pos.z) + 0.6 + bobY * 0.3;
+      s.glowMesh.position.y = s.mesh.position.y;
+      s.glowMesh.material.opacity = 0.1 + Math.sin(t * 3) * 0.08;
+    }
+    for (const e of explorationMarkers) {
+      if (e.discovered) continue;
+      e.mesh.rotation.y = rot;
+      e.mesh.position.y = getTerrainHeight(e.pos.x, e.pos.z) + 4 + bobY;
+      e.glowMesh.position.y = e.mesh.position.y;
+      e.glowMesh.material.opacity = 0.15 + Math.sin(t * 3) * 0.1;
+    }
+
+    // ── Update pickup particles ──
+    for (let i = pickupParticles.length - 1; i >= 0; i--) {
+      const p = pickupParticles[i];
+      p.life -= dt * 1.5;
+      p.vy -= 9.8 * dt;
+      p.mesh.position.x += p.vx * dt;
+      p.mesh.position.y += p.vy * dt;
+      p.mesh.position.z += p.vz * dt;
+      p.mesh.material.opacity = Math.max(0, p.life);
+      if (p.life <= 0) {
+        scene.remove(p.mesh);
+        pickupParticles.splice(i, 1);
+      }
+    }
+
+    updateMissionHUD();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // MINIMAP INTEGRATION
+  // ═══════════════════════════════════════════════════════════════════
+  function drawOnMinimap(ctx, worldToMinimap, playerX, playerZ, cosA, sinA, inCircle, CX, CY) {
+    // Draw active mission markers on minimap
+    if (!activeMission) return;
+    const m = activeMission;
+
+    function drawDiamond(px, py, size, fill, stroke) {
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.moveTo(px, py - size);
+      ctx.lineTo(px + size * 0.7, py);
+      ctx.lineTo(px, py + size);
+      ctx.lineTo(px - size * 0.7, py);
+      ctx.closePath();
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+
+    // Waypoint markers
+    for (const w of waypointMarkers) {
+      const p = worldToMinimap(w.mesh.position.x, w.mesh.position.z, playerX, playerZ, cosA, sinA);
+      if (!inCircle(p.x, p.y)) {
+        // Show direction arrow at edge
+        const dx = p.x - CX, dy = p.y - CY;
+        const len = Math.hypot(dx, dy);
+        if (len > 0) {
+          const nx = dx / len, ny = dy / len;
+          const edgeX = CX + nx * (CX - 12);
+          const edgeY = CY + ny * (CY - 12);
+          drawDiamond(edgeX, edgeY, 5, 'rgba(255, 180, 60, 0.9)', 'rgba(255, 140, 20, 0.6)');
+        }
+        continue;
+      }
+      const pulse = 0.7 + 0.3 * Math.sin(performance.now() * 0.005);
+      drawDiamond(p.x, p.y, 7, 'rgba(255, 180, 60, ' + pulse.toFixed(2) + ')', 'rgba(255, 140, 20, 0.6)');
+    }
+
+    // Checkpoint gates
+    for (const g of checkpointGates) {
+      if (g.passed) continue;
+      const p = worldToMinimap(g.center.x, g.center.z, playerX, playerZ, cosA, sinA);
+      if (!inCircle(p.x, p.y)) continue;
+      ctx.fillStyle = 'rgba(255, 100, 40, 0.9)';
+      ctx.strokeStyle = 'rgba(255, 60, 20, 0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // Number
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = 'bold 8px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('' + (g.idx + 1), p.x, p.y);
+    }
+
+    // Scavenge items
+    for (const s of scavengeItems) {
+      if (s.collected) continue;
+      const p = worldToMinimap(s.pos.x, s.pos.z, playerX, playerZ, cosA, sinA);
+      if (!inCircle(p.x, p.y)) continue;
+      ctx.fillStyle = 'rgba(220, 200, 60, 0.85)';
+      ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+      ctx.strokeStyle = 'rgba(200, 180, 40, 0.6)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(p.x - 3, p.y - 3, 6, 6);
+    }
+
+    // Exploration markers
+    for (const e of explorationMarkers) {
+      if (e.discovered) continue;
+      const p = worldToMinimap(e.pos.x, e.pos.z, playerX, playerZ, cosA, sinA);
+      if (!inCircle(p.x, p.y)) continue;
+      drawDiamond(p.x, p.y, 6, 'rgba(60, 220, 160, 0.85)', 'rgba(40, 200, 140, 0.6)');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SAVE / LOAD INTEGRATION
+  // ═══════════════════════════════════════════════════════════════════
+  function getSaveData() {
+    return {
+      totalXP,
+      totalCompleted,
+      activeMissionId: activeMission ? activeMission.id : null,
+      missions: missions.map(m => {
+        const copy = Object.assign({}, m);
+        return copy;
+      }),
+      activeMission: activeMission ? Object.assign({}, activeMission) : null,
+    };
+  }
+
+  function loadSaveData(data) {
+    if (!data) return;
+    totalXP = data.totalXP || 0;
+    totalCompleted = data.totalCompleted || 0;
+    if (data.missions && data.missions.length > 0) {
+      missions = data.missions;
+    }
+    if (data.activeMission) {
+      activeMission = data.activeMission;
+      missionStartTime = performance.now();
+      setupMission3D(activeMission);
+      hudEl.classList.add('active');
+      repHud.classList.add('visible');
+    }
+    updateRepHUD();
+  }
+
+  function updateRepHUD() {
+    mrhXP.textContent = totalXP;
+    mrhRank.textContent = getRank(totalXP);
+    mrhDone.textContent = totalCompleted;
+    if (totalCompleted > 0 || activeMission) {
+      repHud.classList.add('visible');
+    }
+  }
+
+  // ── Init ──
+  generateMissions();
+  updateRepHUD();
+
+  // Show hint briefly
+  setTimeout(() => { hintEl.classList.add('visible'); }, 5000);
+  setTimeout(() => { hintEl.classList.remove('visible'); }, 12000);
+
+  return {
+    update,
+    toggleBoard: toggleMissionBoard,
+    isOpen: () => missionBoardOpen || missionResultShown,
+    drawOnMinimap,
+    getSaveData,
+    loadSaveData,
+    getActiveMission: () => activeMission,
+    getMissions: () => missions,
+  };
+})();
+
 
 animate();
 </script>
