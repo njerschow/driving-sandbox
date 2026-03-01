@@ -821,11 +821,11 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 4.5;
+renderer.toneMappingExposure = 1.8;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0xd8d4cc, 0.0008);
+scene.fog = new THREE.FogExp2(0xc0b8a8, 0.0012);
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.5, 1200);
 camera.position.set(0, 8, 12);
 const orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -5628,7 +5628,7 @@ function updateDayNightCycle(dt) {
   // (updateShadowCam will re-position, but we set base direction here)
 
   if (sunAltitude > 0) {
-    dirLight.intensity = Math.min(6.0, sunAltitude * 9.0);
+    dirLight.intensity = Math.min(2.5, sunAltitude * 4.0);
     dirLight.color.copy(getSunColor(sunAltitude));
     dirLight.visible = true;
   } else {
@@ -5638,7 +5638,7 @@ function updateDayNightCycle(dt) {
 
   // ── Fill Light ──
   if (sunAltitude > 0) {
-    fillLight.intensity = Math.min(0.8, sunAltitude * 1.5);
+    fillLight.intensity = Math.min(0.35, sunAltitude * 0.6);
     fillLight.color.copy(getSunColor(Math.max(0, sunAltitude * 0.8)));
   } else {
     fillLight.intensity = 0;
@@ -5668,7 +5668,7 @@ function updateDayNightCycle(dt) {
     // Day
     const dayT = Math.min(1, (sunAltitude - 0.1) / 0.5);
     ambLight.color.set(0x506080).lerp(new THREE.Color(0xcccccc), dayT);
-    ambLight.intensity = 1.0 + dayT * 1.0;
+    ambLight.intensity = 0.4 + dayT * 0.3;
   } else if (sunAltitude > -0.1) {
     // Sunrise/sunset transition
     const t = (sunAltitude + 0.1) / 0.2; // 0 at -0.1, 1 at +0.1
@@ -5685,7 +5685,7 @@ function updateDayNightCycle(dt) {
     const t = Math.min(1, sunAltitude * 2);
     hemiLight.color.set(0x1a1a3a).lerp(new THREE.Color(0x8ec8f0), t);
     hemiLight.groundColor.set(0x1a1a2a).lerp(new THREE.Color(0x4a7d3a), t);
-    hemiLight.intensity = 1.0 + t * 2.0;
+    hemiLight.intensity = 0.4 + t * 0.6;
   } else {
     hemiLight.color.set(0x1a1a3a);
     hemiLight.groundColor.set(0x1a1a2a);
@@ -5695,7 +5695,7 @@ function updateDayNightCycle(dt) {
   // ── Fog (with weather multiplier) ──
   scene.fog.color.copy(skyColors.hz);
   // Denser fog at night, lighter during day
-  const baseFogDensity = 0.0008;
+  const baseFogDensity = 0.0012;
   let computedFogDensity;
   if (sunAltitude > 0.1) {
     computedFogDensity = baseFogDensity;
@@ -5716,15 +5716,15 @@ function updateDayNightCycle(dt) {
 
   // ── Renderer exposure ──
   if (sunAltitude > 0.3) {
-    renderer.toneMappingExposure = 4.5;
+    renderer.toneMappingExposure = 1.8;
   } else if (sunAltitude > 0) {
     const t = sunAltitude / 0.3;
-    renderer.toneMappingExposure = 2.2 + t * 2.3;
+    renderer.toneMappingExposure = 1.0 + t * 0.8;
   } else if (sunAltitude > -0.1) {
     const t = (sunAltitude + 0.1) / 0.1;
-    renderer.toneMappingExposure = 0.8 + t * 1.4;
+    renderer.toneMappingExposure = 0.4 + t * 0.6;
   } else {
-    renderer.toneMappingExposure = 0.8;
+    renderer.toneMappingExposure = 0.4;
   }
 
   // ── Lamp Posts (on at night/dusk/dawn) ──
@@ -6281,27 +6281,27 @@ const waterNormalTex = createWaterNormalMap();
 
 // ── Shared water materials ──
 const lakeWaterMat = new THREE.MeshStandardMaterial({
-  color: 0x2a6e7a,
-  roughness: 0.1,
-  metalness: 0.3,
+  color: 0x1a4a55,
+  roughness: 0.3,
+  metalness: 0.1,
   transparent: true,
-  opacity: 0.7,
-  normalMap: waterNormalTex,
-  normalScale: new THREE.Vector2(0.4, 0.4),
-  side: THREE.DoubleSide,
-  envMapIntensity: 1.2,
-});
-
-const riverWaterMat = new THREE.MeshStandardMaterial({
-  color: 0x2a6e7a,
-  roughness: 0.1,
-  metalness: 0.3,
-  transparent: true,
-  opacity: 0.6,
+  opacity: 0.65,
   normalMap: waterNormalTex,
   normalScale: new THREE.Vector2(0.3, 0.3),
   side: THREE.DoubleSide,
-  envMapIntensity: 1.2,
+  envMapIntensity: 0.5,
+});
+
+const riverWaterMat = new THREE.MeshStandardMaterial({
+  color: 0x1a4a55,
+  roughness: 0.3,
+  metalness: 0.1,
+  transparent: true,
+  opacity: 0.55,
+  normalMap: waterNormalTex,
+  normalScale: new THREE.Vector2(0.2, 0.2),
+  side: THREE.DoubleSide,
+  envMapIntensity: 0.5,
 });
 
 const puddleMat = new THREE.MeshStandardMaterial({
@@ -7117,8 +7117,8 @@ composer.addPass(colorGradingPass);
 const VignetteShader = {
   uniforms: {
     tDiffuse: { value: null },
-    intensity: { value: 0.05 },
-    smoothness: { value: 0.35 },
+    intensity: { value: 0.0 },
+    smoothness: { value: 0.6 },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -8102,7 +8102,7 @@ function animate(){
   // Vignette: increase with damage (base 0.3, max 0.8 when badly hurt)
   const avgHealth = getAverageHealth();
   const damageRatio = 1.0 - avgHealth / 100.0;
-  vignettePass.uniforms.intensity.value = 0.05 + damageRatio * 0.25;
+  vignettePass.uniforms.intensity.value = damageRatio * 0.15;
 
   // Film grain time + dust storm grain boost
   filmGrainSpeedPass.uniforms.time.value = elapsedTime;
