@@ -154,6 +154,258 @@
     z-index: 50;
     backdrop-filter: blur(4px);
   }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     FPS DEBUG OVERLAY
+     ═══════════════════════════════════════════════════════════════════════ */
+  #debug-overlay {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
+    padding: 10px 18px;
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+    user-select: none;
+    z-index: 200;
+    display: none;          /* toggled by backtick key */
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    min-width: 260px;
+  }
+  .debug-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .debug-label {
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+  .debug-val {
+    color: #0f0;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     SETTINGS OVERLAY
+     ═══════════════════════════════════════════════════════════════════════ */
+  #settings-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(18px);
+    z-index: 9000;
+    display: none;               /* shown via Escape key */
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  #settings-overlay.open {
+    display: flex;
+    opacity: 1;
+  }
+  #settings-panel {
+    background: rgba(18, 16, 14, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    width: min(540px, 92vw);
+    max-height: 82vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+    animation: settings-in 0.25s ease both;
+  }
+  @keyframes settings-in {
+    from { transform: scale(0.95) translateY(12px); opacity: 0; }
+    to   { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  #settings-header {
+    padding: 18px 22px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #settings-header h2 {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(220, 200, 160, 0.9);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  #settings-close {
+    background: none; border: none; color: rgba(255,255,255,0.45);
+    font-size: 22px; cursor: pointer; padding: 4px 8px;
+    border-radius: 6px; transition: background 0.15s, color 0.15s;
+  }
+  #settings-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+  /* Tabs */
+  #settings-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 14px 22px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .settings-tab {
+    background: none; border: none;
+    color: rgba(255,255,255,0.4);
+    font-family: 'Courier New', monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 8px 14px;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+  }
+  .settings-tab:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.04); }
+  .settings-tab.active {
+    color: rgba(220, 200, 160, 0.95);
+    background: rgba(255, 255, 255, 0.06);
+    border-bottom: 2px solid rgba(220, 200, 160, 0.5);
+  }
+
+  /* Content area */
+  #settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 22px 22px;
+  }
+  #settings-content::-webkit-scrollbar { width: 6px; }
+  #settings-content::-webkit-scrollbar-track { background: transparent; }
+  #settings-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+  }
+  .settings-section { display: none; }
+  .settings-section.active { display: block; }
+  .settings-section h3 {
+    font-family: 'Courier New', monospace;
+    font-size: 12px; font-weight: 700;
+    color: rgba(220, 200, 160, 0.7);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin: 0 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  /* Setting row */
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-info { flex: 1; min-width: 0; }
+  .setting-name {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: rgba(255,255,255,0.75);
+  }
+  .setting-desc {
+    font-size: 10px; color: rgba(255,255,255,0.3);
+    margin-top: 2px;
+  }
+  .setting-control { margin-left: 16px; flex-shrink: 0; }
+
+  /* Slider */
+  .settings-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 120px; height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px; outline: none;
+    cursor: pointer;
+  }
+  .settings-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px;
+    background: rgba(220, 200, 160, 0.9);
+    border-radius: 50%; cursor: pointer;
+    box-shadow: 0 0 6px rgba(220, 200, 160, 0.3);
+  }
+  .slider-value {
+    display: inline-block;
+    width: 38px; text-align: right;
+    font-family: 'Courier New', monospace;
+    font-size: 11px; color: rgba(255,255,255,0.5);
+    margin-left: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Toggle */
+  .settings-toggle {
+    position: relative;
+    width: 40px; height: 22px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .settings-toggle.on { background: rgba(100, 180, 80, 0.5); }
+  .settings-toggle .toggle-knob {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+  .settings-toggle.on .toggle-knob { left: 20px; }
+
+  /* Dropdown */
+  .settings-dropdown {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    color: rgba(255,255,255,0.7);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 4px 8px;
+    cursor: pointer;
+    outline: none;
+  }
+  .settings-dropdown option {
+    background: #1a1816;
+    color: rgba(255,255,255,0.8);
+  }
+
+  /* Footer */
+  #settings-footer {
+    padding: 12px 22px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #settings-footer button {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.6);
+    font-family: 'Courier New', monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  #settings-footer button:hover {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.9);
+  }
+  #settings-footer .reset-btn { color: rgba(220, 80, 60, 0.7); }
+  #settings-footer .reset-btn:hover { color: rgba(220, 80, 60, 1); background: rgba(220, 80, 60, 0.1); }
 </style>
 </head>
 <body>
@@ -190,7 +442,8 @@
   <span class="key">A</span> <span class="key">D</span> Steer<br>
   <span class="key">Space</span> Handbrake<br>
   <span class="key">R</span> Reset &nbsp; <span class="key">C</span> Camera<br>
-  <span class="key">F</span> Switch Vehicle &nbsp; <span class="key">E</span> Refuel
+  <span class="key">F</span> Switch Vehicle &nbsp; <span class="key">E</span> Refuel<br>
+  <span class="key">`</span> Debug &nbsp; <span class="key">Esc</span> Settings
 </div>
 <div id="fuel-warning">OUT OF FUEL</div>
 <div id="refuel-prompt">Press <span style="color:#fff;font-size:24px">E</span> to refuel</div>
@@ -214,6 +467,35 @@
   opacity: 0; transition: opacity 0.25s;
   text-align: center;
 ">PRESS <span style="color:#ffcc44; font-size:26px;">F</span> TO SWITCH VEHICLE</div>
+
+<!-- FPS Debug Overlay -->
+<div id="debug-overlay">
+  <div class="debug-row"><span class="debug-label">FPS</span><span class="debug-val" id="dbg-fps">--</span></div>
+  <div class="debug-row"><span class="debug-label">Frame</span><span class="debug-val" id="dbg-frame">--</span></div>
+  <div class="debug-row"><span class="debug-label">Draw Calls</span><span class="debug-val" id="dbg-draw">--</span></div>
+  <div class="debug-row"><span class="debug-label">Triangles</span><span class="debug-val" id="dbg-tris">--</span></div>
+  <div class="debug-row"><span class="debug-label">Textures</span><span class="debug-val" id="dbg-tex">--</span></div>
+  <div class="debug-row"><span class="debug-label">Geometries</span><span class="debug-val" id="dbg-geo">--</span></div>
+  <div class="debug-row"><span class="debug-label">Physics</span><span class="debug-val" id="dbg-phys">--</span></div>
+  <div class="debug-row"><span class="debug-label">Heap MB</span><span class="debug-val" id="dbg-mem">--</span></div>
+  <div class="debug-row"><span class="debug-label">Car Pos</span><span class="debug-val" id="dbg-pos">--</span></div>
+</div>
+
+<!-- Settings Overlay -->
+<div id="settings-overlay">
+  <div id="settings-panel">
+    <div id="settings-header">
+      <h2>Settings</h2>
+      <button id="settings-close">&times;</button>
+    </div>
+    <div id="settings-tabs"></div>
+    <div id="settings-content"></div>
+    <div id="settings-footer">
+      <button class="reset-btn" id="settings-reset">RESET DEFAULTS</button>
+      <button id="settings-done">DONE</button>
+    </div>
+  </div>
+</div>
 
 <script type="importmap">
 {
@@ -268,8 +550,8 @@ function fbm(x, y, oct=5, lac=2, gain=0.5) {
 function createGrassTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 512;
   const ctx = c.getContext('2d');
-  // Earthy base - muted green-brown
-  ctx.fillStyle = '#4d5e30'; ctx.fillRect(0,0,512,512);
+  // Earthy base - brighter green
+  ctx.fillStyle = '#607a40'; ctx.fillRect(0,0,512,512);
   // Faint mowing stripe pattern — alternating lighter bands
   for (let sy = 0; sy < 512; sy += 24) {
     const stripe = (Math.floor(sy / 24) % 2 === 0);
@@ -539,11 +821,11 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMappingExposure = 4.5;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0xb8a080, 0.0014);
+scene.fog = new THREE.FogExp2(0xd8d4cc, 0.0008);
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.5, 1200);
 camera.position.set(0, 8, 12);
 const orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -555,10 +837,10 @@ orbitControls.enableDamping = true; orbitControls.dampingFactor = 0.1; orbitCont
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false,
   uniforms: {
-    topColor: { value: new THREE.Color(0x1a5fa0) },
-    horizonColor: { value: new THREE.Color(0xc4a070) },
+    topColor: { value: new THREE.Color(0xbbeeff) },
+    horizonColor: { value: new THREE.Color(0xf8f4ec) },
     bottomColor: { value: new THREE.Color(0x8ab578) },
-    exponent: { value: 0.5 },
+    exponent: { value: 0.4 },
     sunDir: { value: new THREE.Vector3(0.4,0.6,0.3).normalize() },
   },
   vertexShader: `varying vec3 vDir; void main(){vDir=normalize((modelMatrix*vec4(position,1.0)).xyz);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
@@ -976,20 +1258,20 @@ for (let i = 0; i < posAttr.count; i++) {
 
   // Grass color: rich green with noise variation (hue 0.28-0.36)
   const grassHue = 0.28 + nv * 0.08;
-  const grassSat = 0.45 + nv * 0.2;
-  const grassLum = 0.22 + nv * 0.1;
+  const grassSat = 0.5 + nv * 0.2;
+  const grassLum = 0.32 + nv * 0.12;
   const gc = hsl2rgb(grassHue, grassSat, grassLum);
 
-  // Dirt color: warm brown (hue 0.08-0.12, sat 0.3-0.5, lum 0.25-0.4)
+  // Dirt color: warm brown (hue 0.08-0.12, sat 0.3-0.5, lum 0.3-0.45)
   const dirtHue = 0.08 + nv * 0.04;
-  const dirtSat = 0.3 + nv * 0.2;
-  const dirtLum = 0.25 + nv * 0.15;
+  const dirtSat = 0.35 + nv * 0.2;
+  const dirtLum = 0.32 + nv * 0.15;
   const dc = hsl2rgb(dirtHue, dirtSat, dirtLum);
 
-  // Mud color: dark brown (hue 0.06-0.09, sat 0.4-0.6, lum 0.12-0.22)
+  // Mud color: dark brown (hue 0.06-0.09, sat 0.4-0.6, lum 0.18-0.28)
   const mudHue = 0.06 + nv * 0.03;
   const mudSat = 0.4 + nv * 0.2;
-  const mudLum = 0.12 + nv * 0.1;
+  const mudLum = 0.18 + nv * 0.1;
   const mc = hsl2rgb(mudHue, mudSat, mudLum);
 
   // Blend colors
@@ -1274,6 +1556,7 @@ const lampPostPositions = [];
   }
 
   scene.add(poleInst); scene.add(armInst); scene.add(lanternInst); scene.add(glowInst);
+  window._lampPostData = { poleInst, armInst, lanternInst, glowInst, positions: lampPostPositions, POLE_H };
 
   // Physics colliders for lamp posts
   const lpShape = new CANNON.Cylinder(0.12, 0.12, POLE_H, 6);
@@ -1529,6 +1812,7 @@ scene.add(rockInst);
   tuftInst.count = tuftIdx;
   if (tuftInst.instanceColor) tuftInst.instanceColor.needsUpdate = true;
   scene.add(tuftInst);
+  window._tuftInst = tuftInst;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1575,6 +1859,7 @@ scene.add(rockInst);
   pebbleInst.count = pebbleIdx;
   if (pebbleInst.instanceColor) pebbleInst.instanceColor.needsUpdate = true;
   scene.add(pebbleInst);
+  window._pebbleInst = pebbleInst;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1787,6 +2072,8 @@ function getRoadPerp(tangent) {
     railInst.count = rIdx;
     scene.add(postInst);
     scene.add(railInst);
+    if (!window._guardrailInsts) window._guardrailInsts = [];
+    window._guardrailInsts.push(postInst, railInst);
   }
 }
 
@@ -1904,6 +2191,8 @@ function getRoadPerp(tangent) {
     fRailInst.count = frIdx;
     scene.add(fPostInst);
     scene.add(fRailInst);
+    if (!window._fenceInsts) window._fenceInsts = [];
+    window._fenceInsts.push(fPostInst, fRailInst);
   }
 }
 
@@ -3080,6 +3369,7 @@ const windTurbineBlades = [];
   hayInst.count = hayIdx;
   if (hayIdx > 0 && hayInst.instanceColor) hayInst.instanceColor.needsUpdate = true;
   scene.add(hayInst);
+  window._hayInst = hayInst;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -3199,6 +3489,7 @@ const windTurbineBlades = [];
   scene.add(hulkBodyInst);
   scene.add(hulkCabinInst);
   scene.add(hulkWheelInst);
+  window._hulkData = { hulkBodyInst, hulkCabinInst, hulkWheelInst };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -3314,6 +3605,7 @@ const windTurbineBlades = [];
   rubbleInst.count = rubbleIdx;
   if (rubbleIdx > 0 && rubbleInst.instanceColor) rubbleInst.instanceColor.needsUpdate = true;
   scene.add(rubbleInst);
+  window._rubbleInst = rubbleInst;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -5023,9 +5315,31 @@ function updateSurfaceSounds(speed, lateralSpeed, avgOnRoad, isDriftingNow, brak
 // CONTROLS
 // ═══════════════════════════════════════════════════════════════════════
 const keys={};
-window.addEventListener('keydown',e=>{keys[e.code]=true;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(!audioStarted)initAudio();});
+let gamePaused = false;
+window.addEventListener('keydown',e=>{
+  // Allow Escape and Backquote even when paused
+  if (gamePaused && e.code !== 'Escape' && e.code !== 'Backquote') return;
+  keys[e.code]=true;
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+  if(!audioStarted)initAudio();
+});
 window.addEventListener('keyup',e=>{
   keys[e.code]=false;
+  // ── Backtick toggles debug overlay ──
+  if(e.code==='Backquote'){
+    const ov=document.getElementById('debug-overlay');
+    ov.style.display=(ov.style.display==='none'||!ov.style.display)?'block':'none';
+    return;
+  }
+  // ── Escape toggles settings (pause) ──
+  if(e.code==='Escape'){
+    gamePaused=!gamePaused;
+    const ov=document.getElementById('settings-overlay');
+    if(gamePaused){ov.classList.add('open');ov.style.display='flex';if(typeof buildSettingsUI==='function')buildSettingsUI();}
+    else{ov.classList.remove('open');ov.style.display='none';}
+    return;
+  }
+  if(gamePaused) return;
   if(e.code==='KeyC')toggleCamera();
   if(e.code==='KeyR')resetVehicle();
   if(e.code==='KeyF' && nearestFindable) switchToVehicle(nearestFindable);
@@ -5145,10 +5459,10 @@ const skyKeyframes = [
   { t: 5,  top: new THREE.Color(0x1a1a4a), hz: new THREE.Color(0xff6633) },  // dawn start
   { t: 6,  top: new THREE.Color(0x1a2a5a), hz: new THREE.Color(0xff7744) },  // dawn mid
   { t: 7,  top: new THREE.Color(0x3366aa), hz: new THREE.Color(0xffaa55) },  // dawn end
-  { t: 9,  top: new THREE.Color(0x4488cc), hz: new THREE.Color(0xccbb88) },  // morning
-  { t: 12, top: new THREE.Color(0x5577aa), hz: new THREE.Color(0xc4a880) },  // noon (dusty post-apoc)
-  { t: 14, top: new THREE.Color(0x5577aa), hz: new THREE.Color(0xc4a880) },  // early afternoon
-  { t: 17, top: new THREE.Color(0x4466aa), hz: new THREE.Color(0xddaa66) },  // afternoon
+  { t: 9,  top: new THREE.Color(0xaaddff), hz: new THREE.Color(0xf0f2ec) },  // morning
+  { t: 12, top: new THREE.Color(0xbbeeff), hz: new THREE.Color(0xf8f4ec) },  // noon (bright blue sky)
+  { t: 14, top: new THREE.Color(0xbbeeff), hz: new THREE.Color(0xf8f4ec) },  // early afternoon
+  { t: 17, top: new THREE.Color(0x88bbdd), hz: new THREE.Color(0xf0cc88) },  // afternoon
   { t: 18, top: new THREE.Color(0x3a2a5a), hz: new THREE.Color(0xff5533) },  // sunset start
   { t: 19, top: new THREE.Color(0x2a1a4a), hz: new THREE.Color(0xff4422) },  // sunset peak
   { t: 20, top: new THREE.Color(0x0a0a20), hz: new THREE.Color(0x1a0a1a) },  // dusk end
@@ -5285,7 +5599,7 @@ scene.add(moonGlowMesh);
 // ── Day/Night Update Function ──
 function updateDayNightCycle(dt) {
   // Advance time
-  gameTime += dt * TIME_SCALE;
+  gameTime += dt * TIME_SCALE * (currentSettings.timeSpeed || 1.0);
   if (gameTime >= 24) gameTime -= 24;
   if (gameTime < 0) gameTime += 24;
 
@@ -5314,7 +5628,7 @@ function updateDayNightCycle(dt) {
   // (updateShadowCam will re-position, but we set base direction here)
 
   if (sunAltitude > 0) {
-    dirLight.intensity = Math.min(3.5, sunAltitude * 5.0);
+    dirLight.intensity = Math.min(6.0, sunAltitude * 9.0);
     dirLight.color.copy(getSunColor(sunAltitude));
     dirLight.visible = true;
   } else {
@@ -5324,7 +5638,7 @@ function updateDayNightCycle(dt) {
 
   // ── Fill Light ──
   if (sunAltitude > 0) {
-    fillLight.intensity = Math.min(0.4, sunAltitude * 0.8);
+    fillLight.intensity = Math.min(0.8, sunAltitude * 1.5);
     fillLight.color.copy(getSunColor(Math.max(0, sunAltitude * 0.8)));
   } else {
     fillLight.intensity = 0;
@@ -5335,9 +5649,9 @@ function updateDayNightCycle(dt) {
   skyMat.uniforms.topColor.value.copy(skyColors.top);
   skyMat.uniforms.horizonColor.value.copy(skyColors.hz);
 
-  // Add permanent dusty haze to horizon (post-apocalyptic atmosphere)
-  const hazeColor = new THREE.Color(0x8a7560);
-  skyMat.uniforms.horizonColor.value.lerp(hazeColor, 0.08);
+  // Add subtle haze to horizon
+  const hazeColor = new THREE.Color(0x9aabb8);
+  skyMat.uniforms.horizonColor.value.lerp(hazeColor, 0.03);
 
   // Animate bottomColor (ground/below horizon)
   if (sunAltitude > 0.1) {
@@ -5353,8 +5667,8 @@ function updateDayNightCycle(dt) {
   if (sunAltitude > 0.1) {
     // Day
     const dayT = Math.min(1, (sunAltitude - 0.1) / 0.5);
-    ambLight.color.set(0x404860).lerp(new THREE.Color(0x808080), dayT);
-    ambLight.intensity = 0.5 + dayT * 0.3;
+    ambLight.color.set(0x506080).lerp(new THREE.Color(0xcccccc), dayT);
+    ambLight.intensity = 1.0 + dayT * 1.0;
   } else if (sunAltitude > -0.1) {
     // Sunrise/sunset transition
     const t = (sunAltitude + 0.1) / 0.2; // 0 at -0.1, 1 at +0.1
@@ -5371,7 +5685,7 @@ function updateDayNightCycle(dt) {
     const t = Math.min(1, sunAltitude * 2);
     hemiLight.color.set(0x1a1a3a).lerp(new THREE.Color(0x8ec8f0), t);
     hemiLight.groundColor.set(0x1a1a2a).lerp(new THREE.Color(0x4a7d3a), t);
-    hemiLight.intensity = 0.5 + t * 0.8;
+    hemiLight.intensity = 1.0 + t * 2.0;
   } else {
     hemiLight.color.set(0x1a1a3a);
     hemiLight.groundColor.set(0x1a1a2a);
@@ -5381,7 +5695,7 @@ function updateDayNightCycle(dt) {
   // ── Fog (with weather multiplier) ──
   scene.fog.color.copy(skyColors.hz);
   // Denser fog at night, lighter during day
-  const baseFogDensity = 0.0014;
+  const baseFogDensity = 0.0008;
   let computedFogDensity;
   if (sunAltitude > 0.1) {
     computedFogDensity = baseFogDensity;
@@ -5393,7 +5707,7 @@ function updateDayNightCycle(dt) {
   }
   // Apply weather fog multiplier
   const weatherFogMult = getWeatherFogMultiplier();
-  scene.fog.density = computedFogDensity * weatherFogMult;
+  scene.fog.density = computedFogDensity * weatherFogMult * (currentSettings.fogDensity || 1.0);
   // Apply weather fog color tint
   const fogTint = getWeatherFogColorTint();
   if (fogTint.amount > 0) {
@@ -5402,15 +5716,15 @@ function updateDayNightCycle(dt) {
 
   // ── Renderer exposure ──
   if (sunAltitude > 0.3) {
-    renderer.toneMappingExposure = 2.2;
+    renderer.toneMappingExposure = 4.5;
   } else if (sunAltitude > 0) {
     const t = sunAltitude / 0.3;
-    renderer.toneMappingExposure = 1.2 + t * 1.0;
+    renderer.toneMappingExposure = 2.2 + t * 2.3;
   } else if (sunAltitude > -0.1) {
     const t = (sunAltitude + 0.1) / 0.1;
-    renderer.toneMappingExposure = 0.6 + t * 0.4;
+    renderer.toneMappingExposure = 0.8 + t * 1.4;
   } else {
-    renderer.toneMappingExposure = 0.6;
+    renderer.toneMappingExposure = 0.8;
   }
 
   // ── Lamp Posts (on at night/dusk/dawn) ──
@@ -5760,7 +6074,7 @@ function updateWeatherSystem(dt) {
   // ── Update Rain ──
   const rainActive = weatherState.type === 'rain';
   const rainIntensity = rainActive ? weatherState.intensity : 0;
-  rainMat.uniforms.opacity.value = rainIntensity;
+  rainMat.uniforms.opacity.value = rainIntensity * (currentSettings.particleDensity || 1.0);
 
   if (rainIntensity > 0) {
     const camX = camera.position.x, camY = camera.position.y, camZ = camera.position.z;
@@ -5834,7 +6148,7 @@ function updateWeatherSystem(dt) {
   // ── Update Dust Storm ──
   const stormActive = weatherState.type === 'dust_storm';
   const stormIntensity = stormActive ? weatherState.intensity : 0;
-  stormMat.uniforms.opacity.value = stormIntensity;
+  stormMat.uniforms.opacity.value = stormIntensity * (currentSettings.particleDensity || 1.0);
 
   if (stormIntensity > 0) {
     const camX = camera.position.x, camY = camera.position.y, camZ = camera.position.z;
@@ -6253,6 +6567,158 @@ let riverMesh = null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// RESEAT ALL PLACED OBJECTS — After ALL terrain modifications are done
+// (towns, gas stations, rivers have all modified heightData)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  console.log('[Reseat] Re-seating all placed objects to final terrain heights...');
+  const _rd = new THREE.Object3D();
+
+  // Helper: reseat an InstancedMesh — keeps X,Z,rotation,scale but updates Y
+  // yOffsetFn(position, scale) returns the Y offset above terrain
+  function reseatInstancedMesh(inst, yOffsetFn) {
+    if (!inst || inst.count === 0) return;
+    for (let i = 0; i < inst.count; i++) {
+      inst.getMatrixAt(i, _rd.matrix);
+      _rd.matrix.decompose(_rd.position, _rd.quaternion, _rd.scale);
+      // Skip instances that were hidden (scale near zero)
+      if (_rd.scale.x < 0.01 && _rd.scale.y < 0.01) continue;
+      const newH = getTerrainHeight(_rd.position.x, _rd.position.z);
+      _rd.position.y = newH + yOffsetFn(_rd.position, _rd.scale);
+      _rd.updateMatrix();
+      inst.setMatrixAt(i, _rd.matrix);
+    }
+    inst.instanceMatrix.needsUpdate = true;
+  }
+
+  // ── Trees ──
+  // Trunk: Y offset = 1.4 * scale.y (scale is uniform)
+  reseatInstancedMesh(trunkInst, (pos, sc) => 1.4 * sc.y);
+  // Foliage layers: offset depends on the foliage def y values
+  foliageDefs.forEach((d, li) => {
+    reseatInstancedMesh(foliageInsts[li], (pos, sc) => d.y * sc.y);
+  });
+  // Update tree collision bodies
+  // (tree bodies are at treePositions with h+2.5, recalc)
+  // Note: CANNON bodies created earlier are hard to update; skip for now
+
+  // ── Rocks ──
+  // Rocks: Y offset = scale.y * 0.3 (from original: h + s*0.3 where scale = s*...)
+  reseatInstancedMesh(rockInst, (pos, sc) => sc.y * 0.3);
+
+  // ── Grass Tufts ──
+  if (window._tuftInst) {
+    reseatInstancedMesh(window._tuftInst, (pos, sc) => 0);
+  }
+
+  // ── Pebbles ──
+  if (window._pebbleInst) {
+    reseatInstancedMesh(window._pebbleInst, (pos, sc) => 0.02);
+  }
+
+  // ── Lamp Posts ──
+  if (window._lampPostData) {
+    const lpd = window._lampPostData;
+    const POLE_H = lpd.POLE_H;
+    for (let i = 0; i < lpd.positions.length; i++) {
+      const lp = lpd.positions[i];
+      const newH = getTerrainHeight(lp.x, lp.z);
+      const deltaY = newH - lp.y;
+      lp.y = newH; // update stored position
+
+      // Update pole
+      const lpDummy = new THREE.Object3D();
+      lpd.poleInst.getMatrixAt(i, lpDummy.matrix);
+      lpDummy.matrix.decompose(lpDummy.position, lpDummy.quaternion, lpDummy.scale);
+      lpDummy.position.y += deltaY;
+      lpDummy.updateMatrix();
+      lpd.poleInst.setMatrixAt(i, lpDummy.matrix);
+
+      // Update arm
+      lpd.armInst.getMatrixAt(i, lpDummy.matrix);
+      lpDummy.matrix.decompose(lpDummy.position, lpDummy.quaternion, lpDummy.scale);
+      lpDummy.position.y += deltaY;
+      lpDummy.updateMatrix();
+      lpd.armInst.setMatrixAt(i, lpDummy.matrix);
+
+      // Update lantern
+      lpd.lanternInst.getMatrixAt(i, lpDummy.matrix);
+      lpDummy.matrix.decompose(lpDummy.position, lpDummy.quaternion, lpDummy.scale);
+      lpDummy.position.y += deltaY;
+      lpDummy.updateMatrix();
+      lpd.lanternInst.setMatrixAt(i, lpDummy.matrix);
+
+      // Update glow
+      lpd.glowInst.getMatrixAt(i, lpDummy.matrix);
+      lpDummy.matrix.decompose(lpDummy.position, lpDummy.quaternion, lpDummy.scale);
+      lpDummy.position.y += deltaY;
+      lpDummy.updateMatrix();
+      lpd.glowInst.setMatrixAt(i, lpDummy.matrix);
+    }
+    lpd.poleInst.instanceMatrix.needsUpdate = true;
+    lpd.armInst.instanceMatrix.needsUpdate = true;
+    lpd.lanternInst.instanceMatrix.needsUpdate = true;
+    lpd.glowInst.instanceMatrix.needsUpdate = true;
+  }
+
+  // ── Hay Bales ──
+  if (window._hayInst) {
+    reseatInstancedMesh(window._hayInst, (pos, sc) => 0.3);
+  }
+
+  // ── Vehicle Hulks ──
+  if (window._hulkData) {
+    const hd = window._hulkData;
+    reseatInstancedMesh(hd.hulkBodyInst, (pos, sc) => 0.35);
+    reseatInstancedMesh(hd.hulkCabinInst, (pos, sc) => 0.7);
+    reseatInstancedMesh(hd.hulkWheelInst, (pos, sc) => 0.2);
+  }
+
+  // ── Rubble ──
+  if (window._rubbleInst) {
+    reseatInstancedMesh(window._rubbleInst, (pos, sc) => sc.y * 0.3);
+  }
+
+  // ── Guardrails ──
+  if (window._guardrailInsts) {
+    for (const inst of window._guardrailInsts) {
+      reseatInstancedMesh(inst, (pos, sc) => sc.y * 0.5);
+    }
+  }
+
+  // ── Fences ──
+  if (window._fenceInsts) {
+    for (const inst of window._fenceInsts) {
+      reseatInstancedMesh(inst, (pos, sc) => sc.y * 0.5);
+    }
+  }
+
+  // ── Findable Vehicles ──
+  for (const fv of findableVehicles) {
+    const newH = getTerrainHeight(fv.position.x, fv.position.z);
+    const deltaY = newH - fv.position.y;
+    fv.position.y = newH;
+    if (fv.mesh) fv.mesh.position.y = newH;
+    if (fv.glowMesh) fv.glowMesh.position.y = newH + 0.08;
+    // Update static wheels
+    if (fv.mesh && fv.mesh.userData._staticWheels) {
+      for (const wg of fv.mesh.userData._staticWheels) {
+        wg.position.y += deltaY;
+      }
+    }
+  }
+
+  // ── Fuel Canisters ──
+  for (const fc of fuelCanisters) {
+    const newH = getTerrainHeight(fc.mesh.position.x, fc.mesh.position.z);
+    fc.mesh.position.y = newH + 0.5;
+    fc.baseY = newH + 0.5;
+  }
+
+  console.log('[Reseat] Done re-seating objects.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // 4. WATER DETECTION FUNCTION — isInWater(x, z)
 // ═══════════════════════════════════════════════════════════════════════
 // Returns { inWater: bool, depth: number, type: 'lake'|'river'|'puddle'|null }
@@ -6599,9 +7065,9 @@ composer.addPass(bloomPass);
 const ColorGradingShader = {
   uniforms: {
     tDiffuse: { value: null },
-    saturation: { value: 0.90 },
-    warmth: { value: 0.10 },
-    contrast: { value: 1.05 },
+    saturation: { value: 1.0 },
+    warmth: { value: 0.02 },
+    contrast: { value: 1.0 },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -6651,8 +7117,8 @@ composer.addPass(colorGradingPass);
 const VignetteShader = {
   uniforms: {
     tDiffuse: { value: null },
-    intensity: { value: 0.3 },
-    smoothness: { value: 0.45 },
+    intensity: { value: 0.05 },
+    smoothness: { value: 0.35 },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -6692,7 +7158,7 @@ const FilmGrainSpeedShader = {
   uniforms: {
     tDiffuse: { value: null },
     time: { value: 0.0 },
-    grainIntensity: { value: 0.03 },
+    grainIntensity: { value: 0.015 },
     speedFactor: { value: 0.0 },
   },
   vertexShader: `
@@ -6751,6 +7217,268 @@ const filmGrainSpeedPass = new ShaderPass(FilmGrainSpeedShader);
 composer.addPass(filmGrainSpeedPass);
 
 // ═══════════════════════════════════════════════════════════════════════
+// FPS DEBUG OVERLAY SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+window._perfThresholds = { fps: 30, frameTime: 33 };
+window._debugStats = {
+  fps: 0, frameTime: 0, drawCalls: 0, triangles: 0,
+  textures: 0, geometries: 0, physicsBodies: 0, heapMB: 0,
+  carPos: '0, 0, 0',
+};
+const _dbgFrameTimes = [];
+let _dbgLastTime = performance.now();
+
+function updateDebugOverlay() {
+  const overlay = document.getElementById('debug-overlay');
+  if (!overlay || overlay.style.display === 'none' || !overlay.style.display) return;
+
+  const now = performance.now();
+  const frameDelta = now - _dbgLastTime;
+  _dbgLastTime = now;
+
+  _dbgFrameTimes.push(frameDelta);
+  if (_dbgFrameTimes.length > 60) _dbgFrameTimes.shift();
+
+  const avgFrame = _dbgFrameTimes.reduce((a, b) => a + b, 0) / _dbgFrameTimes.length;
+  const fps = avgFrame > 0 ? 1000 / avgFrame : 0;
+
+  const info = renderer.info;
+  const stats = window._debugStats;
+  stats.fps = fps;
+  stats.frameTime = avgFrame;
+  stats.drawCalls = info.render.calls;
+  stats.triangles = info.render.triangles;
+  stats.textures = info.memory.textures;
+  stats.geometries = info.memory.geometries;
+  stats.physicsBodies = world.bodies.length;
+  if (performance.memory) {
+    stats.heapMB = (performance.memory.usedJSHeapSize / (1024 * 1024)).toFixed(1);
+  }
+  const cp = chassisBody.position;
+  stats.carPos = `${cp.x.toFixed(1)}, ${cp.y.toFixed(1)}, ${cp.z.toFixed(1)}`;
+
+  // Color-code FPS
+  const fpsColor = fps >= 55 ? '#0f0' : fps >= window._perfThresholds.fps ? '#ff0' : '#f44';
+  const frameColor = avgFrame <= 18 ? '#0f0' : avgFrame <= window._perfThresholds.frameTime ? '#ff0' : '#f44';
+
+  document.getElementById('dbg-fps').style.color = fpsColor;
+  document.getElementById('dbg-fps').textContent = fps.toFixed(1);
+  document.getElementById('dbg-frame').style.color = frameColor;
+  document.getElementById('dbg-frame').textContent = avgFrame.toFixed(2) + ' ms';
+  document.getElementById('dbg-draw').textContent = stats.drawCalls;
+  document.getElementById('dbg-tris').textContent = stats.triangles.toLocaleString();
+  document.getElementById('dbg-tex').textContent = stats.textures;
+  document.getElementById('dbg-geo').textContent = stats.geometries;
+  document.getElementById('dbg-phys').textContent = stats.physicsBodies;
+  document.getElementById('dbg-mem').textContent = stats.heapMB;
+  document.getElementById('dbg-pos').textContent = stats.carPos;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SETTINGS SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+const SETTINGS_DEFAULTS = {
+  // Graphics
+  renderScale: 1.0,
+  shadowQuality: 'high',       // 'off','low','medium','high'
+  bloomEnabled: true,
+  bloomStrength: 0.4,
+  postProcessing: true,
+  // Gameplay
+  timeSpeed: 1.0,              // multiplier on TIME_SCALE
+  weatherEnabled: true,
+  // Audio
+  masterVolume: 1.0,
+  engineVolume: 1.0,
+  // Camera
+  fov: 60,
+  chaseDist: 1.0,              // multiplier
+  // Effects
+  particleDensity: 1.0,
+  filmGrain: 0.015,
+  fogDensity: 1.0,             // multiplier on computed fog
+};
+
+const SETTINGS_DEFS = [
+  // tab, key, label, description, type, options
+  { tab: 'Graphics', key: 'renderScale',    label: 'Render Scale',     desc: 'Resolution multiplier', type: 'slider', min: 0.5, max: 2.0, step: 0.1 },
+  { tab: 'Graphics', key: 'shadowQuality',  label: 'Shadow Quality',   desc: 'Shadow map resolution', type: 'dropdown', options: ['off','low','medium','high'] },
+  { tab: 'Graphics', key: 'bloomEnabled',   label: 'Bloom',            desc: 'Glow effect on bright areas', type: 'toggle' },
+  { tab: 'Graphics', key: 'bloomStrength',  label: 'Bloom Strength',   desc: 'Intensity of bloom effect', type: 'slider', min: 0.0, max: 1.5, step: 0.05 },
+  { tab: 'Graphics', key: 'postProcessing', label: 'Post-Processing',  desc: 'Color grading, vignette, film grain', type: 'toggle' },
+  { tab: 'Gameplay', key: 'timeSpeed',      label: 'Time Speed',       desc: 'Day/night cycle speed multiplier', type: 'slider', min: 0.0, max: 5.0, step: 0.25 },
+  { tab: 'Gameplay', key: 'weatherEnabled', label: 'Weather System',   desc: 'Dynamic weather transitions', type: 'toggle' },
+  { tab: 'Gameplay', key: 'fogDensity',     label: 'Fog Density',      desc: 'Atmospheric fog multiplier', type: 'slider', min: 0.0, max: 3.0, step: 0.1 },
+  { tab: 'Audio',    key: 'masterVolume',   label: 'Master Volume',    desc: 'Overall game volume', type: 'slider', min: 0.0, max: 1.0, step: 0.05 },
+  { tab: 'Audio',    key: 'engineVolume',   label: 'Engine Volume',    desc: 'Vehicle engine sounds', type: 'slider', min: 0.0, max: 1.0, step: 0.05 },
+  { tab: 'Camera',   key: 'fov',            label: 'Field of View',    desc: 'Camera FOV in degrees', type: 'slider', min: 40, max: 110, step: 1 },
+  { tab: 'Camera',   key: 'chaseDist',      label: 'Chase Distance',   desc: 'How far camera sits behind car', type: 'slider', min: 0.5, max: 2.5, step: 0.1 },
+  { tab: 'Effects',  key: 'particleDensity',label: 'Particle Density', desc: 'Dust, smoke, rain particle count', type: 'slider', min: 0.0, max: 2.0, step: 0.1 },
+  { tab: 'Effects',  key: 'filmGrain',      label: 'Film Grain',       desc: 'Overlay grain intensity', type: 'slider', min: 0.0, max: 0.06, step: 0.005 },
+];
+
+let currentSettings = { ...SETTINGS_DEFAULTS };
+
+function saveSettings() {
+  try { localStorage.setItem('drivingSandboxSettings', JSON.stringify(currentSettings)); } catch(e) {}
+}
+function loadSettings() {
+  try {
+    const s = localStorage.getItem('drivingSandboxSettings');
+    if (s) { Object.assign(currentSettings, JSON.parse(s)); }
+  } catch(e) {}
+}
+loadSettings();
+
+function applySettings() {
+  const s = currentSettings;
+
+  // Render scale
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * s.renderScale);
+
+  // Shadows
+  if (s.shadowQuality === 'off') {
+    renderer.shadowMap.enabled = false;
+  } else {
+    renderer.shadowMap.enabled = true;
+    const sizes = { low: 512, medium: 1024, high: 2048 };
+    const sz = sizes[s.shadowQuality] || 2048;
+    dirLight.shadow.mapSize.set(sz, sz);
+    if (dirLight.shadow.map) { dirLight.shadow.map.dispose(); dirLight.shadow.map = null; }
+  }
+
+  // Bloom
+  bloomPass.enabled = s.bloomEnabled && s.postProcessing;
+  bloomPass.strength = s.bloomStrength;
+
+  // Post-processing passes
+  colorGradingPass.enabled = s.postProcessing;
+  vignettePass.enabled = s.postProcessing;
+  filmGrainSpeedPass.enabled = s.postProcessing;
+
+  // FOV
+  camera.fov = s.fov;
+  camera.updateProjectionMatrix();
+
+  // Film grain base
+  // (actual grain updated per-frame in animate; this sets the base)
+
+  saveSettings();
+}
+applySettings();
+
+// ── Dynamic Settings UI Generation ──
+let _settingsBuilt = false;
+function buildSettingsUI() {
+  if (_settingsBuilt) return;
+  _settingsBuilt = true;
+
+  const tabs = [...new Set(SETTINGS_DEFS.map(d => d.tab))];
+  const tabsEl = document.getElementById('settings-tabs');
+  const contentEl = document.getElementById('settings-content');
+  tabsEl.innerHTML = '';
+  contentEl.innerHTML = '';
+
+  tabs.forEach((tabName, idx) => {
+    // Tab button
+    const btn = document.createElement('button');
+    btn.className = 'settings-tab' + (idx === 0 ? ' active' : '');
+    btn.textContent = tabName;
+    btn.addEventListener('click', () => {
+      tabsEl.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      contentEl.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('settings-section-' + tabName).classList.add('active');
+    });
+    tabsEl.appendChild(btn);
+
+    // Section
+    const section = document.createElement('div');
+    section.className = 'settings-section' + (idx === 0 ? ' active' : '');
+    section.id = 'settings-section-' + tabName;
+
+    const defs = SETTINGS_DEFS.filter(d => d.tab === tabName);
+    defs.forEach(def => {
+      const row = document.createElement('div');
+      row.className = 'setting-row';
+
+      const info = document.createElement('div');
+      info.className = 'setting-info';
+      info.innerHTML = `<div class="setting-name">${def.label}</div><div class="setting-desc">${def.desc}</div>`;
+      row.appendChild(info);
+
+      const ctrl = document.createElement('div');
+      ctrl.className = 'setting-control';
+
+      if (def.type === 'slider') {
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.className = 'settings-slider';
+        slider.min = def.min; slider.max = def.max; slider.step = def.step;
+        slider.value = currentSettings[def.key];
+        const valSpan = document.createElement('span');
+        valSpan.className = 'slider-value';
+        valSpan.textContent = Number(currentSettings[def.key]).toFixed(def.step < 0.01 ? 3 : def.step < 1 ? 2 : 0);
+        slider.addEventListener('input', () => {
+          currentSettings[def.key] = parseFloat(slider.value);
+          valSpan.textContent = Number(slider.value).toFixed(def.step < 0.01 ? 3 : def.step < 1 ? 2 : 0);
+          applySettings();
+        });
+        ctrl.appendChild(slider);
+        ctrl.appendChild(valSpan);
+      } else if (def.type === 'toggle') {
+        const toggle = document.createElement('div');
+        toggle.className = 'settings-toggle' + (currentSettings[def.key] ? ' on' : '');
+        toggle.innerHTML = '<div class="toggle-knob"></div>';
+        toggle.addEventListener('click', () => {
+          currentSettings[def.key] = !currentSettings[def.key];
+          toggle.classList.toggle('on', currentSettings[def.key]);
+          applySettings();
+        });
+        ctrl.appendChild(toggle);
+      } else if (def.type === 'dropdown') {
+        const select = document.createElement('select');
+        select.className = 'settings-dropdown';
+        def.options.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt; o.textContent = opt.charAt(0).toUpperCase() + opt.slice(1);
+          if (currentSettings[def.key] === opt) o.selected = true;
+          select.appendChild(o);
+        });
+        select.addEventListener('change', () => {
+          currentSettings[def.key] = select.value;
+          applySettings();
+        });
+        ctrl.appendChild(select);
+      }
+
+      row.appendChild(ctrl);
+      section.appendChild(row);
+    });
+
+    contentEl.appendChild(section);
+  });
+
+  // Footer buttons
+  document.getElementById('settings-reset').addEventListener('click', () => {
+    currentSettings = { ...SETTINGS_DEFAULTS };
+    _settingsBuilt = false;
+    buildSettingsUI();
+    applySettings();
+  });
+  document.getElementById('settings-done').addEventListener('click', () => {
+    gamePaused = false;
+    const ov = document.getElementById('settings-overlay');
+    ov.classList.remove('open'); ov.style.display = 'none';
+  });
+  document.getElementById('settings-close').addEventListener('click', () => {
+    gamePaused = false;
+    const ov = document.getElementById('settings-overlay');
+    ov.classList.remove('open'); ov.style.display = 'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // GAME LOOP
 // ═══════════════════════════════════════════════════════════════════════
 const clock=new THREE.Clock();const fixedDt=1/60;let accum=0;
@@ -6759,6 +7487,16 @@ setTimeout(()=>{document.getElementById('controls-hint').style.opacity='0';},800
 function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),0.1);
+
+  // ── Pause guard: skip physics/game updates when paused, still render ──
+  if (gamePaused) {
+    // Still render the scene so it's visible behind the settings overlay
+    if (currentSettings.postProcessing) { composer.render(); }
+    else { renderer.render(scene, camera); }
+    updateDebugOverlay();
+    return;
+  }
+
   accum+=dt;
 
   const accel=keys['KeyW']||keys['ArrowUp'];
@@ -7353,7 +8091,7 @@ function animate(){
   updateSurfaceSounds(speed, lateralSpeed, avgSurfaceBlend, isDrifting, brakingHard);
   updateLampLights(camera.position);
   updateDayNightCycle(dt);
-  updateWeatherSystem(dt);
+  if (currentSettings.weatherEnabled) updateWeatherSystem(dt);
   // ── Water bodies system update ──
   updateWaterSystem(dt, clock.elapsedTime, chassisBody.position, speed);
   minimapSystem.update();
@@ -7364,20 +8102,25 @@ function animate(){
   // Vignette: increase with damage (base 0.3, max 0.8 when badly hurt)
   const avgHealth = getAverageHealth();
   const damageRatio = 1.0 - avgHealth / 100.0;
-  vignettePass.uniforms.intensity.value = 0.2 + damageRatio * 0.5;
+  vignettePass.uniforms.intensity.value = 0.05 + damageRatio * 0.25;
 
   // Film grain time + dust storm grain boost
   filmGrainSpeedPass.uniforms.time.value = elapsedTime;
   const dustStormGrainBoost = (weatherState.type === 'dust_storm') ? weatherState.intensity * 0.08 : 0;
-  filmGrainSpeedPass.uniforms.grainIntensity.value = 0.03 + dustStormGrainBoost;
+  const baseGrain = currentSettings.filmGrain !== undefined ? currentSettings.filmGrain : 0.015;
+  filmGrainSpeedPass.uniforms.grainIntensity.value = baseGrain + dustStormGrainBoost;
 
   // Speed lines: activate above 100 km/h, ramp up to max at ~200 km/h
   const kmhSpeed = speed * 3.6;
   const speedLinesFactor = Math.max(0, Math.min(1.0, (kmhSpeed - 100) / 100));
   filmGrainSpeedPass.uniforms.speedFactor.value = speedLinesFactor;
 
-  // Render via composer instead of direct renderer
-  composer.render();
+  // Render via composer (or direct if post-processing disabled)
+  if (currentSettings.postProcessing) { composer.render(); }
+  else { renderer.render(scene, camera); }
+
+  // ── FPS Debug Overlay ──
+  updateDebugOverlay();
 }
 
 window.addEventListener('resize',()=>{
