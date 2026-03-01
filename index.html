@@ -142,7 +142,29 @@ function createGrassTexture() {
   const ctx = c.getContext('2d');
   // Earthy base - muted green-brown
   ctx.fillStyle = '#4d5e30'; ctx.fillRect(0,0,512,512);
-  // Dirt patches - warm browns (keep R≈G to avoid red)
+  // Faint mowing stripe pattern — alternating lighter bands
+  for (let sy = 0; sy < 512; sy += 24) {
+    const stripe = (Math.floor(sy / 24) % 2 === 0);
+    if (stripe) {
+      ctx.fillStyle = 'rgba(90,120,50,0.08)';
+      ctx.fillRect(0, sy, 512, 12);
+    }
+  }
+  // Worn grass patches (brownish zones)
+  for (let i = 0; i < 12; i++) {
+    const px = Math.random() * 512, py = Math.random() * 512, pr = 15 + Math.random() * 30;
+    const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
+    g.addColorStop(0, 'rgba(90,75,45,0.15)'); g.addColorStop(1, 'rgba(90,75,45,0)');
+    ctx.fillStyle = g; ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+  }
+  // Lush dark green patches
+  for (let i = 0; i < 10; i++) {
+    const px = Math.random() * 512, py = Math.random() * 512, pr = 12 + Math.random() * 25;
+    const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
+    g.addColorStop(0, 'rgba(30,65,20,0.18)'); g.addColorStop(1, 'rgba(30,65,20,0)');
+    ctx.fillStyle = g; ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+  }
+  // Dirt patches - warm browns (keep R~G to avoid red)
   for (let i = 0; i < 2500; i++) {
     const x=Math.random()*512,y=Math.random()*512;
     const base=50+Math.random()*30;
@@ -157,10 +179,12 @@ function createGrassTexture() {
     const r=1+Math.random()*3;
     ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
   }
-  // Grass blades - dominant green, varied
-  for (let i = 0; i < 8000; i++) {
+  // Grass blades - dominant green, varied, denser in stripe bands
+  for (let i = 0; i < 9000; i++) {
     const x=Math.random()*512,y=Math.random()*512,len=3+Math.random()*9;
-    ctx.strokeStyle=`rgba(${30+Math.random()*35},${55+Math.random()*70},${12+Math.random()*20},0.4)`;
+    const inStripe = (Math.floor(y / 24) % 2 === 0);
+    const alpha = inStripe ? 0.45 : 0.35;
+    ctx.strokeStyle=`rgba(${30+Math.random()*35},${55+Math.random()*70},${12+Math.random()*20},${alpha})`;
     ctx.lineWidth=0.4+Math.random()*0.7;
     ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(Math.random()-0.5)*2.5,y-len);ctx.stroke();
   }
@@ -170,6 +194,126 @@ function createGrassTexture() {
     const v=40+Math.random()*30;
     ctx.fillStyle=`rgba(${v+5},${v+2},${v-5},0.15)`;
     ctx.fillRect(x,y,1+Math.random()*2,1+Math.random()*2);
+  }
+  // Subtle wildflower specks — tiny dots of yellow, white, purple
+  const flowerColors = ['rgba(220,200,60,0.35)', 'rgba(240,240,230,0.3)', 'rgba(160,100,180,0.25)', 'rgba(230,180,50,0.3)'];
+  for (let i = 0; i < 120; i++) {
+    const x = Math.random() * 512, y = Math.random() * 512;
+    ctx.fillStyle = flowerColors[Math.floor(Math.random() * flowerColors.length)];
+    ctx.beginPath(); ctx.arc(x, y, 0.8 + Math.random() * 1.2, 0, Math.PI * 2); ctx.fill();
+  }
+  return c;
+}
+function createDirtGroundTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const ctx = c.getContext('2d');
+  // Warm ochre-brown base
+  ctx.fillStyle = '#7a6040'; ctx.fillRect(0, 0, 512, 512);
+  // Tonal variation — patches of lighter/darker earth
+  for (let i = 0; i < 30; i++) {
+    const px = Math.random() * 512, py = Math.random() * 512, pr = 20 + Math.random() * 50;
+    const v = Math.random() > 0.5 ? 'rgba(100,85,55,0.2)' : 'rgba(55,42,28,0.15)';
+    const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
+    g.addColorStop(0, v); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+  }
+  // Cracked dry earth pattern — hexagonal-ish crack lines
+  ctx.strokeStyle = 'rgba(40,30,18,0.4)'; ctx.lineWidth = 0.8;
+  for (let i = 0; i < 60; i++) {
+    let px = Math.random() * 512, py = Math.random() * 512;
+    ctx.beginPath(); ctx.moveTo(px, py);
+    const segments = 3 + Math.floor(Math.random() * 5);
+    for (let s = 0; s < segments; s++) {
+      const angle = (s / segments) * Math.PI * 2 + (Math.random() - 0.5) * 1.2;
+      px += Math.cos(angle) * (8 + Math.random() * 15);
+      py += Math.sin(angle) * (8 + Math.random() * 15);
+      ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  // Finer crack network
+  ctx.strokeStyle = 'rgba(50,38,22,0.25)'; ctx.lineWidth = 0.5;
+  for (let i = 0; i < 100; i++) {
+    let px = Math.random() * 512, py = Math.random() * 512;
+    ctx.beginPath(); ctx.moveTo(px, py);
+    for (let s = 0; s < 2 + Math.floor(Math.random() * 3); s++) {
+      px += (Math.random() - 0.5) * 20; py += (Math.random() - 0.5) * 20;
+      ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  // Scattered small rocks/pebbles
+  for (let i = 0; i < 300; i++) {
+    const x = Math.random() * 512, y = Math.random() * 512;
+    const v = 55 + Math.random() * 40;
+    ctx.fillStyle = `rgba(${v+5},${v},${v-10},0.35)`;
+    const r = 0.8 + Math.random() * 2.5;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  // Fine grit
+  for (let i = 0; i < 2000; i++) {
+    const x = Math.random() * 512, y = Math.random() * 512;
+    const v = 50 + Math.random() * 35;
+    ctx.fillStyle = `rgba(${v+8},${v+3},${v-8},0.12)`;
+    ctx.fillRect(x, y, 1 + Math.random() * 1.5, 1 + Math.random() * 1.5);
+  }
+  return c;
+}
+function createMudTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const ctx = c.getContext('2d');
+  // Dark wet brown base
+  ctx.fillStyle = '#3a2a18'; ctx.fillRect(0, 0, 512, 512);
+  // Wet sheen patches — glossy reflective areas
+  for (let i = 0; i < 20; i++) {
+    const px = Math.random() * 512, py = Math.random() * 512, pr = 15 + Math.random() * 40;
+    const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
+    g.addColorStop(0, 'rgba(80,65,45,0.3)'); g.addColorStop(0.6, 'rgba(60,48,30,0.15)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+  }
+  // Puddle highlights — lighter reflective spots
+  for (let i = 0; i < 15; i++) {
+    const px = Math.random() * 512, py = Math.random() * 512, pr = 5 + Math.random() * 15;
+    const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
+    g.addColorStop(0, 'rgba(120,110,90,0.2)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+  }
+  // Tire rut suggestions — subtle parallel depressions
+  for (let i = 0; i < 6; i++) {
+    const yOff = 50 + Math.random() * 400;
+    ctx.strokeStyle = 'rgba(25,18,10,0.3)'; ctx.lineWidth = 2 + Math.random() * 3;
+    ctx.beginPath();
+    let px = 0;
+    ctx.moveTo(px, yOff);
+    while (px < 512) {
+      px += 10 + Math.random() * 20;
+      ctx.lineTo(px, yOff + (Math.random() - 0.5) * 4);
+    }
+    ctx.stroke();
+    // Parallel companion rut
+    ctx.beginPath();
+    px = 0;
+    ctx.moveTo(px, yOff + 18 + Math.random() * 8);
+    while (px < 512) {
+      px += 10 + Math.random() * 20;
+      ctx.lineTo(px, yOff + 20 + (Math.random() - 0.5) * 4);
+    }
+    ctx.stroke();
+  }
+  // Dark organic debris
+  for (let i = 0; i < 800; i++) {
+    const x = Math.random() * 512, y = Math.random() * 512;
+    const v = 25 + Math.random() * 20;
+    ctx.fillStyle = `rgba(${v+5},${v},${v-5},0.2)`;
+    ctx.fillRect(x, y, 1 + Math.random() * 3, 1 + Math.random() * 2);
+  }
+  // Slight color variation noise
+  for (let i = 0; i < 1500; i++) {
+    const x = Math.random() * 512, y = Math.random() * 512;
+    const v = 30 + Math.random() * 25;
+    ctx.fillStyle = `rgba(${v+10},${v+3},${v-8},0.1)`;
+    ctx.fillRect(x, y, 1 + Math.random(), 1 + Math.random());
   }
   return c;
 }
@@ -463,6 +607,42 @@ for (let i = 0; i <= TSEG; i++) {
   }
 }
 
+// ── Terrain Edge Treatment — gradual height decrease at boundaries ──
+{
+  const edgeFraction = 0.10; // last 10% of terrain half-width
+  const edgeStart = TSIZE * 0.5 * (1 - edgeFraction); // distance from center where fade begins
+  for (let i = 0; i <= TSEG; i++) {
+    for (let j = 0; j <= TSEG; j++) {
+      const wx = (i / TSEG - 0.5) * TSIZE, wz = (j / TSEG - 0.5) * TSIZE;
+      const edgeDist = Math.max(Math.abs(wx), Math.abs(wz));
+      if (edgeDist > edgeStart) {
+        const t = (edgeDist - edgeStart) / (TSIZE * 0.5 * edgeFraction);
+        const fade = 1 - t * t; // quadratic fade to 0
+        heightData[i][j] *= Math.max(0, fade);
+        heightData[i][j] -= t * 3; // slight downward slope at edge
+      }
+    }
+  }
+}
+
+// ── Micro-Detail Noise — fine bumps for close-up visual richness ──
+{
+  for (let i = 0; i <= TSEG; i++) {
+    for (let j = 0; j <= TSEG; j++) {
+      const wx = (i / TSEG - 0.5) * TSIZE, wz = (j / TSEG - 0.5) * TSIZE;
+      // Skip vertices on or very near roads — preserve flat road bed
+      let nearRoad = false;
+      for (const rp of allRoadPoints) {
+        if (Math.hypot(wx - rp.x, wz - rp.z) <= ROAD_WIDTH + 1.0) { nearRoad = true; break; }
+      }
+      if (nearRoad) continue;
+      // High-frequency micro noise — subtle bumps
+      const microNoise = noise(wx * 0.3, wz * 0.3) * 0.1 + noise(wx * 0.7, wz * 0.7) * 0.05;
+      heightData[i][j] += microNoise;
+    }
+  }
+}
+
 function isOnRoad(x, z, buffer) {
   buffer = buffer || 0;
   for (const rp of allRoadPoints) {
@@ -482,7 +662,7 @@ function getTerrainHeight(wx, wz) {
 // Physics heightfield - reverse j-axis to match cannon-es rotation
 const physData = [];
 for (let i=0;i<=TSEG;i++){physData.push([]);for(let j=0;j<=TSEG;j++)physData[i].push(heightData[i][TSEG-j]);}
-const hfShape = new CANNON.Heightfield(physData, { elementSize: segSize });
+let hfShape = new CANNON.Heightfield(physData, { elementSize: segSize });
 const hfBody = new CANNON.Body({ mass: 0, material: groundMat });
 hfBody.addShape(hfShape);
 hfBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
@@ -496,23 +676,101 @@ const posAttr = terrainGeo.attributes.position;
 for (let i=0;i<=TSEG;i++) for(let j=0;j<=TSEG;j++) posAttr.setY(i*(TSEG+1)+j, heightData[j][i]);
 terrainGeo.computeVertexNormals();
 
-// Vertex colors - natural terrain palette
+// ── Surface Type Query Function ──
+function getSurfaceType(x, z) {
+  if (isOnRoad(x, z)) return 'road';
+  const h = getTerrainHeight(x, z);
+  // Compute slope from nearby height samples
+  const d = 1.0;
+  const hL = getTerrainHeight(x - d, z), hR = getTerrainHeight(x + d, z);
+  const hU = getTerrainHeight(x, z - d), hD = getTerrainHeight(x, z + d);
+  const slope = Math.sqrt(((hR - hL) / (2 * d)) ** 2 + ((hD - hU) / (2 * d)) ** 2);
+  if (h < 1) return 'mud';
+  if (slope > 0.3 || h > 8) return 'dirt';
+  return 'grass';
+}
+window.getSurfaceType = getSurfaceType;
+
+// ── Helper: HSL to RGB ──
+function hsl2rgb(h, s, l) {
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const hue2rgb = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t; if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+  }
+  return [r, g, b];
+}
+
+// Vertex colors - rich multi-biome terrain palette
 const vcolors = new Float32Array(posAttr.count * 3);
 const _n = new THREE.Vector3();
 for (let i = 0; i < posAttr.count; i++) {
-  const y=posAttr.getY(i);
+  const y = posAttr.getY(i);
+  const vx = posAttr.getX(i), vz = posAttr.getZ(i);
   _n.fromBufferAttribute(terrainGeo.attributes.normal, i);
-  const slope=1-_n.y;
-  // Base: muted green with brown undertone
-  let r=0.28,g=0.42,b=0.18;
-  // Higher = drier, browner (not redder)
-  const hf=Math.max(0,(y-5)/THEIGHT);
-  r+=hf*0.12;g-=hf*0.06;b-=hf*0.04;
-  // Slopes = exposed earth/rock (warm brown, not red)
-  if(slope>0.25){const sf=Math.min(1,(slope-0.25)*3);r=r*(1-sf)+0.40*sf;g=g*(1-sf)+0.36*sf;b=b*(1-sf)+0.26*sf;}
-  // Low areas = darker, damper soil
-  if(y<1){const lf=Math.max(0,1-y);r+=lf*0.02;g+=lf*0.02;b-=lf*0.02;}
-  vcolors[i*3]=r;vcolors[i*3+1]=g;vcolors[i*3+2]=b;
+  const slope = 1 - _n.y;
+
+  // Per-vertex noise for natural variation
+  const nv = noise(vx * 0.05, vz * 0.05) * 0.5 + 0.5; // 0-1
+
+  // Road proximity factor (for shoulder blending)
+  let roadProx = 0;
+  for (const rp of allRoadPoints) {
+    const d = Math.hypot(vx - rp.x, vz - rp.z);
+    if (d < ROAD_WIDTH + ROAD_SHOULDER + 2) {
+      const t = Math.max(0, 1 - (d - ROAD_WIDTH) / (ROAD_SHOULDER + 2));
+      roadProx = Math.max(roadProx, t);
+    }
+  }
+
+  // Compute surface blend weights
+  let wGrass = 0, wDirt = 0, wMud = 0;
+  // Mud: low-lying areas
+  if (y < 1) { wMud = Math.min(1, (1 - y) * 1.2); }
+  // Dirt: hilltops, steep slopes, road shoulders
+  if (y > 6 || slope > 0.2 || roadProx > 0.3) {
+    const hFactor = Math.max(0, (y - 6) / (THEIGHT - 6));
+    const sFactor = Math.max(0, (slope - 0.2) / 0.3);
+    const rFactor = Math.max(0, (roadProx - 0.3) / 0.7) * 0.6;
+    wDirt = Math.min(1, Math.max(hFactor, sFactor, rFactor));
+  }
+  // Grass: whatever is left
+  wGrass = Math.max(0, 1 - wMud - wDirt);
+
+  // Grass color: rich green with noise variation (hue 0.28-0.36)
+  const grassHue = 0.28 + nv * 0.08;
+  const grassSat = 0.45 + nv * 0.2;
+  const grassLum = 0.22 + nv * 0.1;
+  const gc = hsl2rgb(grassHue, grassSat, grassLum);
+
+  // Dirt color: warm brown (hue 0.08-0.12, sat 0.3-0.5, lum 0.25-0.4)
+  const dirtHue = 0.08 + nv * 0.04;
+  const dirtSat = 0.3 + nv * 0.2;
+  const dirtLum = 0.25 + nv * 0.15;
+  const dc = hsl2rgb(dirtHue, dirtSat, dirtLum);
+
+  // Mud color: dark brown (hue 0.06-0.09, sat 0.4-0.6, lum 0.12-0.22)
+  const mudHue = 0.06 + nv * 0.03;
+  const mudSat = 0.4 + nv * 0.2;
+  const mudLum = 0.12 + nv * 0.1;
+  const mc = hsl2rgb(mudHue, mudSat, mudLum);
+
+  // Blend colors
+  let r = gc[0] * wGrass + dc[0] * wDirt + mc[0] * wMud;
+  let g = gc[1] * wGrass + dc[1] * wDirt + mc[1] * wMud;
+  let b = gc[2] * wGrass + dc[2] * wDirt + mc[2] * wMud;
+
+  // Suppress color under roads — use neutral dark tone so nothing bleeds through
+  if (roadProx > 0.8) {
+    const suppress = (roadProx - 0.8) / 0.2;
+    r = r * (1 - suppress) + 0.22 * suppress;
+    g = g * (1 - suppress) + 0.20 * suppress;
+    b = b * (1 - suppress) + 0.16 * suppress;
+  }
+
+  vcolors[i * 3] = r; vcolors[i * 3 + 1] = g; vcolors[i * 3 + 2] = b;
 }
 terrainGeo.setAttribute('color', new THREE.BufferAttribute(vcolors, 3));
 
@@ -521,9 +779,19 @@ const grassTex = new THREE.CanvasTexture(createGrassTexture());
 grassTex.wrapS=grassTex.wrapT=THREE.RepeatWrapping;
 grassTex.repeat.set(70,70);
 grassTex.anisotropy=renderer.capabilities.getMaxAnisotropy();
-const terrainMesh = new THREE.Mesh(terrainGeo, new THREE.MeshStandardMaterial({
-  map: grassTex, vertexColors: true, roughness: 0.85, metalness: 0.0,
-}));
+const terrainMat = new THREE.MeshStandardMaterial({
+  map: grassTex, vertexColors: true, roughness: 0.7, metalness: 0.0,
+});
+// Vary roughness based on vertex color brightness — darker = wetter = less rough
+terrainMat.onBeforeCompile = (shader) => {
+  shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <roughnessmap_fragment>',
+    `#include <roughnessmap_fragment>
+     float vcBrightness = dot(vColor, vec3(0.299, 0.587, 0.114));
+     roughnessFactor = mix(0.5, 0.9, vcBrightness);`
+  );
+};
+const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
 terrainMesh.receiveShadow = true;
 scene.add(terrainMesh);
 
@@ -974,6 +1242,92 @@ rockInst.count=rIdx;rockInst.instanceColor.needsUpdate=true;
 scene.add(rockInst);
 
 // ═══════════════════════════════════════════════════════════════════════
+// GROUND DETAIL — GRASS TUFTS
+// ═══════════════════════════════════════════════════════════════════════
+{
+  const TUFT_COUNT = 250;
+  const tuftGeo = new THREE.ConeGeometry(0.15, 0.45, 4);
+  tuftGeo.translate(0, 0.22, 0); // pivot at base
+  const tuftMat = new THREE.MeshStandardMaterial({
+    color: 0x3a6e1e, roughness: 0.85, metalness: 0.0,
+    side: THREE.DoubleSide, alphaTest: 0.5,
+  });
+  const tuftInst = new THREE.InstancedMesh(tuftGeo, tuftMat, TUFT_COUNT);
+  tuftInst.receiveShadow = true;
+  let tuftIdx = 0;
+  for (let att = 0; att < 4000 && tuftIdx < TUFT_COUNT; att++) {
+    const x = (Math.random() - 0.5) * TSIZE * 0.85, z = (Math.random() - 0.5) * TSIZE * 0.85;
+    // Skip roads, steep slopes, mud areas
+    if (isOnRoad(x, z, 3)) continue;
+    const h = getTerrainHeight(x, z);
+    if (h < 1) continue; // skip mud
+    const sl = Math.abs(getTerrainHeight(x + 1, z) - h) + Math.abs(getTerrainHeight(x, z + 1) - h);
+    if (sl > 1.5) continue; // skip steep slopes
+    const s = 0.6 + Math.random() * 0.8;
+    dummy.position.set(x, h, z);
+    dummy.scale.set(s * (0.8 + Math.random() * 0.4), s, s * (0.8 + Math.random() * 0.4));
+    dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
+    dummy.updateMatrix();
+    tuftInst.setMatrixAt(tuftIdx, dummy.matrix);
+    // Tint to match local terrain — read vertex color approximation
+    const nv = noise(x * 0.05, z * 0.05) * 0.5 + 0.5;
+    const hue = 0.25 + nv * 0.1;
+    const sat = 0.4 + Math.random() * 0.3;
+    const lum = 0.2 + Math.random() * 0.1;
+    tuftInst.setColorAt(tuftIdx, new THREE.Color().setHSL(hue, sat, lum));
+    tuftIdx++;
+  }
+  tuftInst.count = tuftIdx;
+  if (tuftInst.instanceColor) tuftInst.instanceColor.needsUpdate = true;
+  scene.add(tuftInst);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GROUND DETAIL — SMALL PEBBLES
+// ═══════════════════════════════════════════════════════════════════════
+{
+  const PEBBLE_COUNT = 130;
+  let pebbleGeo = new THREE.IcosahedronGeometry(0.08, 0);
+  pebbleGeo = mergeVertices(pebbleGeo);
+  // Slight deformation for natural look
+  const pp = pebbleGeo.attributes.position;
+  for (let i = 0; i < pp.count; i++) {
+    const v = new THREE.Vector3().fromBufferAttribute(pp, i);
+    v.x *= 0.7 + Math.random() * 0.6;
+    v.y *= 0.5 + Math.random() * 0.5;
+    v.z *= 0.7 + Math.random() * 0.6;
+    pp.setXYZ(i, v.x, v.y, v.z);
+  }
+  pebbleGeo.computeVertexNormals();
+  const pebbleMat = new THREE.MeshStandardMaterial({ color: 0x6a6560, roughness: 0.9, metalness: 0.05 });
+  const pebbleInst = new THREE.InstancedMesh(pebbleGeo, pebbleMat, PEBBLE_COUNT);
+  pebbleInst.receiveShadow = true;
+  let pebbleIdx = 0;
+  for (let att = 0; att < 2000 && pebbleIdx < PEBBLE_COUNT; att++) {
+    const x = (Math.random() - 0.5) * TSIZE * 0.85, z = (Math.random() - 0.5) * TSIZE * 0.85;
+    if (isOnRoad(x, z, 1)) continue;
+    const h = getTerrainHeight(x, z);
+    const sl = Math.abs(getTerrainHeight(x + 1, z) - h) + Math.abs(getTerrainHeight(x, z + 1) - h);
+    // Prefer dirt and mud areas: slopes, hilltops, road shoulders, low areas
+    const onDirtOrMud = (h > 7 || sl > 0.8 || h < 1.5 || isOnRoad(x, z, ROAD_WIDTH + ROAD_SHOULDER + 2));
+    if (!onDirtOrMud && Math.random() > 0.2) continue; // sparse on grass
+    const s = 0.5 + Math.random() * 1.5;
+    dummy.position.set(x, h + 0.02, z);
+    dummy.scale.set(s * (0.7 + Math.random() * 0.6), s * (0.4 + Math.random() * 0.5), s * (0.7 + Math.random() * 0.6));
+    dummy.rotation.set(Math.random() * 0.6, Math.random() * Math.PI * 2, Math.random() * 0.6);
+    dummy.updateMatrix();
+    pebbleInst.setMatrixAt(pebbleIdx, dummy.matrix);
+    pebbleInst.setColorAt(pebbleIdx, new THREE.Color().setHSL(
+      0.06 + Math.random() * 0.06, 0.08 + Math.random() * 0.12, 0.3 + Math.random() * 0.2
+    ));
+    pebbleIdx++;
+  }
+  pebbleInst.count = pebbleIdx;
+  if (pebbleInst.instanceColor) pebbleInst.instanceColor.needsUpdate = true;
+  scene.add(pebbleInst);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // CLOUDS
 // ═══════════════════════════════════════════════════════════════════════
 const clouds = [];
@@ -999,6 +1353,756 @@ const rampMat = new THREE.MeshStandardMaterial({color:0xb08050,roughness:0.8});
   rm.position.copy(rb.position);rm.quaternion.copy(rb.quaternion);
   rm.castShadow=true;rm.receiveShadow=true;scene.add(rm);
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+// STRUCTURE PLACEMENT HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function isValidBuildingSpot(x, z, radius) {
+  if (isOnRoad(x, z, radius + 2)) return false;
+  const h = getTerrainHeight(x, z);
+  const dx = Math.abs(getTerrainHeight(x + 2, z) - h);
+  const dz = Math.abs(getTerrainHeight(x, z + 2) - h);
+  if (dx + dz > 1.0) return false;
+  for (const tp of treePositions) {
+    if (Math.hypot(x - tp.x, z - tp.z) < radius + 5) return false;
+  }
+  return true;
+}
+
+function flattenTerrainUnder(cx, cz, halfW, halfD, margin) {
+  const targetH = getTerrainHeight(cx, cz);
+  for (let i = 0; i <= TSEG; i++) {
+    for (let j = 0; j <= TSEG; j++) {
+      const wx = (i / TSEG - 0.5) * TSIZE, wz = (j / TSEG - 0.5) * TSIZE;
+      const dx = Math.abs(wx - cx), dz = Math.abs(wz - cz);
+      if (dx <= halfW + margin && dz <= halfD + margin) {
+        if (dx <= halfW && dz <= halfD) {
+          heightData[i][j] = targetH - 0.05;
+        } else {
+          const tx = dx > halfW ? (dx - halfW) / margin : 0;
+          const tz = dz > halfD ? (dz - halfD) / margin : 0;
+          const t = Math.max(tx, tz);
+          heightData[i][j] = targetH * (1 - t) + heightData[i][j] * t;
+        }
+      }
+    }
+  }
+}
+
+function getRoadTangent(road, idx) {
+  const _t = new THREE.Vector3();
+  if (idx === 0) _t.set(road[1].x - road[0].x, 0, road[1].z - road[0].z);
+  else if (idx >= road.length - 1) _t.set(road[road.length-1].x - road[road.length-2].x, 0, road[road.length-1].z - road[road.length-2].z);
+  else _t.set(road[idx+1].x - road[idx-1].x, 0, road[idx+1].z - road[idx-1].z);
+  _t.normalize();
+  return _t;
+}
+
+function getRoadPerp(tangent) {
+  return new THREE.Vector3(-tangent.z, 0, tangent.x);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ROADSIDE GUARDRAILS
+// ═══════════════════════════════════════════════════════════════════════
+{
+  const guardrailSections = [];
+  const grPostGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.7, 4);
+  const grRailGeo = new THREE.BoxGeometry(0.02, 0.12, 3.0);
+  const grMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.8 });
+
+  // Detect sharp curves and steep drop-offs
+  for (const road of allRoads) {
+    if (road.length < 12) continue;
+    let i = 0;
+    while (i < road.length - 10) {
+      const t0 = getRoadTangent(road, i);
+      const lookAhead = Math.min(i + 10, road.length - 1);
+      const t1 = getRoadTangent(road, lookAhead);
+      const angleDiff = Math.acos(Math.max(-1, Math.min(1, t0.dot(t1))));
+
+      const perp = getRoadPerp(t0);
+      const rx = road[i].x, rz = road[i].z;
+      const hCenter = getTerrainHeight(rx, rz);
+      const hLeft = getTerrainHeight(rx + perp.x * 10, rz + perp.z * 10);
+      const hRight = getTerrainHeight(rx - perp.x * 10, rz - perp.z * 10);
+      const steepDropLeft = (hCenter - hLeft) > 3;
+      const steepDropRight = (hCenter - hRight) > 3;
+
+      if (angleDiff > (15 * Math.PI / 180) || steepDropLeft || steepDropRight) {
+        let side = 1;
+        if (angleDiff > (15 * Math.PI / 180)) {
+          const cross = t0.x * t1.z - t0.z * t1.x;
+          side = cross > 0 ? 1 : -1;
+        } else if (steepDropLeft) {
+          side = 1;
+        } else {
+          side = -1;
+        }
+
+        const sectionLen = 15 + Math.floor(Math.random() * 25);
+        const endIdx = Math.min(i + sectionLen, road.length - 1);
+        const sectionPts = [];
+        for (let j = i; j <= endIdx; j++) {
+          const tan = getRoadTangent(road, j);
+          const p = getRoadPerp(tan);
+          const offset = ROAD_WIDTH + 0.5;
+          sectionPts.push({
+            x: road[j].x + p.x * offset * side,
+            z: road[j].z + p.z * offset * side,
+            y: getTerrainHeight(road[j].x + p.x * offset * side, road[j].z + p.z * offset * side),
+            tan: tan.clone()
+          });
+        }
+        if (sectionPts.length > 3) {
+          guardrailSections.push(sectionPts);
+        }
+        i = endIdx + 5;
+      } else {
+        i++;
+      }
+    }
+  }
+
+  let totalPosts = 0, totalRails = 0;
+  const sectionMeta = [];
+  for (const section of guardrailSections) {
+    let dist = 0;
+    const postIndices = [0];
+    for (let i = 1; i < section.length; i++) {
+      dist += Math.hypot(section[i].x - section[i-1].x, section[i].z - section[i-1].z);
+      if (dist >= 3) {
+        postIndices.push(i);
+        dist = 0;
+      }
+    }
+    const postCount = postIndices.length;
+    const railCount = Math.max(0, postCount - 1);
+    sectionMeta.push({ postIndices, postCount, railCount });
+    totalPosts += postCount;
+    totalRails += railCount;
+  }
+
+  if (totalPosts > 0) {
+    const postInst = new THREE.InstancedMesh(grPostGeo, grMat, totalPosts);
+    postInst.castShadow = true;
+    const railInst = new THREE.InstancedMesh(grRailGeo, grMat, totalRails);
+    railInst.castShadow = true;
+
+    let pIdx = 0, rIdx = 0;
+    for (let s = 0; s < guardrailSections.length; s++) {
+      const section = guardrailSections[s];
+      const meta = sectionMeta[s];
+
+      for (let p = 0; p < meta.postIndices.length; p++) {
+        const pt = section[meta.postIndices[p]];
+        dummy.position.set(pt.x, pt.y + 0.35, pt.z);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.set(1, 1, 1);
+        dummy.updateMatrix();
+        postInst.setMatrixAt(pIdx, dummy.matrix);
+        pIdx++;
+      }
+
+      for (let p = 0; p < meta.postIndices.length - 1; p++) {
+        const pt0 = section[meta.postIndices[p]];
+        const pt1 = section[meta.postIndices[p + 1]];
+        const mx = (pt0.x + pt1.x) / 2, mz = (pt0.z + pt1.z) / 2;
+        const my = (pt0.y + pt1.y) / 2 + 0.5;
+        const dx = pt1.x - pt0.x, dz = pt1.z - pt0.z;
+        const len = Math.hypot(dx, dz);
+        const yaw = Math.atan2(dx, dz);
+        dummy.position.set(mx, my, mz);
+        dummy.rotation.set(0, yaw, 0);
+        dummy.scale.set(1, 1, Math.max(0.5, len / 3.0));
+        dummy.updateMatrix();
+        railInst.setMatrixAt(rIdx, dummy.matrix);
+        rIdx++;
+      }
+
+      const first = section[0], last = section[section.length - 1];
+      const secLen = Math.hypot(last.x - first.x, last.z - first.z);
+      const secMx = (first.x + last.x) / 2, secMz = (first.z + last.z) / 2;
+      const secMy = (first.y + last.y) / 2 + 0.35;
+      const secYaw = Math.atan2(last.x - first.x, last.z - first.z);
+      const grBody = new CANNON.Body({ mass: 0 });
+      grBody.addShape(new CANNON.Box(new CANNON.Vec3(0.1, 0.4, secLen / 2)));
+      grBody.position.set(secMx, secMy, secMz);
+      grBody.quaternion.setFromEuler(0, secYaw, 0);
+      world.addBody(grBody);
+    }
+
+    postInst.count = pIdx;
+    railInst.count = rIdx;
+    scene.add(postInst);
+    scene.add(railInst);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FENCES
+// ═══════════════════════════════════════════════════════════════════════
+{
+  const fencePostGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.2, 4);
+  const fenceRailGeo = new THREE.BoxGeometry(0.04, 0.04, 4.0);
+  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x5c3a1e, roughness: 0.85, metalness: 0.05 });
+
+  const fenceLines = [];
+
+  for (const road of allRoads) {
+    if (road.length < 20) continue;
+    const totalLen = road.length;
+    const fenceLen = Math.floor(totalLen * 0.3);
+    const startIdx = Math.floor(Math.random() * (totalLen - fenceLen));
+    const side = Math.random() < 0.5 ? 1 : -1;
+    const offset = ROAD_WIDTH + 4 + Math.random() * 4;
+    const pts = [];
+    for (let i = startIdx; i < startIdx + fenceLen; i += 2) {
+      const tan = getRoadTangent(road, i);
+      const perp = getRoadPerp(tan);
+      const fx = road[i].x + perp.x * offset * side;
+      const fz = road[i].z + perp.z * offset * side;
+      const fy = getTerrainHeight(fx, fz);
+      pts.push({ x: fx, y: fy, z: fz });
+    }
+    if (pts.length > 2) fenceLines.push(pts);
+  }
+
+  for (let f = 0; f < 3 + Math.floor(Math.random() * 3); f++) {
+    const pts = [];
+    const sx = (Math.random() - 0.5) * TSIZE * 0.6;
+    const sz = (Math.random() - 0.5) * TSIZE * 0.6;
+    const angle = Math.random() * Math.PI * 2;
+    const len = 30 + Math.random() * 30;
+    const steps = Math.floor(len / 4);
+    let valid = true;
+    for (let s = 0; s <= steps; s++) {
+      const fx = sx + Math.cos(angle) * s * 4;
+      const fz = sz + Math.sin(angle) * s * 4;
+      if (isOnRoad(fx, fz, 3)) { valid = false; break; }
+      const fy = getTerrainHeight(fx, fz);
+      pts.push({ x: fx, y: fy, z: fz });
+    }
+    if (valid && pts.length > 2) fenceLines.push(pts);
+  }
+
+  let totalFPosts = 0, totalFRails = 0;
+  for (const line of fenceLines) {
+    totalFPosts += line.length;
+    totalFRails += (line.length - 1) * 2;
+  }
+
+  if (totalFPosts > 0) {
+    const fPostInst = new THREE.InstancedMesh(fencePostGeo, fenceMat, totalFPosts);
+    fPostInst.castShadow = true;
+    const fRailInst = new THREE.InstancedMesh(fenceRailGeo, fenceMat, totalFRails);
+    fRailInst.castShadow = true;
+
+    let fpIdx = 0, frIdx = 0;
+    for (const line of fenceLines) {
+      for (let p = 0; p < line.length; p++) {
+        const pt = line[p];
+        dummy.position.set(pt.x, pt.y + 0.6, pt.z);
+        dummy.rotation.set(
+          (Math.random() - 0.5) * 0.06,
+          Math.random() * Math.PI * 2,
+          (Math.random() - 0.5) * 0.06
+        );
+        dummy.scale.set(1, 1, 1);
+        dummy.updateMatrix();
+        fPostInst.setMatrixAt(fpIdx, dummy.matrix);
+        fpIdx++;
+
+        if (p < line.length - 1) {
+          const pt1 = line[p + 1];
+          const dx = pt1.x - pt.x, dz = pt1.z - pt.z;
+          const dist = Math.hypot(dx, dz);
+          const yaw = Math.atan2(dx, dz);
+          const mx = (pt.x + pt1.x) / 2, mz = (pt.z + pt1.z) / 2;
+          const my = (pt.y + pt1.y) / 2;
+
+          dummy.position.set(mx, my + 0.4, mz);
+          dummy.rotation.set(0, yaw, 0);
+          dummy.scale.set(1, 1, Math.max(0.5, dist / 4.0));
+          dummy.updateMatrix();
+          fRailInst.setMatrixAt(frIdx, dummy.matrix);
+          frIdx++;
+
+          dummy.position.set(mx, my + 0.9, mz);
+          dummy.rotation.set(0, yaw, 0);
+          dummy.scale.set(1, 1, Math.max(0.5, dist / 4.0));
+          dummy.updateMatrix();
+          fRailInst.setMatrixAt(frIdx, dummy.matrix);
+          frIdx++;
+        }
+      }
+
+      for (const pt of line) {
+        const fb = new CANNON.Body({ mass: 0 });
+        fb.addShape(new CANNON.Cylinder(0.08, 0.08, 1.2, 4));
+        fb.position.set(pt.x, pt.y + 0.6, pt.z);
+        world.addBody(fb);
+      }
+    }
+
+    fPostInst.count = fpIdx;
+    fRailInst.count = frIdx;
+    scene.add(fPostInst);
+    scene.add(fRailInst);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SMALL BUILDINGS / BARNS
+// ═══════════════════════════════════════════════════════════════════════
+{
+  const buildingPositions = [];
+
+  function findBuildingSpot(nearRoadIdx, minDist, maxDist) {
+    const road = allRoads[nearRoadIdx >= allRoads.length ? 0 : nearRoadIdx];
+    for (let att = 0; att < 200; att++) {
+      const ri = Math.floor(Math.random() * road.length);
+      const rp = road[ri];
+      const angle = Math.random() * Math.PI * 2;
+      const dist = minDist + Math.random() * (maxDist - minDist);
+      const bx = rp.x + Math.cos(angle) * dist;
+      const bz = rp.z + Math.sin(angle) * dist;
+      if (Math.abs(bx) > TSIZE * 0.4 || Math.abs(bz) > TSIZE * 0.4) continue;
+      if (!isValidBuildingSpot(bx, bz, 5)) continue;
+      let tooClose = false;
+      for (const bp of buildingPositions) {
+        if (Math.hypot(bx - bp.x, bz - bp.z) < 25) { tooClose = true; break; }
+      }
+      if (tooClose) continue;
+      return { x: bx, z: bz, y: getTerrainHeight(bx, bz) };
+    }
+    return null;
+  }
+
+  function createBarn(pos) {
+    const group = new THREE.Group();
+    const baseW = 6, baseH = 3, baseD = 8;
+    flattenTerrainUnder(pos.x, pos.z, baseW / 2, baseD / 2, 2);
+    const h = getTerrainHeight(pos.x, pos.z);
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x8b3a2a, roughness: 0.85, metalness: 0.05 });
+    const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), wallMat);
+    wallMesh.position.set(0, baseH / 2, 0);
+    wallMesh.castShadow = true;
+    group.add(wallMesh);
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.6, metalness: 0.4 });
+    const roofGeo = new THREE.PlaneGeometry(4.5, 9);
+    const roofLeft = new THREE.Mesh(roofGeo, roofMat);
+    roofLeft.position.set(-1.5, baseH + 0.9, 0);
+    roofLeft.rotation.z = Math.PI / 2 - 0.65;
+    roofLeft.rotation.y = Math.PI / 2;
+    roofLeft.castShadow = true;
+    group.add(roofLeft);
+    const roofRight = new THREE.Mesh(roofGeo, roofMat);
+    roofRight.position.set(1.5, baseH + 0.9, 0);
+    roofRight.rotation.z = -(Math.PI / 2 - 0.65);
+    roofRight.rotation.y = Math.PI / 2;
+    roofRight.castShadow = true;
+    group.add(roofRight);
+    const doorMat = new THREE.MeshStandardMaterial({ color: 0x3d1f0f, roughness: 0.9, metalness: 0.0 });
+    const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 0.1), doorMat);
+    doorMesh.position.set(0, 1.25, -baseD / 2 - 0.05);
+    doorMesh.castShadow = true;
+    group.add(doorMesh);
+    const winMat = new THREE.MeshStandardMaterial({ color: 0x556677, roughness: 0.3, metalness: 0.2, emissive: 0x223344, emissiveIntensity: 0.2 });
+    const winMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, 0.8), winMat);
+    winMesh.position.set(baseW / 2 + 0.05, 1.8, 0);
+    group.add(winMesh);
+    group.position.set(pos.x, h, pos.z);
+    group.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(group);
+    const bBody = new CANNON.Body({ mass: 0 });
+    bBody.addShape(new CANNON.Box(new CANNON.Vec3(baseW / 2, baseH / 2 + 1, baseD / 2)));
+    bBody.position.set(pos.x, h + baseH / 2, pos.z);
+    bBody.quaternion.setFromEuler(0, group.rotation.y, 0);
+    world.addBody(bBody);
+    buildingPositions.push(pos);
+  }
+
+  function createHouse(pos) {
+    const group = new THREE.Group();
+    const baseW = 4, baseH = 2.5, baseD = 5;
+    flattenTerrainUnder(pos.x, pos.z, baseW / 2, baseD / 2, 2);
+    const h = getTerrainHeight(pos.x, pos.z);
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xd4c5a0, roughness: 0.8, metalness: 0.02 });
+    const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), wallMat);
+    wallMesh.position.set(0, baseH / 2, 0);
+    wallMesh.castShadow = true;
+    group.add(wallMesh);
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x5a3825, roughness: 0.7, metalness: 0.3 });
+    const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW + 1, 0.15, baseD + 1), roofMat);
+    roofMesh.position.set(0, baseH + 0.1, 0);
+    roofMesh.rotation.z = 0.08;
+    roofMesh.castShadow = true;
+    group.add(roofMesh);
+    const chimMat = new THREE.MeshStandardMaterial({ color: 0x6e4e3a, roughness: 0.85, metalness: 0.05 });
+    const chimMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.5, 0.4), chimMat);
+    chimMesh.position.set(1.2, baseH + 0.7, -1);
+    chimMesh.castShadow = true;
+    group.add(chimMesh);
+    const doorMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1a, roughness: 0.9, metalness: 0.0 });
+    const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.0, 0.1), doorMat);
+    doorMesh.position.set(0, 1.0, -baseD / 2 - 0.05);
+    doorMesh.castShadow = true;
+    group.add(doorMesh);
+    const winMat = new THREE.MeshStandardMaterial({ color: 0x445566, roughness: 0.3, metalness: 0.2, emissive: 0x112233, emissiveIntensity: 0.15 });
+    const win1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.6), winMat);
+    win1.position.set(baseW / 2 + 0.05, 1.6, 0.5);
+    group.add(win1);
+    const win2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.6), winMat);
+    win2.position.set(-baseW / 2 - 0.05, 1.6, -0.3);
+    group.add(win2);
+    group.position.set(pos.x, h, pos.z);
+    group.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(group);
+    const bBody = new CANNON.Body({ mass: 0 });
+    bBody.addShape(new CANNON.Box(new CANNON.Vec3(baseW / 2, baseH / 2 + 0.5, baseD / 2)));
+    bBody.position.set(pos.x, h + baseH / 2, pos.z);
+    bBody.quaternion.setFromEuler(0, group.rotation.y, 0);
+    world.addBody(bBody);
+    buildingPositions.push(pos);
+  }
+
+  function createWaterTower(pos) {
+    const group = new THREE.Group();
+    const legH = 4;
+    flattenTerrainUnder(pos.x, pos.z, 2, 2, 2);
+    const h = getTerrainHeight(pos.x, pos.z);
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x777777, roughness: 0.5, metalness: 0.7 });
+    const rustMat = new THREE.MeshStandardMaterial({ color: 0x8b5c3a, roughness: 0.8, metalness: 0.3 });
+    const legGeo = new THREE.CylinderGeometry(0.08, 0.1, legH, 4);
+    const legPositions = [[-0.8, 0, -0.8], [0.8, 0, -0.8], [-0.8, 0, 0.8], [0.8, 0, 0.8]];
+    for (const lp of legPositions) {
+      const leg = new THREE.Mesh(legGeo, metalMat);
+      leg.position.set(lp[0], legH / 2, lp[2]);
+      leg.castShadow = true;
+      group.add(leg);
+    }
+    const braceGeo = new THREE.BoxGeometry(0.04, 0.04, 2.4);
+    for (let bh = 1.5; bh < legH; bh += 2) {
+      const brace1 = new THREE.Mesh(braceGeo, metalMat);
+      brace1.position.set(0, bh, -0.8);
+      brace1.rotation.y = 0;
+      brace1.castShadow = true;
+      group.add(brace1);
+      const brace2 = new THREE.Mesh(braceGeo, metalMat);
+      brace2.position.set(0, bh, 0.8);
+      brace2.castShadow = true;
+      group.add(brace2);
+      const brace3 = new THREE.Mesh(braceGeo, metalMat);
+      brace3.position.set(-0.8, bh, 0);
+      brace3.rotation.y = Math.PI / 2;
+      brace3.castShadow = true;
+      group.add(brace3);
+      const brace4 = new THREE.Mesh(braceGeo, metalMat);
+      brace4.position.set(0.8, bh, 0);
+      brace4.rotation.y = Math.PI / 2;
+      brace4.castShadow = true;
+      group.add(brace4);
+    }
+    const tankGeo = new THREE.CylinderGeometry(1.2, 1.2, 1.5, 8);
+    const tank = new THREE.Mesh(tankGeo, rustMat);
+    tank.position.set(0, legH + 0.75, 0);
+    tank.castShadow = true;
+    group.add(tank);
+    group.position.set(pos.x, h, pos.z);
+    group.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(group);
+    const bBody = new CANNON.Body({ mass: 0 });
+    bBody.addShape(new CANNON.Box(new CANNON.Vec3(1.5, (legH + 1.5) / 2, 1.5)));
+    bBody.position.set(pos.x, h + (legH + 1.5) / 2, pos.z);
+    world.addBody(bBody);
+    buildingPositions.push(pos);
+  }
+
+  for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
+    const spot = findBuildingSpot(0, 15, 30);
+    if (spot) createBarn(spot);
+  }
+  for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
+    const roadIdx = i === 0 ? 0 : 1 + Math.floor(Math.random() * (allRoads.length - 1));
+    const spot = findBuildingSpot(roadIdx, 15, 30);
+    if (spot) createHouse(spot);
+  }
+  if (Math.random() > 0.3) {
+    const spot = findBuildingSpot(0, 20, 40);
+    if (spot) createWaterTower(spot);
+  }
+
+  // Update terrain mesh after flattening under buildings
+  const posAttr2 = terrainGeo.attributes.position;
+  for (let i = 0; i <= TSEG; i++) for (let j = 0; j <= TSEG; j++) posAttr2.setY(i * (TSEG + 1) + j, heightData[j][i]);
+  terrainGeo.attributes.position.needsUpdate = true;
+  terrainGeo.computeVertexNormals();
+
+  // Update physics heightfield
+  for (let i = 0; i <= TSEG; i++) for (let j = 0; j <= TSEG; j++) physData[i][j] = heightData[i][TSEG - j];
+  hfBody.removeShape(hfShape);
+  const hfShape2 = new CANNON.Heightfield(physData, { elementSize: segSize });
+  hfBody.addShape(hfShape2);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// BILLBOARDS / SIGNS
+// ═══════════════════════════════════════════════════════════════════════
+{
+  const billboardTexts = [
+    { text: 'SPEED LIMIT', subtext: '\u221E', bgColor: '#fff', fgColor: '#222', accentColor: '#c00' },
+    { text: 'DRIVE FREE', subtext: 'OPEN WORLD', bgColor: '#1a4a8a', fgColor: '#fff', accentColor: '#ffcc00' },
+    { text: 'FULL SEND', subtext: 'NO BRAKES', bgColor: '#cc2222', fgColor: '#fff', accentColor: '#ffdd00' },
+    { text: 'OFF-ROAD', subtext: 'PARADISE', bgColor: '#2a5e1a', fgColor: '#fff', accentColor: '#ff8800' },
+  ];
+
+  function createBillboardTexture(config) {
+    const c = document.createElement('canvas');
+    c.width = 512; c.height = 256;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = config.bgColor;
+    ctx.fillRect(0, 0, 512, 256);
+    ctx.fillStyle = config.accentColor;
+    ctx.fillRect(0, 0, 512, 8);
+    ctx.fillRect(0, 248, 512, 8);
+    ctx.fillRect(0, 0, 8, 256);
+    ctx.fillRect(504, 0, 8, 256);
+    ctx.fillStyle = config.accentColor;
+    ctx.globalAlpha = 0.2;
+    ctx.fillRect(380, 20, 30, 216);
+    ctx.fillRect(430, 20, 50, 216);
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = config.fgColor;
+    ctx.font = 'bold 52px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(config.text, 220, 100);
+    ctx.font = 'bold 72px Arial, sans-serif';
+    ctx.fillStyle = config.accentColor;
+    ctx.fillText(config.subtext, 220, 195);
+    return new THREE.CanvasTexture(c);
+  }
+
+  let bbPlaced = 0;
+  const bbMax = 3 + Math.floor(Math.random() * 2);
+  const bbPositions = [];
+
+  for (const road of allRoads) {
+    if (bbPlaced >= bbMax) break;
+    if (road.length < 30) continue;
+    const spacing = Math.floor(road.length / 2);
+    for (let ri = 10; ri < road.length - 10 && bbPlaced < bbMax; ri += spacing) {
+      const tan = getRoadTangent(road, ri);
+      const perp = getRoadPerp(tan);
+      const side = Math.random() < 0.5 ? 1 : -1;
+      const offset = ROAD_WIDTH + 3;
+      const bx = road[ri].x + perp.x * offset * side;
+      const bz = road[ri].z + perp.z * offset * side;
+      if (isOnRoad(bx, bz, 2)) continue;
+
+      let tooClose = false;
+      for (const bp of bbPositions) {
+        if (Math.hypot(bx - bp.x, bz - bp.z) < 30) { tooClose = true; break; }
+      }
+      if (tooClose) continue;
+
+      const by = getTerrainHeight(bx, bz);
+      const group = new THREE.Group();
+
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.5, metalness: 0.6 });
+      const poleGeo = new THREE.CylinderGeometry(0.06, 0.06, 3, 4);
+      const pole1 = new THREE.Mesh(poleGeo, poleMat);
+      pole1.position.set(-1.0, 1.5, 0);
+      pole1.castShadow = true;
+      group.add(pole1);
+      const pole2 = new THREE.Mesh(poleGeo, poleMat);
+      pole2.position.set(1.0, 1.5, 0);
+      pole2.castShadow = true;
+      group.add(pole2);
+
+      const config = billboardTexts[bbPlaced % billboardTexts.length];
+      const signTex = createBillboardTexture(config);
+      const signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.6, metalness: 0.1 });
+      const signGeo = new THREE.PlaneGeometry(3, 1.5);
+      const signFront = new THREE.Mesh(signGeo, signMat);
+      signFront.position.set(0, 3.5, 0);
+      signFront.castShadow = true;
+      group.add(signFront);
+      const backMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.8, metalness: 0.2 });
+      const signBack = new THREE.Mesh(signGeo, backMat);
+      signBack.position.set(0, 3.5, -0.02);
+      signBack.rotation.y = Math.PI;
+      signBack.castShadow = true;
+      group.add(signBack);
+
+      const faceAngle = Math.atan2(tan.x, tan.z);
+      group.position.set(bx, by, bz);
+      group.rotation.y = faceAngle;
+      scene.add(group);
+
+      for (const px of [-1.0, 1.0]) {
+        const poleCos = Math.cos(faceAngle) * px;
+        const poleSin = Math.sin(faceAngle) * px;
+        const pb = new CANNON.Body({ mass: 0 });
+        pb.addShape(new CANNON.Cylinder(0.08, 0.08, 3, 4));
+        pb.position.set(bx + poleCos, by + 1.5, bz + poleSin);
+        world.addBody(pb);
+      }
+
+      bbPositions.push({ x: bx, z: bz });
+      bbPlaced++;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// WIND TURBINES
+// ═══════════════════════════════════════════════════════════════════════
+const windTurbineBlades = [];
+{
+  const turbineCount = 2 + Math.floor(Math.random() * 2);
+
+  function findHilltop() {
+    let bestH = -Infinity, bestX = 0, bestZ = 0;
+    for (let att = 0; att < 200; att++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 100 + Math.random() * 100;
+      const tx = Math.cos(angle) * dist;
+      const tz = Math.sin(angle) * dist;
+      if (Math.abs(tx) > TSIZE * 0.42 || Math.abs(tz) > TSIZE * 0.42) continue;
+      const h = getTerrainHeight(tx, tz);
+      let tooClose = false;
+      for (const tb of windTurbineBlades) {
+        if (Math.hypot(tx - tb.userData.baseX, tz - tb.userData.baseZ) < 50) { tooClose = true; break; }
+      }
+      if (tooClose) continue;
+      if (h > bestH) { bestH = h; bestX = tx; bestZ = tz; }
+    }
+    return { x: bestX, z: bestZ, y: bestH };
+  }
+
+  const towerMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4, metalness: 0.3 });
+  const nacelleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.5, metalness: 0.4 });
+  const bladeMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.4, metalness: 0.1, side: THREE.DoubleSide });
+
+  for (let t = 0; t < turbineCount; t++) {
+    const pos = findHilltop();
+    const group = new THREE.Group();
+    const towerH = 20;
+
+    const towerGeo = new THREE.CylinderGeometry(0.3, 0.5, towerH, 8);
+    const tower = new THREE.Mesh(towerGeo, towerMat);
+    tower.position.set(0, towerH / 2, 0);
+    tower.castShadow = true;
+    group.add(tower);
+
+    const nacelleGeo = new THREE.BoxGeometry(1, 0.6, 0.6);
+    const nacelle = new THREE.Mesh(nacelleGeo, nacelleMat);
+    nacelle.position.set(0.3, towerH, 0);
+    nacelle.castShadow = true;
+    group.add(nacelle);
+
+    const bladeGroup = new THREE.Group();
+    bladeGroup.position.set(-0.2, towerH, 0);
+    const bladeGeo = new THREE.PlaneGeometry(0.4, 8);
+    for (let b = 0; b < 3; b++) {
+      const blade = new THREE.Mesh(bladeGeo, bladeMat);
+      blade.position.set(0, 4, 0);
+      blade.rotation.z = 0;
+      const bladeHolder = new THREE.Group();
+      bladeHolder.rotation.z = (b / 3) * Math.PI * 2;
+      bladeHolder.add(blade);
+      bladeGroup.add(bladeHolder);
+    }
+    bladeGroup.rotation.x = 0;
+    bladeGroup.userData = { baseX: pos.x, baseZ: pos.z };
+    group.add(bladeGroup);
+    windTurbineBlades.push(bladeGroup);
+
+    group.position.set(pos.x, pos.y, pos.z);
+    scene.add(group);
+
+    const tb = new CANNON.Body({ mass: 0 });
+    tb.addShape(new CANNON.Cylinder(0.8, 0.8, towerH, 8));
+    tb.position.set(pos.x, pos.y + towerH / 2, pos.z);
+    world.addBody(tb);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// HAY BALES
+// ═══════════════════════════════════════════════════════════════════════
+{
+  const hayGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.8, 8);
+  const hayMat = new THREE.MeshStandardMaterial({ color: 0xc4a535, roughness: 0.95, metalness: 0.0 });
+  const HAY_MAX = 20;
+  const hayInst = new THREE.InstancedMesh(hayGeo, hayMat, HAY_MAX);
+  hayInst.castShadow = true;
+  hayInst.receiveShadow = true;
+
+  let hayIdx = 0;
+  const hayPositions = [];
+
+  function placeHay(cx, cz, cluster) {
+    const count = cluster ? 2 + Math.floor(Math.random() * 3) : 1;
+    for (let c = 0; c < count && hayIdx < HAY_MAX; c++) {
+      const hx = cx + (cluster ? (Math.random() - 0.5) * 4 : 0);
+      const hz = cz + (cluster ? (Math.random() - 0.5) * 4 : 0);
+      if (isOnRoad(hx, hz, 3)) continue;
+      const hy = getTerrainHeight(hx, hz);
+      const slope = Math.abs(getTerrainHeight(hx + 1, hz) - hy) + Math.abs(getTerrainHeight(hx, hz + 1) - hy);
+      if (slope > 1.5) continue;
+
+      dummy.position.set(hx, hy + 0.3, hz);
+      dummy.rotation.set(Math.PI / 2, Math.random() * Math.PI, (Math.random() - 0.5) * 0.2);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      hayInst.setMatrixAt(hayIdx, dummy.matrix);
+      hayInst.setColorAt(hayIdx, new THREE.Color().setHSL(
+        0.12 + Math.random() * 0.04,
+        0.5 + Math.random() * 0.2,
+        0.4 + Math.random() * 0.15
+      ));
+
+      const hb = new CANNON.Body({ mass: 0 });
+      hb.addShape(new CANNON.Cylinder(0.6, 0.6, 0.8, 8));
+      hb.position.set(hx, hy + 0.4, hz);
+      hb.quaternion.setFromEuler(Math.PI / 2, 0, 0);
+      world.addBody(hb);
+
+      hayPositions.push({ x: hx, z: hz });
+      hayIdx++;
+    }
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const road = allRoads[Math.floor(Math.random() * allRoads.length)];
+    const ri = Math.floor(Math.random() * road.length);
+    const rp = road[ri];
+    const angle = Math.random() * Math.PI * 2;
+    const dist = ROAD_WIDTH + 10 + Math.random() * 15;
+    placeHay(rp.x + Math.cos(angle) * dist, rp.z + Math.sin(angle) * dist, true);
+  }
+
+  for (let att = 0; att < 200 && hayIdx < HAY_MAX; att++) {
+    const hx = (Math.random() - 0.5) * TSIZE * 0.7;
+    const hz = (Math.random() - 0.5) * TSIZE * 0.7;
+    if (isOnRoad(hx, hz, 4)) continue;
+    const hy = getTerrainHeight(hx, hz);
+    const slope = Math.abs(getTerrainHeight(hx + 1, hz) - hy) + Math.abs(getTerrainHeight(hx, hz + 1) - hy);
+    if (slope > 1.5) continue;
+    let tooClose = false;
+    for (const hp of hayPositions) {
+      if (Math.hypot(hx - hp.x, hz - hp.z) < 5) { tooClose = true; break; }
+    }
+    if (tooClose) continue;
+    placeHay(hx, hz, false);
+  }
+
+  hayInst.count = hayIdx;
+  if (hayIdx > 0 && hayInst.instanceColor) hayInst.instanceColor.needsUpdate = true;
+  scene.add(hayInst);
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // VEHICLE PHYSICS — GTA 4 style: heavy, wallowing, momentum-driven
@@ -1416,6 +2520,9 @@ chassisBody.addEventListener('collide', e => {
       emitSparks(worldPt.x, worldPt.y, worldPt.z, Math.floor(impact * 2),
         e.contact.ni.x, e.contact.ni.z);
     }
+
+    // ── Impact crash sound ──
+    playImpactSound(impact);
   }
 });
 
@@ -1446,7 +2553,12 @@ function emitDust(x,y,z,intensity){
 function updateDust(dt){
   for(let i=0;i<DUST_MAX;i++){const d=dustData[i];if(d.life<=0){dustSizes[i]=0;continue;}
     d.life-=dt;dustPos[i*3]+=d.vx*dt;dustPos[i*3+1]+=d.vy*dt;dustPos[i*3+2]+=d.vz*dt;
-    d.vy-=1.5*dt;d.vx*=0.97;d.vz*=0.97;dustSizes[i]=Math.max(0,d.life*3);}
+    // Gravity-affected: heavier particles (larger vy) get stronger gravity for arcing trajectories
+    const grav = Math.abs(d.vy) > 2 ? 6.0 : 1.5;
+    d.vy-=grav*dt;d.vx*=0.97;d.vz*=0.97;
+    // Clamp to ground: don't go below terrain
+    if(dustPos[i*3+1]<0)dustPos[i*3+1]=0;
+    dustSizes[i]=Math.max(0,d.life*3);}
   dustGeo.attributes.position.needsUpdate=true;dustGeo.attributes.size.needsUpdate=true;
 }
 
@@ -1469,6 +2581,175 @@ function updateDust(dt){
 
 
 // ═══════════════════════════════════════════════════════════════════════
+// SURFACE-DEPENDENT TIRE GRIP — STATE
+// ═══════════════════════════════════════════════════════════════════════
+// Per-wheel surface blend factor: 0.0 = off-road (grass/dirt), 1.0 = on-road (asphalt)
+const wheelSurfaceBlend = [0.5, 0.5, 0.5, 0.5]; // start at 0.5 — will converge quickly
+const SURFACE_TRANSITION_SPEED = 2.0; // blend over ~0.5s (1/0.5 = 2.0 per second)
+
+// Grip parameters per surface
+const GRIP_ROAD_FRONT = 3.5, GRIP_ROAD_REAR = 2.8;
+const GRIP_OFFROAD_FRONT = 1.5, GRIP_OFFROAD_REAR = 1.2;
+const SUSP_STIFF_ROAD = 35, SUSP_STIFF_OFFROAD = 25;
+const ROLL_INF_ROAD = 0.08, ROLL_INF_OFFROAD = 0.2;
+
+// ═══════════════════════════════════════════════════════════════════════
+// TIRE SMOKE PARTICLE SYSTEM (separate from dirt dust)
+// ═══════════════════════════════════════════════════════════════════════
+const SMOKE_MAX = 400;
+const smokeParticleData = [];
+const smokePos = new Float32Array(SMOKE_MAX * 3);
+const smokeSizes = new Float32Array(SMOKE_MAX);
+for (let i = 0; i < SMOKE_MAX; i++) {
+  smokeParticleData.push({ life: 0, maxLife: 1, vx: 0, vy: 0, vz: 0, gravity: 0 });
+  smokeSizes[i] = 0;
+}
+const smokeGeo = new THREE.BufferGeometry();
+smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePos, 3));
+smokeGeo.setAttribute('size', new THREE.BufferAttribute(smokeSizes, 1));
+const smokeMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { tex: { value: particleTex }, color: { value: new THREE.Color(0.85, 0.85, 0.82) } },
+  vertexShader: `attribute float size;varying float vA;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=size*(250.0/-mv.z);gl_Position=projectionMatrix*mv;vA=size>0.0?1.0:0.0;}`,
+  fragmentShader: `uniform sampler2D tex;uniform vec3 color;varying float vA;void main(){vec4 t=texture2D(tex,gl_PointCoord);gl_FragColor=vec4(color,t.a*vA*0.55);}`
+});
+scene.add(new THREE.Points(smokeGeo, smokeMat));
+let smokeIdx = 0;
+
+function emitTireSmoke(x, y, z, count, vxBias, vzBias) {
+  for (let i = 0; i < count; i++) {
+    const si = smokeIdx % SMOKE_MAX;
+    const d = smokeParticleData[si];
+    d.maxLife = 1.5 + Math.random() * 1.0;
+    d.life = d.maxLife;
+    d.gravity = -0.1; // rises slowly
+    smokePos[si * 3] = x + (Math.random() - 0.5) * 0.4;
+    smokePos[si * 3 + 1] = y;
+    smokePos[si * 3 + 2] = z + (Math.random() - 0.5) * 0.4;
+    d.vx = (vxBias || 0) * 0.3 + (Math.random() - 0.5) * 0.8;
+    d.vy = 0.3 + Math.random() * 0.6;
+    d.vz = (vzBias || 0) * 0.3 + (Math.random() - 0.5) * 0.8;
+    smokeSizes[si] = 3 + Math.random() * 2;
+    smokeIdx++;
+  }
+}
+
+function emitDriftTrail(x, y, z, count) {
+  // Ground-hugging wide smoke trail
+  for (let i = 0; i < count; i++) {
+    const si = smokeIdx % SMOKE_MAX;
+    const d = smokeParticleData[si];
+    d.maxLife = 3.0 + Math.random() * 1.0;
+    d.life = d.maxLife;
+    d.gravity = 0;
+    smokePos[si * 3] = x + (Math.random() - 0.5) * 0.8;
+    smokePos[si * 3 + 1] = y + 0.05;
+    smokePos[si * 3 + 2] = z + (Math.random() - 0.5) * 0.8;
+    d.vx = (Math.random() - 0.5) * 0.5;
+    d.vy = 0.02 + Math.random() * 0.05; // barely rises
+    d.vz = (Math.random() - 0.5) * 0.5;
+    smokeSizes[si] = 2.5 + Math.random() * 2;
+    smokeIdx++;
+  }
+}
+
+function emitBrakeDust(x, y, z) {
+  // Subtle dark brake dust
+  const si = smokeIdx % SMOKE_MAX;
+  const d = smokeParticleData[si];
+  d.maxLife = 0.3 + Math.random() * 0.3;
+  d.life = d.maxLife;
+  d.gravity = 0.5;
+  smokePos[si * 3] = x + (Math.random() - 0.5) * 0.2;
+  smokePos[si * 3 + 1] = y;
+  smokePos[si * 3 + 2] = z + (Math.random() - 0.5) * 0.2;
+  d.vx = (Math.random() - 0.5) * 1.0;
+  d.vy = 0.2 + Math.random() * 0.3;
+  d.vz = (Math.random() - 0.5) * 1.0;
+  smokeSizes[si] = 0.8 + Math.random() * 0.5;
+  smokeIdx++;
+}
+
+function emitDirtSpray(x, y, z, intensity, fwdX, fwdZ) {
+  const count = Math.floor(intensity * 3);
+  for (let i = 0; i < count; i++) {
+    // Mix of large slow clumps and small fast spray
+    const isClump = Math.random() < 0.3;
+    const di = dustIdx % DUST_MAX;
+    const d = dustData[di];
+    d.life = isClump ? (0.6 + Math.random() * 0.5) : (0.4 + Math.random() * 0.4);
+    dustPos[di * 3] = x + (Math.random() - 0.5) * 0.5;
+    dustPos[di * 3 + 1] = y;
+    dustPos[di * 3 + 2] = z + (Math.random() - 0.5) * 0.5;
+    if (isClump) {
+      // Large slow clumps — gravity affected arcing
+      d.vx = (Math.random() - 0.5) * 2.5;
+      d.vy = 2.0 + Math.random() * 2.5;
+      d.vz = (Math.random() - 0.5) * 2.5;
+      dustSizes[di] = 2.5 + Math.random() * 2;
+    } else {
+      // Small fast spray
+      d.vx = (Math.random() - 0.5) * 4 + (fwdX || 0) * -2;
+      d.vy = 1.0 + Math.random() * 3;
+      d.vz = (Math.random() - 0.5) * 4 + (fwdZ || 0) * -2;
+      dustSizes[di] = 1.0 + Math.random() * 1.5;
+    }
+    dustIdx++;
+  }
+}
+
+function emitRoosterTail(x, y, z, fwdX, fwdZ, onRoad) {
+  // Dramatic upward spray from rear wheels during wheelspin
+  const count = onRoad ? 3 : 5;
+  for (let i = 0; i < count; i++) {
+    if (onRoad) {
+      // Lighter smoke for road wheelspin
+      emitTireSmoke(x, y, z, 1, fwdX * 2, fwdZ * 2);
+    } else {
+      // Dirt rooster tail — kicked backward
+      const di = dustIdx % DUST_MAX;
+      const d = dustData[di];
+      d.life = 0.5 + Math.random() * 0.6;
+      dustPos[di * 3] = x + (Math.random() - 0.5) * 0.3;
+      dustPos[di * 3 + 1] = y;
+      dustPos[di * 3 + 2] = z + (Math.random() - 0.5) * 0.3;
+      // Opposite to forward direction (kicked backward) + upward
+      d.vx = fwdX * (3 + Math.random() * 4) + (Math.random() - 0.5) * 2;
+      d.vy = 3.0 + Math.random() * 4;
+      d.vz = fwdZ * (3 + Math.random() * 4) + (Math.random() - 0.5) * 2;
+      dustSizes[di] = 1.5 + Math.random() * 2;
+      dustIdx++;
+    }
+  }
+}
+
+function updateSmoke(dt) {
+  for (let i = 0; i < SMOKE_MAX; i++) {
+    const d = smokeParticleData[i];
+    if (d.life <= 0) { smokeSizes[i] = 0; continue; }
+    d.life -= dt;
+    smokePos[i * 3] += d.vx * dt;
+    smokePos[i * 3 + 1] += d.vy * dt;
+    smokePos[i * 3 + 2] += d.vz * dt;
+    d.vy -= d.gravity * dt;
+    d.vx *= 0.98; d.vz *= 0.98;
+    // Size grows slightly as smoke expands, then fades
+    const lifeRatio = d.life / d.maxLife;
+    smokeSizes[i] = Math.max(0, (1.0 - lifeRatio * 0.3) * d.life * 2.5);
+  }
+  smokeGeo.attributes.position.needsUpdate = true;
+  smokeGeo.attributes.size.needsUpdate = true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// BRAKE LIGHT SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+const brakeLightPoint = new THREE.PointLight(0xff1a1a, 0, 12, 2);
+brakeLightPoint.position.set(0, 0.3, CLENGTH / 2 + 0.3);
+carGroup.add(brakeLightPoint);
+const tlMatBase_emissiveIntensity = 0.4; // original tail light emissive
+
+// ═══════════════════════════════════════════════════════════════════════
 // ENGINE SOUND
 // ═══════════════════════════════════════════════════════════════════════
 let audioCtx,engineGain,engineOsc1,engineOsc2,engineFilter,audioStarted=false;
@@ -1482,6 +2763,7 @@ function initAudio(){
   engineOsc1.connect(g1);g1.connect(engineFilter);engineOsc2.connect(g2);g2.connect(engineFilter);
   engineFilter.connect(engineGain);engineGain.connect(audioCtx.destination);
   engineOsc1.start();engineOsc2.start();audioStarted=true;
+  initSurfaceSounds();
 }
 function updateAudio(speed,throttle){
   if(!audioStarted)return;
@@ -1490,6 +2772,160 @@ function updateAudio(speed,throttle){
   engineFilter.frequency.value=120+speed*12+(throttle?80:0);
   const vol=0.02+(throttle?0.05:0)+Math.min(speed*0.002,0.04);
   engineGain.gain.value+=(Math.min(0.12,vol)-engineGain.gain.value)*0.1;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SURFACE-DEPENDENT SOUND SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+let tireSquealNode, tireSquealGain, tireSquealFilter;
+let gravelNode, gravelGain, gravelFilter;
+let windNode, windGain, windFilter;
+let impactGain;
+let surfaceSoundsInitialized = false;
+
+function initSurfaceSounds() {
+  if (!audioCtx || surfaceSoundsInitialized) return;
+  surfaceSoundsInitialized = true;
+
+  // ── Tire Squeal (on-road drifting) — white noise through bandpass ──
+  const squealBufferSize = audioCtx.sampleRate * 2;
+  const squealBuffer = audioCtx.createBuffer(1, squealBufferSize, audioCtx.sampleRate);
+  const squealData = squealBuffer.getChannelData(0);
+  for (let i = 0; i < squealBufferSize; i++) squealData[i] = Math.random() * 2 - 1;
+
+  tireSquealNode = audioCtx.createBufferSource();
+  tireSquealNode.buffer = squealBuffer;
+  tireSquealNode.loop = true;
+
+  tireSquealFilter = audioCtx.createBiquadFilter();
+  tireSquealFilter.type = 'bandpass';
+  tireSquealFilter.frequency.value = 2000;
+  tireSquealFilter.Q.value = 2.5;
+
+  tireSquealGain = audioCtx.createGain();
+  tireSquealGain.gain.value = 0;
+
+  tireSquealNode.connect(tireSquealFilter);
+  tireSquealFilter.connect(tireSquealGain);
+  tireSquealGain.connect(audioCtx.destination);
+  tireSquealNode.start();
+
+  // ── Gravel/Dirt Sound (off-road) — brown noise approximation ──
+  const gravelBufferSize = audioCtx.sampleRate * 2;
+  const gravelBuffer = audioCtx.createBuffer(1, gravelBufferSize, audioCtx.sampleRate);
+  const gravelData = gravelBuffer.getChannelData(0);
+  let gravelLast = 0;
+  for (let i = 0; i < gravelBufferSize; i++) {
+    const white = Math.random() * 2 - 1;
+    gravelLast = (gravelLast + (0.02 * white)) / 1.02;
+    gravelData[i] = gravelLast * 12;
+  }
+
+  gravelNode = audioCtx.createBufferSource();
+  gravelNode.buffer = gravelBuffer;
+  gravelNode.loop = true;
+
+  gravelFilter = audioCtx.createBiquadFilter();
+  gravelFilter.type = 'bandpass';
+  gravelFilter.frequency.value = 400;
+  gravelFilter.Q.value = 1.0;
+
+  gravelGain = audioCtx.createGain();
+  gravelGain.gain.value = 0;
+
+  gravelNode.connect(gravelFilter);
+  gravelFilter.connect(gravelGain);
+  gravelGain.connect(audioCtx.destination);
+  gravelNode.start();
+
+  // ── Wind Noise — high-frequency filtered noise ──
+  const windBufferSize = audioCtx.sampleRate * 2;
+  const windBuffer = audioCtx.createBuffer(1, windBufferSize, audioCtx.sampleRate);
+  const windData = windBuffer.getChannelData(0);
+  for (let i = 0; i < windBufferSize; i++) windData[i] = Math.random() * 2 - 1;
+
+  windNode = audioCtx.createBufferSource();
+  windNode.buffer = windBuffer;
+  windNode.loop = true;
+
+  windFilter = audioCtx.createBiquadFilter();
+  windFilter.type = 'highpass';
+  windFilter.frequency.value = 3000;
+  windFilter.Q.value = 0.5;
+
+  windGain = audioCtx.createGain();
+  windGain.gain.value = 0;
+
+  windNode.connect(windFilter);
+  windFilter.connect(windGain);
+  windGain.connect(audioCtx.destination);
+  windNode.start();
+
+  // ── Impact/Crash sound gain node (burst on collision) ──
+  impactGain = audioCtx.createGain();
+  impactGain.gain.value = 0;
+  impactGain.connect(audioCtx.destination);
+}
+
+function playImpactSound(intensity) {
+  if (!audioCtx || !impactGain) return;
+  // Create a short burst of low-frequency noise for crash
+  const bufLen = Math.floor(audioCtx.sampleRate * 0.15);
+  const buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < bufLen; i++) {
+    const white = Math.random() * 2 - 1;
+    last = (last + 0.04 * white) / 1.04;
+    // Envelope: sharp attack, fast decay
+    const env = Math.exp(-i / (audioCtx.sampleRate * 0.04));
+    data[i] = last * 20 * env;
+  }
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const lpf = audioCtx.createBiquadFilter();
+  lpf.type = 'lowpass';
+  lpf.frequency.value = 300;
+  const g = audioCtx.createGain();
+  g.gain.value = Math.min(0.35, intensity * 0.04);
+  src.connect(lpf);
+  lpf.connect(g);
+  g.connect(audioCtx.destination);
+  src.start();
+  src.stop(audioCtx.currentTime + 0.15);
+}
+
+function updateSurfaceSounds(speed, lateralSpeed, avgOnRoad, isDriftingNow, brakingHard) {
+  if (!surfaceSoundsInitialized) return;
+
+  // ── Tire Squeal: on-road drifting ──
+  let squealTarget = 0;
+  if (avgOnRoad > 0.5 && lateralSpeed > 2.5) {
+    squealTarget = Math.min(0.12, (lateralSpeed - 2.5) * 0.03 * avgOnRoad);
+  }
+  // Higher pitch when more sideways
+  const squealFreq = 1500 + Math.min(lateralSpeed * 300, 2500);
+  tireSquealFilter.frequency.value += (squealFreq - tireSquealFilter.frequency.value) * 0.1;
+  tireSquealGain.gain.value += (squealTarget - tireSquealGain.gain.value) * 0.15;
+
+  // ── Gravel Sound: off-road driving ──
+  let gravelTarget = 0;
+  if (avgOnRoad < 0.7 && speed > 2) {
+    gravelTarget = Math.min(0.08, speed * 0.003 * (1 - avgOnRoad));
+    // Louder when sliding on dirt
+    if (lateralSpeed > 2) gravelTarget = Math.min(0.15, gravelTarget + lateralSpeed * 0.01);
+  }
+  gravelFilter.frequency.value = 300 + speed * 8;
+  gravelGain.gain.value += (gravelTarget - gravelGain.gain.value) * 0.12;
+
+  // ── Wind Noise: subtle speed sensation ──
+  const kmh = speed * 3.6;
+  let windTarget = 0;
+  if (kmh > 40) {
+    windTarget = Math.min(0.025, (kmh - 40) * 0.0004);
+  }
+  windFilter.frequency.value = 2500 + Math.min(speed * 40, 4000);
+  windGain.gain.value += (windTarget - windGain.gain.value) * 0.08;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1643,48 +3079,94 @@ function animate(){
 
   const isDrifting = lateralSpeed > 2.5 || handbrake || landingDrift;
 
-  // ── Tire friction ──
+  // ═══════════════════════════════════════════════════════════════════
+  // SURFACE DETECTION — per-wheel surface blend (0=offroad, 1=road)
+  // ═══════════════════════════════════════════════════════════════════
+  const wheelPositions = []; // cache world positions for particles later
+  for (let w = 0; w < 4; w++) {
+    vehicle.updateWheelTransform(w);
+    const wt = vehicle.wheelInfos[w].worldTransform;
+    const wx = wt.position.x, wz = wt.position.z;
+    wheelPositions.push({ x: wx, y: wt.position.y, z: wz });
+    const onRoad = isOnRoad(wx, wz) ? 1.0 : 0.0;
+    // Smooth interpolation over ~0.5s
+    wheelSurfaceBlend[w] += (onRoad - wheelSurfaceBlend[w]) * Math.min(1, SURFACE_TRANSITION_SPEED * dt);
+  }
+  // Average surface blend for the whole car (used for sound crossfade etc.)
+  const avgSurfaceBlend = (wheelSurfaceBlend[0] + wheelSurfaceBlend[1] + wheelSurfaceBlend[2] + wheelSurfaceBlend[3]) / 4;
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SURFACE-DEPENDENT TIRE GRIP & SUSPENSION
+  // ═══════════════════════════════════════════════════════════════════
+  for (let w = 0; w < 4; w++) {
+    const s = wheelSurfaceBlend[w]; // 0=offroad, 1=road
+    const isFront = w < 2;
+
+    // ── Grip: interpolate between road and offroad frictionSlip ──
+    const gripRoad = isFront ? GRIP_ROAD_FRONT : GRIP_ROAD_REAR;
+    const gripOff = isFront ? GRIP_OFFROAD_FRONT : GRIP_OFFROAD_REAR;
+    let baseGrip = gripOff + (gripRoad - gripOff) * s;
+
+    // ── Suspension stiffness per surface ──
+    vehicle.wheelInfos[w].suspensionStiffness = SUSP_STIFF_OFFROAD + (SUSP_STIFF_ROAD - SUSP_STIFF_OFFROAD) * s;
+
+    // ── Roll influence per surface ──
+    vehicle.wheelInfos[w].rollInfluence = ROLL_INF_OFFROAD + (ROLL_INF_ROAD - ROLL_INF_OFFROAD) * s;
+
+    // Store base grip for override by handbrake/drift/etc.
+    vehicle.wheelInfos[w]._surfaceBaseGrip = baseGrip;
+  }
+
+  // ── Tire friction — modulated by surface grip ──
   if (handbrake) {
-    // Front loses some grip (was 3.2) but still steers; rear slides (was 0.5, too free)
-    // Ratio 3.6:1 - rear swings out but angular clamp prevents spinout
-    vehicle.wheelInfos[0].frictionSlip = 2.5;
-    vehicle.wheelInfos[1].frictionSlip = 2.5;
-    vehicle.wheelInfos[2].frictionSlip = 0.7;
-    vehicle.wheelInfos[3].frictionSlip = 0.7;
-    vehicle.setBrake(0,0); vehicle.setBrake(0,1);
-    vehicle.setBrake(HANDBRAKE_F,2); vehicle.setBrake(HANDBRAKE_F,3);
+    // Front loses some grip but still steers; rear slides freely
+    vehicle.wheelInfos[0].frictionSlip = vehicle.wheelInfos[0]._surfaceBaseGrip * 0.72;
+    vehicle.wheelInfos[1].frictionSlip = vehicle.wheelInfos[1]._surfaceBaseGrip * 0.72;
+    vehicle.wheelInfos[2].frictionSlip = vehicle.wheelInfos[2]._surfaceBaseGrip * 0.25;
+    vehicle.wheelInfos[3].frictionSlip = vehicle.wheelInfos[3]._surfaceBaseGrip * 0.25;
+    vehicle.setBrake(0, 0); vehicle.setBrake(0, 1);
+    vehicle.setBrake(HANDBRAKE_F, 2); vehicle.setBrake(HANDBRAKE_F, 3);
   } else if (landingDrift) {
-    // Landing sideways - reduced friction to let the slide continue naturally
-    vehicle.wheelInfos[0].frictionSlip = 2.2;
-    vehicle.wheelInfos[1].frictionSlip = 2.2;
-    vehicle.wheelInfos[2].frictionSlip = 0.9;
-    vehicle.wheelInfos[3].frictionSlip = 0.9;
+    // Landing sideways — reduced friction scaled by surface
+    vehicle.wheelInfos[0].frictionSlip = vehicle.wheelInfos[0]._surfaceBaseGrip * 0.63;
+    vehicle.wheelInfos[1].frictionSlip = vehicle.wheelInfos[1]._surfaceBaseGrip * 0.63;
+    vehicle.wheelInfos[2].frictionSlip = vehicle.wheelInfos[2]._surfaceBaseGrip * 0.32;
+    vehicle.wheelInfos[3].frictionSlip = vehicle.wheelInfos[3]._surfaceBaseGrip * 0.32;
     const nb = (brake && forwardSpeed > 1.5) ? MAX_BRAKE : 0;
-    for(let i=0;i<4;i++) vehicle.setBrake(nb,i);
+    for (let i = 0; i < 4; i++) vehicle.setBrake(nb, i);
   } else {
-    vehicle.wheelInfos[0].frictionSlip = 3.2;
-    vehicle.wheelInfos[1].frictionSlip = 3.2;
-    let rearFriction = 2.4;
-    if (accel && speed > 8) rearFriction = Math.max(1.2, 2.4 - speed * 0.02);
-    if (lateralSpeed > 3 && accel) rearFriction = Math.min(rearFriction, 1.3);
-    vehicle.wheelInfos[2].frictionSlip = rearFriction;
-    vehicle.wheelInfos[3].frictionSlip = rearFriction;
+    // Normal driving — use surface base grip for front
+    vehicle.wheelInfos[0].frictionSlip = vehicle.wheelInfos[0]._surfaceBaseGrip;
+    vehicle.wheelInfos[1].frictionSlip = vehicle.wheelInfos[1]._surfaceBaseGrip;
+    // Rear: reduce grip under power at speed for natural oversteer
+    let rearMult = 1.0;
+    if (accel && speed > 8) rearMult = Math.max(0.5, 1.0 - speed * 0.008);
+    if (lateralSpeed > 3 && accel) rearMult = Math.min(rearMult, 0.55);
+    vehicle.wheelInfos[2].frictionSlip = vehicle.wheelInfos[2]._surfaceBaseGrip * rearMult;
+    vehicle.wheelInfos[3].frictionSlip = vehicle.wheelInfos[3]._surfaceBaseGrip * rearMult;
     const nb = (brake && forwardSpeed > 1.5) ? MAX_BRAKE : 0;
-    for(let i=0;i<4;i++) vehicle.setBrake(nb,i);
+    for (let i = 0; i < 4; i++) vehicle.setBrake(nb, i);
   }
 
   // ── Drift stabilization ──
-  // Angular velocity clamp to prevent full spinouts
   const angVelY = chassisBody.angularVelocity.y;
   if (Math.abs(angVelY) > 2.5) {
     chassisBody.angularVelocity.y = Math.sign(angVelY) * 2.5;
   }
-  // Increase angular damping when sliding (base is 0.35 for GTA4 sway)
   chassisBody.angularDamping = lateralSpeed > 3 ? 0.6 : 0.35;
-  // Gentle counter-steer assist only at extreme angular velocity
   if (Math.abs(angVelY) > 2.0 && lateralSpeed > 2) {
     chassisBody.angularVelocity.y += -angVelY * 0.08;
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // BRAKE LIGHTS
+  // ═══════════════════════════════════════════════════════════════════
+  const isBraking = brake && forwardSpeed > 1.5;
+  const brakeIntensity = isBraking ? Math.min(1, forwardSpeed * 0.1) : 0;
+  // Taillight emissive glow
+  tlMat.emissiveIntensity = tlMatBase_emissiveIntensity + brakeIntensity * 1.6;
+  // Point light behind car
+  brakeLightPoint.intensity = brakeIntensity * 8;
 
   // ── Physics step ──
   while(accum>=fixedDt){world.step(fixedDt);accum-=fixedDt;}
@@ -1708,7 +3190,6 @@ function animate(){
       const wt=wi.worldTransform;
       const wp=new THREE.Vector3(wt.position.x, wt.position.y, wt.position.z);
       const isRear = w >= 2;
-      // width, depth, opacity - deeper/wider/darker when drifting
       if (isDrifting && isRear) {
         wheelTrails[w].add(wp, carFwd, 0.20, 0.06, 0.85);
       } else {
@@ -1717,39 +3198,83 @@ function animate(){
     }
   }
 
-  // ── Dust & wheelspin ──
-  // Wheelspin: high throttle + low speed = tires spinning on dirt
+  // ═══════════════════════════════════════════════════════════════════
+  // AAA PARTICLE SYSTEM — Surface-Aware Dust, Smoke, Spray
+  // ═══════════════════════════════════════════════════════════════════
   const wheelSpin = accel && speed < 6 && forwardSpeed < 5;
-  // Emit dust from ALL wheels based on conditions
-  for (let w=0;w<4;w++){
-    const wi=vehicle.wheelInfos[w];
-    if(!wi.raycastResult.body)continue;
-    vehicle.updateWheelTransform(w);
-    const wt=wi.worldTransform;
+  const carFwdVec = new THREE.Vector3(0, 0, -1).applyQuaternion(carGroup.quaternion);
+  const brakingHard = brake && forwardSpeed > 4;
+
+  // Dynamically set dust particle color based on average surface
+  // On road: dust is lighter gray. Off road: brown dirt
+  const dustR = 0.53 + avgSurfaceBlend * 0.15;
+  const dustG = 0.47 + avgSurfaceBlend * 0.15;
+  const dustB = 0.33 + avgSurfaceBlend * 0.15;
+  dustMat.uniforms.color.value.setRGB(dustR, dustG, dustB);
+
+  // Set tire smoke color: white/light gray on road, slightly tan off road
+  const smokeR = 0.75 + avgSurfaceBlend * 0.1;
+  const smokeG = 0.75 + avgSurfaceBlend * 0.1;
+  const smokeB = 0.72 + avgSurfaceBlend * 0.1;
+  smokeMat.uniforms.color.value.setRGB(smokeR, smokeG, smokeB);
+
+  for (let w = 0; w < 4; w++) {
+    const wi = vehicle.wheelInfos[w];
+    if (!wi.raycastResult.body) continue;
+    const wp = wheelPositions[w];
     const isRear = w >= 2;
-    let intensity = 0;
-    // Wheelspin (rear wheels only) — big rooster tail
-    if (wheelSpin && isRear) intensity = 2.5;
-    // Drifting — all wheels kick up dirt
-    else if (isDrifting && speed > 3) intensity = isRear ? 2.0 : 0.8;
-    // Normal driving at speed — light dust from rear
-    else if (speed > 5 && isRear) intensity = Math.min(0.8, speed/20);
-    if (intensity > 0) {
-      emitDust(wt.position.x, wt.position.y-0.3, wt.position.z, intensity);
-      // Wheelspin also leaves tire marks
-      if (wheelSpin && isRear) {
-        const carFwd = new THREE.Vector3(0,0,-1).applyQuaternion(carGroup.quaternion);
-        const wp = new THREE.Vector3(wt.position.x, wt.position.y, wt.position.z);
-        wheelTrails[w].add(wp, carFwd, 0.18, 0.05, 0.75);
+    const surfBlend = wheelSurfaceBlend[w]; // 0=offroad, 1=road
+    const onRoadWheel = surfBlend > 0.5;
+
+    // ── Wheelspin Rooster Tail (rear wheels, high throttle low speed) ──
+    if (wheelSpin && isRear) {
+      emitRoosterTail(wp.x, wp.y - 0.3, wp.z, carFwdVec.x, carFwdVec.z, onRoadWheel);
+      // Tire marks during wheelspin
+      const fwd3 = new THREE.Vector3(carFwdVec.x, 0, carFwdVec.z);
+      const wp3 = new THREE.Vector3(wp.x, wp.y, wp.z);
+      wheelTrails[w].add(wp3, fwd3, 0.18, 0.05, 0.75);
+    }
+    // ── Drifting particles ──
+    else if (isDrifting && speed > 3) {
+      if (onRoadWheel) {
+        // ON-ROAD DRIFTING: tire smoke (white/gray) from rear wheels, all wheels during heavy braking
+        if (isRear || brakingHard) {
+          const smokeCount = isRear ? Math.floor(lateralSpeed * 0.8) : 1;
+          emitTireSmoke(wp.x, wp.y - 0.25, wp.z, smokeCount, 0, 0);
+          // Drift trail — ground-hugging smoke behind rear wheels
+          if (isRear && lateralSpeed > 3) {
+            emitDriftTrail(wp.x, wp.y - 0.35, wp.z, 1);
+          }
+        }
+      } else {
+        // OFF-ROAD DRIFTING: dirt spray with clumps and fine spray
+        const intensity = isRear ? 2.0 : 0.8;
+        emitDirtSpray(wp.x, wp.y - 0.3, wp.z, intensity, carFwdVec.x, carFwdVec.z);
       }
     }
+    // ── Normal driving at speed ──
+    else if (speed > 5 && isRear) {
+      if (onRoadWheel) {
+        // Light road dust
+        emitDust(wp.x, wp.y - 0.3, wp.z, Math.min(0.4, speed / 40));
+      } else {
+        // Off-road: spray dirt
+        emitDirtSpray(wp.x, wp.y - 0.3, wp.z, Math.min(1.2, speed / 15), carFwdVec.x, carFwdVec.z);
+      }
+    }
+
+    // ── Brake Dust (all wheels, on-road heavy braking) ──
+    if (brakingHard && onRoadWheel && speed > 8) {
+      emitBrakeDust(wp.x, wp.y - 0.3, wp.z);
+    }
   }
+
   updateDust(dt);
+  updateSmoke(dt);
   updateSparks(dt);
 
   // ── Engine smoke (when front zone heavily damaged) ──
   if (smokeActive) {
-    // Emit dark smoke from hood area
     const hoodPos = new THREE.Vector3(0, 1.0, -1.5).applyQuaternion(carGroup.quaternion).add(carGroup.position);
     for (let i = 0; i < 2; i++) {
       const si = dustIdx % DUST_MAX; const d = dustData[si];
@@ -1770,7 +3295,6 @@ function animate(){
     d.mesh.position.set(d.body.position.x, d.body.position.y, d.body.position.z);
     d.mesh.quaternion.set(d.body.quaternion.x, d.body.quaternion.y, d.body.quaternion.z, d.body.quaternion.w);
     if (d.timer < 2) {
-      // Fade out
       if (d.mesh.material) d.mesh.material.transparent = true;
       if (d.mesh.material) d.mesh.material.opacity = d.timer / 2;
     }
@@ -1780,6 +3304,9 @@ function animate(){
       debrisList.splice(i, 1);
     }
   }
+
+  // ── Wind Turbine Blades ──
+  windTurbineBlades.forEach(g => { g.rotation.z += 0.8 * dt; });
 
   // ── Clouds ──
   clouds.forEach(c=>{
@@ -1792,7 +3319,9 @@ function animate(){
   if(cameraMode==='chase')updateChaseCamera(dt);
   else{orbitControls.target.set(chassisBody.position.x,chassisBody.position.y+1,chassisBody.position.z);orbitControls.update();}
 
+  // ── Update all systems ──
   updateShadowCam();updateHUD(speed);updateAudio(speed,accel);
+  updateSurfaceSounds(speed, lateralSpeed, avgSurfaceBlend, isDrifting, brakingHard);
   updateLampLights(camera.position);
   renderer.render(scene,camera);
 }
