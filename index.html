@@ -45,6 +45,14 @@
     transition: width 0.15s;
   }
   #damage-label { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 2px; }
+  #time-display {
+    position: fixed; top: 20px; left: 20px;
+    font-family: 'Courier New', monospace; font-size: 28px; font-weight: 700;
+    color: rgba(220,200,160,0.85); text-shadow: 0 0 8px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.5);
+    letter-spacing: 3px; pointer-events: none; user-select: none;
+    background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 6px 14px; backdrop-filter: blur(6px);
+  }
   #controls-hint {
     position: fixed; top: 20px; right: 20px;
     background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08);
@@ -67,6 +75,7 @@
 <body>
 
 <div id="hit-flash"></div>
+<div id="time-display">12:00</div>
 
 <div id="hud">
   <div class="hud-panel">
@@ -106,6 +115,10 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // NOISE
@@ -415,7 +428,7 @@ renderer.toneMappingExposure = 1.2;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0xa0c4d8, 0.0016);
+scene.fog = new THREE.FogExp2(0xb8a080, 0.0020);
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.5, 1200);
 camera.position.set(0, 8, 12);
 const orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -428,7 +441,7 @@ const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false,
   uniforms: {
     topColor: { value: new THREE.Color(0x1a5fa0) },
-    horizonColor: { value: new THREE.Color(0xa8d8ea) },
+    horizonColor: { value: new THREE.Color(0xc4a070) },
     bottomColor: { value: new THREE.Color(0x8ab578) },
     exponent: { value: 0.5 },
     sunDir: { value: new THREE.Vector3(0.4,0.6,0.3).normalize() },
@@ -437,7 +450,13 @@ const skyMat = new THREE.ShaderMaterial({
   fragmentShader: `uniform vec3 topColor,horizonColor,bottomColor;uniform float exponent;uniform vec3 sunDir;varying vec3 vDir;
     void main(){float h=normalize(vDir).y;vec3 col;
     if(h>0.0)col=mix(horizonColor,topColor,pow(h,exponent));else col=mix(horizonColor,bottomColor,pow(-h,0.4));
-    float sun=max(0.0,dot(normalize(vDir),sunDir));col+=vec3(1,.95,.8)*pow(sun,64.0)*0.8;col+=vec3(1,.85,.6)*pow(sun,8.0)*0.15;
+    float sunAlt=sunDir.y;
+    float sunGlow=sunAlt>-0.1?smoothstep(-0.1,0.1,sunAlt):0.0;
+    float sun=max(0.0,dot(normalize(vDir),sunDir));
+    col+=vec3(1,.95,.8)*pow(sun,64.0)*0.8*sunGlow;
+    col+=vec3(1,.85,.6)*pow(sun,8.0)*0.15*sunGlow;
+    float dawnGlow=smoothstep(-0.05,0.15,sunAlt)*smoothstep(0.4,0.0,sunAlt);
+    col+=vec3(1.0,0.4,0.1)*pow(sun,4.0)*0.3*dawnGlow;
     gl_FragColor=vec4(col,1.0);}`
 });
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(500,32,24), skyMat));
@@ -445,7 +464,8 @@ scene.add(new THREE.Mesh(new THREE.SphereGeometry(500,32,24), skyMat));
 // ═══════════════════════════════════════════════════════════════════════
 // LIGHTING
 // ═══════════════════════════════════════════════════════════════════════
-scene.add(new THREE.HemisphereLight(0x8ec8f0, 0x4a7d3a, 1.0));
+const hemiLight = new THREE.HemisphereLight(0x8ec8f0, 0x4a7d3a, 1.0);
+scene.add(hemiLight);
 const dirLight = new THREE.DirectionalLight(0xfff0d6, 2.0);
 dirLight.position.set(80,120,60);
 dirLight.castShadow = true;
@@ -456,7 +476,8 @@ dirLight.shadow.camera.near=10;dirLight.shadow.camera.far=300;
 dirLight.shadow.bias=-0.0008;
 scene.add(dirLight); scene.add(dirLight.target);
 const fillLight = new THREE.DirectionalLight(0xffe8cc, 0.4); fillLight.position.set(-60,40,-40); scene.add(fillLight);
-scene.add(new THREE.AmbientLight(0x404860, 0.3));
+const ambLight = new THREE.AmbientLight(0x404860, 0.3);
+scene.add(ambLight);
 
 // ═══════════════════════════════════════════════════════════════════════
 // PHYSICS WORLD
@@ -1008,12 +1029,12 @@ const lampPostPositions = [];
   armInst.castShadow = true;
   // Lantern InstancedMesh
   const lanternGeo = new THREE.BoxGeometry(0.3, 0.15, 0.3);
-  const lanternMat = new THREE.MeshStandardMaterial({ color: 0xffeecc, emissive: 0xffaa44, emissiveIntensity: 0.8 });
+  var lanternMat = new THREE.MeshStandardMaterial({ color: 0xffeecc, emissive: 0xffaa44, emissiveIntensity: 0.8 });
   const lanternInst = new THREE.InstancedMesh(lanternGeo, lanternMat, LP_COUNT);
   // Ground glow InstancedMesh
   const glowGeo = new THREE.CircleGeometry(2.5, 16);
   glowGeo.rotateX(-Math.PI / 2);
-  const glowMat = new THREE.MeshBasicMaterial({ color: 0xffcc66, transparent: true, opacity: 0.12, depthWrite: false });
+  var glowMat = new THREE.MeshBasicMaterial({ color: 0xffcc66, transparent: true, opacity: 0.12, depthWrite: false });
   const glowInst = new THREE.InstancedMesh(glowGeo, glowMat, LP_COUNT);
 
   const lpDummy = new THREE.Object3D();
@@ -1183,16 +1204,27 @@ for (let att=0;att<3000&&tIdx<TREE_COUNT;att++) {
   if(Math.abs(getTerrainHeight(x+1,z)-h)+Math.abs(getTerrainHeight(x,z+1)-h)>2.5)continue;
   let skip=false; for(const tp of treePositions) if(Math.hypot(x-tp.x,z-tp.z)<6){skip=true;break;}
   if(skip)continue;
+  const isDead = Math.random() < 0.3; // 30% dead trees
   const s=0.6+Math.random()*0.7;
   dummy.position.set(x,h+1.4*s,z);dummy.scale.set(s,s,s);dummy.rotation.set(0,Math.random()*6.28,0);
   dummy.updateMatrix();trunkInst.setMatrixAt(tIdx,dummy.matrix);
-  trunkInst.setColorAt(tIdx,new THREE.Color().setHSL(0.07,0.4+Math.random()*0.2,0.18+Math.random()*0.08));
+  trunkInst.setColorAt(tIdx, isDead
+    ? new THREE.Color().setHSL(0.05, 0.15, 0.1 + Math.random() * 0.05)
+    : new THREE.Color().setHSL(0.07,0.4+Math.random()*0.2,0.18+Math.random()*0.08));
   foliageDefs.forEach((d,li)=>{
+    if (isDead) {
+      // Dead tree: hide foliage by scaling to zero
+      dummy.position.set(x, h + d.y * s, z);
+      dummy.scale.set(0.001, 0.001, 0.001);
+      dummy.updateMatrix(); foliageInsts[li].setMatrixAt(tIdx, dummy.matrix);
+      foliageInsts[li].setColorAt(tIdx, new THREE.Color(0x1a1008));
+    } else {
     dummy.position.set(x,h+d.y*s,z);dummy.scale.set(s*(0.9+Math.random()*0.2),s,s*(0.9+Math.random()*0.2));
     dummy.updateMatrix();foliageInsts[li].setMatrixAt(tIdx,dummy.matrix);
     foliageInsts[li].setColorAt(tIdx,new THREE.Color().setHSL(0.28+Math.random()*0.06,0.5+Math.random()*0.3,0.18+Math.random()*0.12));
+    }
   });
-  treePositions.push({x,z,s});tIdx++;
+  treePositions.push({x,z,s,isDead});tIdx++;
 }
 trunkInst.count=tIdx;trunkInst.instanceColor.needsUpdate=true;
 foliageInsts.forEach(m=>{m.count=tIdx;m.instanceColor.needsUpdate=true;});
@@ -1409,7 +1441,7 @@ function getRoadPerp(tangent) {
   const guardrailSections = [];
   const grPostGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.7, 4);
   const grRailGeo = new THREE.BoxGeometry(0.02, 0.12, 3.0);
-  const grMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.8 });
+  const grMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9, metalness: 0.3 });
 
   // Detect sharp curves and steep drop-offs
   for (const road of allRoads) {
@@ -1545,7 +1577,7 @@ function getRoadPerp(tangent) {
 {
   const fencePostGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.2, 4);
   const fenceRailGeo = new THREE.BoxGeometry(0.04, 0.04, 4.0);
-  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x5c3a1e, roughness: 0.85, metalness: 0.05 });
+  const fenceMat = new THREE.MeshStandardMaterial({ color: 0x3a2510, roughness: 0.92, metalness: 0.02 });
 
   const fenceLines = [];
 
@@ -1614,6 +1646,9 @@ function getRoadPerp(tangent) {
         fpIdx++;
 
         if (p < line.length - 1) {
+          // 30% chance to skip rails (post-apocalyptic decay)
+          if (Math.random() < 0.3) { frIdx += 2; }
+          else {
           const pt1 = line[p + 1];
           const dx = pt1.x - pt.x, dz = pt1.z - pt.z;
           const dist = Math.hypot(dx, dz);
@@ -1634,6 +1669,7 @@ function getRoadPerp(tangent) {
           dummy.updateMatrix();
           fRailInst.setMatrixAt(frIdx, dummy.matrix);
           frIdx++;
+          }
         }
       }
 
@@ -1684,12 +1720,12 @@ function getRoadPerp(tangent) {
     const baseW = 6, baseH = 3, baseD = 8;
     flattenTerrainUnder(pos.x, pos.z, baseW / 2, baseD / 2, 2);
     const h = getTerrainHeight(pos.x, pos.z);
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x8b3a2a, roughness: 0.85, metalness: 0.05 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x5a3525, roughness: 0.9, metalness: 0.02 });
     const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), wallMat);
     wallMesh.position.set(0, baseH / 2, 0);
     wallMesh.castShadow = true;
     group.add(wallMesh);
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.6, metalness: 0.4 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x4a3020, roughness: 0.9, metalness: 0.15 });
     const roofGeo = new THREE.PlaneGeometry(4.5, 9);
     const roofLeft = new THREE.Mesh(roofGeo, roofMat);
     roofLeft.position.set(-1.5, baseH + 0.9, 0);
@@ -1708,7 +1744,7 @@ function getRoadPerp(tangent) {
     doorMesh.position.set(0, 1.25, -baseD / 2 - 0.05);
     doorMesh.castShadow = true;
     group.add(doorMesh);
-    const winMat = new THREE.MeshStandardMaterial({ color: 0x556677, roughness: 0.3, metalness: 0.2, emissive: 0x223344, emissiveIntensity: 0.2 });
+    const winMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8, metalness: 0.1 });
     const winMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, 0.8), winMat);
     winMesh.position.set(baseW / 2 + 0.05, 1.8, 0);
     group.add(winMesh);
@@ -1728,18 +1764,18 @@ function getRoadPerp(tangent) {
     const baseW = 4, baseH = 2.5, baseD = 5;
     flattenTerrainUnder(pos.x, pos.z, baseW / 2, baseD / 2, 2);
     const h = getTerrainHeight(pos.x, pos.z);
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0xd4c5a0, roughness: 0.8, metalness: 0.02 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x6a6050, roughness: 0.9, metalness: 0.02 });
     const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), wallMat);
     wallMesh.position.set(0, baseH / 2, 0);
     wallMesh.castShadow = true;
     group.add(wallMesh);
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x5a3825, roughness: 0.7, metalness: 0.3 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x3a3030, roughness: 0.9, metalness: 0.1 });
     const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW + 1, 0.15, baseD + 1), roofMat);
     roofMesh.position.set(0, baseH + 0.1, 0);
     roofMesh.rotation.z = 0.08;
     roofMesh.castShadow = true;
     group.add(roofMesh);
-    const chimMat = new THREE.MeshStandardMaterial({ color: 0x6e4e3a, roughness: 0.85, metalness: 0.05 });
+    const chimMat = new THREE.MeshStandardMaterial({ color: 0x3a2a20, roughness: 0.95, metalness: 0.02 });
     const chimMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.5, 0.4), chimMat);
     chimMesh.position.set(1.2, baseH + 0.7, -1);
     chimMesh.castShadow = true;
@@ -1749,7 +1785,7 @@ function getRoadPerp(tangent) {
     doorMesh.position.set(0, 1.0, -baseD / 2 - 0.05);
     doorMesh.castShadow = true;
     group.add(doorMesh);
-    const winMat = new THREE.MeshStandardMaterial({ color: 0x445566, roughness: 0.3, metalness: 0.2, emissive: 0x112233, emissiveIntensity: 0.15 });
+    const winMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8, metalness: 0.1 });
     const win1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.6), winMat);
     win1.position.set(baseW / 2 + 0.05, 1.6, 0.5);
     group.add(win1);
@@ -1772,8 +1808,8 @@ function getRoadPerp(tangent) {
     const legH = 4;
     flattenTerrainUnder(pos.x, pos.z, 2, 2, 2);
     const h = getTerrainHeight(pos.x, pos.z);
-    const metalMat = new THREE.MeshStandardMaterial({ color: 0x777777, roughness: 0.5, metalness: 0.7 });
-    const rustMat = new THREE.MeshStandardMaterial({ color: 0x8b5c3a, roughness: 0.8, metalness: 0.3 });
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x5a5a5a, roughness: 0.7, metalness: 0.5 });
+    const rustMat = new THREE.MeshStandardMaterial({ color: 0x6a3a1a, roughness: 0.95, metalness: 0.15 });
     const legGeo = new THREE.CylinderGeometry(0.08, 0.1, legH, 4);
     const legPositions = [[-0.8, 0, -0.8], [0.8, 0, -0.8], [-0.8, 0, 0.8], [0.8, 0, 0.8]];
     for (const lp of legPositions) {
@@ -1811,6 +1847,11 @@ function getRoadPerp(tangent) {
     group.add(tank);
     group.position.set(pos.x, h, pos.z);
     group.rotation.y = Math.random() * Math.PI * 2;
+    // Post-apocalyptic lean
+    const tiltAxis = Math.random() < 0.5 ? 'x' : 'z';
+    const tiltAngle = (2 + Math.random() * 3) * Math.PI / 180 * (Math.random() < 0.5 ? 1 : -1);
+    if (tiltAxis === 'x') group.rotation.x = tiltAngle;
+    else group.rotation.z = tiltAngle;
     scene.add(group);
     const bBody = new CANNON.Body({ mass: 0 });
     bBody.addShape(new CANNON.Box(new CANNON.Vec3(1.5, (legH + 1.5) / 2, 1.5)));
@@ -1851,10 +1892,10 @@ function getRoadPerp(tangent) {
 // ═══════════════════════════════════════════════════════════════════════
 {
   const billboardTexts = [
-    { text: 'SPEED LIMIT', subtext: '\u221E', bgColor: '#fff', fgColor: '#222', accentColor: '#c00' },
-    { text: 'DRIVE FREE', subtext: 'OPEN WORLD', bgColor: '#1a4a8a', fgColor: '#fff', accentColor: '#ffcc00' },
-    { text: 'FULL SEND', subtext: 'NO BRAKES', bgColor: '#cc2222', fgColor: '#fff', accentColor: '#ffdd00' },
-    { text: 'OFF-ROAD', subtext: 'PARADISE', bgColor: '#2a5e1a', fgColor: '#fff', accentColor: '#ff8800' },
+    { text: 'DANGER AHEAD', subtext: 'QUARANTINE ZONE', bgColor: '#3a3530', fgColor: '#c8b898', accentColor: '#8a6030' },
+    { text: 'FUEL 50 MI', subtext: '\u2192', bgColor: '#2a2820', fgColor: '#b0a080', accentColor: '#7a5020' },
+    { text: 'SURVIVORS', subtext: 'WELCOME', bgColor: '#2e3028', fgColor: '#a8a078', accentColor: '#6a7040' },
+    { text: 'NO TRESPASSING', subtext: 'LAST STOP', bgColor: '#3a2020', fgColor: '#c0a0a0', accentColor: '#8a3030' },
   ];
 
   function createBillboardTexture(config) {
@@ -1938,14 +1979,19 @@ function getRoadPerp(tangent) {
       const faceAngle = Math.atan2(tan.x, tan.z);
       group.position.set(bx, by, bz);
       group.rotation.y = faceAngle;
+      // Post-apocalyptic tilt
+      const bbTiltAxis = Math.random() < 0.5 ? 'x' : 'z';
+      const bbTiltAngle = (2 + Math.random() * 4) * Math.PI / 180 * (Math.random() < 0.5 ? 1 : -1);
+      if (bbTiltAxis === 'x') group.rotation.x = bbTiltAngle;
+      else group.rotation.z = bbTiltAngle;
       scene.add(group);
 
       for (const px of [-1.0, 1.0]) {
-        const poleCos = Math.cos(faceAngle) * px;
-        const poleSin = Math.sin(faceAngle) * px;
+        const poleWorldX = bx + Math.cos(faceAngle + Math.PI/2) * px;
+        const poleWorldZ = bz + Math.sin(faceAngle + Math.PI/2) * px;
         const pb = new CANNON.Body({ mass: 0 });
         pb.addShape(new CANNON.Cylinder(0.08, 0.08, 3, 4));
-        pb.position.set(bx + poleCos, by + 1.5, bz + poleSin);
+        pb.position.set(poleWorldX, by + 1.5, poleWorldZ);
         world.addBody(pb);
       }
 
@@ -1981,9 +2027,9 @@ const windTurbineBlades = [];
     return { x: bestX, z: bestZ, y: bestH };
   }
 
-  const towerMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4, metalness: 0.3 });
-  const nacelleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.5, metalness: 0.4 });
-  const bladeMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.4, metalness: 0.1, side: THREE.DoubleSide });
+  const towerMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.7, metalness: 0.2 });
+  const nacelleMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.3 });
+  const bladeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.6, metalness: 0.1, side: THREE.DoubleSide });
 
   for (let t = 0; t < turbineCount; t++) {
     const pos = findHilltop();
@@ -2005,7 +2051,9 @@ const windTurbineBlades = [];
     const bladeGroup = new THREE.Group();
     bladeGroup.position.set(-0.2, towerH, 0);
     const bladeGeo = new THREE.PlaneGeometry(0.4, 8);
-    for (let b = 0; b < 3; b++) {
+    const isBroken = t % 2 === 0; // ~half are broken
+    const bladeCount = isBroken ? 2 : 3;
+    for (let b = 0; b < bladeCount; b++) {
       const blade = new THREE.Mesh(bladeGeo, bladeMat);
       blade.position.set(0, 4, 0);
       blade.rotation.z = 0;
@@ -2015,7 +2063,7 @@ const windTurbineBlades = [];
       bladeGroup.add(bladeHolder);
     }
     bladeGroup.rotation.x = 0;
-    bladeGroup.userData = { baseX: pos.x, baseZ: pos.z };
+    bladeGroup.userData = { baseX: pos.x, baseZ: pos.z, broken: isBroken };
     group.add(bladeGroup);
     windTurbineBlades.push(bladeGroup);
 
@@ -2034,7 +2082,7 @@ const windTurbineBlades = [];
 // ═══════════════════════════════════════════════════════════════════════
 {
   const hayGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.8, 8);
-  const hayMat = new THREE.MeshStandardMaterial({ color: 0xc4a535, roughness: 0.95, metalness: 0.0 });
+  const hayMat = new THREE.MeshStandardMaterial({ color: 0x7a6030, roughness: 0.95, metalness: 0.0 });
   const HAY_MAX = 20;
   const hayInst = new THREE.InstancedMesh(hayGeo, hayMat, HAY_MAX);
   hayInst.castShadow = true;
@@ -2102,6 +2150,239 @@ const windTurbineBlades = [];
   hayInst.count = hayIdx;
   if (hayIdx > 0 && hayInst.instanceColor) hayInst.instanceColor.needsUpdate = true;
   scene.add(hayInst);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ABANDONED VEHICLE HULKS (Post-Apocalyptic)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  const HULK_COUNT = 10;
+  // Body hulk - InstancedMesh for all hulk bodies
+  const hulkBodyGeo = new THREE.BoxGeometry(1.8, 0.7, 3.5);
+  const hulkMat = new THREE.MeshStandardMaterial({ color: 0x7a4020, roughness: 0.95, metalness: 0.15 });
+  const hulkBodyInst = new THREE.InstancedMesh(hulkBodyGeo, hulkMat, HULK_COUNT);
+  hulkBodyInst.castShadow = true; hulkBodyInst.receiveShadow = true;
+
+  // Cabin (smaller box on top)
+  const hulkCabinGeo = new THREE.BoxGeometry(1.5, 0.5, 1.8);
+  const hulkCabinMat = new THREE.MeshStandardMaterial({ color: 0x6a3a18, roughness: 0.9, metalness: 0.1 });
+  const hulkCabinInst = new THREE.InstancedMesh(hulkCabinGeo, hulkCabinMat, HULK_COUNT);
+  hulkCabinInst.castShadow = true;
+
+  // Wheels (cylinders) - up to 4 per hulk but some missing
+  const hulkWheelGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.25, 8);
+  hulkWheelGeo.rotateZ(Math.PI / 2);
+  const hulkWheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85, metalness: 0.05 });
+  const hulkWheelInst = new THREE.InstancedMesh(hulkWheelGeo, hulkWheelMat, HULK_COUNT * 4);
+  let hwIdx = 0;
+
+  const hulkPositions = [];
+  let hulkIdx = 0;
+
+  for (let att = 0; att < 500 && hulkIdx < HULK_COUNT; att++) {
+    let hx, hz, onRoadHulk;
+    // Some on roads (30%), some off-road
+    if (hulkIdx < 3) {
+      // Place on road
+      const road = allRoads[Math.floor(Math.random() * allRoads.length)];
+      const ri = 10 + Math.floor(Math.random() * (road.length - 20));
+      const tan = getRoadTangent(road, ri);
+      const perp = getRoadPerp(tan);
+      const lateralOff = (Math.random() - 0.5) * ROAD_WIDTH * 1.2;
+      hx = road[ri].x + perp.x * lateralOff;
+      hz = road[ri].z + perp.z * lateralOff;
+      onRoadHulk = true;
+    } else {
+      hx = (Math.random() - 0.5) * TSIZE * 0.7;
+      hz = (Math.random() - 0.5) * TSIZE * 0.7;
+      onRoadHulk = false;
+    }
+    if (Math.sqrt(hx * hx + hz * hz) < 25) continue;
+    let tooClose = false;
+    for (const hp of hulkPositions) {
+      if (Math.hypot(hx - hp.x, hz - hp.z) < 15) { tooClose = true; break; }
+    }
+    if (tooClose) continue;
+    for (const tp of treePositions) {
+      if (Math.hypot(hx - tp.x, hz - tp.z) < 4) { tooClose = true; break; }
+    }
+    if (tooClose) continue;
+
+    const hy = getTerrainHeight(hx, hz);
+    const yaw = Math.random() * Math.PI * 2;
+    // Some tilted/rolled
+    const rolled = Math.random() < 0.2;
+    const tiltX = rolled ? (0.3 + Math.random() * 0.8) * (Math.random() < 0.5 ? 1 : -1) : (Math.random() - 0.5) * 0.1;
+    const tiltZ = rolled ? (Math.random() - 0.5) * 0.3 : (Math.random() - 0.5) * 0.08;
+    const bodyY = rolled ? hy + 0.6 : hy + 0.35;
+
+    // Body
+    dummy.position.set(hx, bodyY, hz);
+    dummy.rotation.set(tiltX, yaw, tiltZ);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    hulkBodyInst.setMatrixAt(hulkIdx, dummy.matrix);
+    const rustColor = new THREE.Color().setHSL(0.06 + Math.random() * 0.04, 0.4 + Math.random() * 0.2, 0.2 + Math.random() * 0.1);
+    hulkBodyInst.setColorAt(hulkIdx, rustColor);
+
+    // Cabin
+    dummy.position.set(hx + Math.sin(yaw) * 0.3, bodyY + 0.55, hz + Math.cos(yaw) * 0.3);
+    dummy.rotation.set(tiltX, yaw, tiltZ);
+    dummy.updateMatrix();
+    hulkCabinInst.setMatrixAt(hulkIdx, dummy.matrix);
+    hulkCabinInst.setColorAt(hulkIdx, new THREE.Color().setHSL(0.05 + Math.random() * 0.03, 0.3 + Math.random() * 0.2, 0.15 + Math.random() * 0.08));
+
+    // Wheels - some missing
+    const wheelOffsets = [[-0.9, -0.25, -1.1], [0.9, -0.25, -1.1], [-0.9, -0.25, 1.1], [0.9, -0.25, 1.1]];
+    for (const wo of wheelOffsets) {
+      if (Math.random() < 0.25) continue; // 25% chance missing wheel
+      const wx2 = hx + Math.cos(yaw) * wo[0] + Math.sin(yaw) * wo[2];
+      const wz2 = hz - Math.sin(yaw) * wo[0] + Math.cos(yaw) * wo[2];
+      const wy2 = hy + 0.15;
+      dummy.position.set(wx2, wy2, wz2);
+      dummy.rotation.set(0, yaw, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      if (hwIdx < HULK_COUNT * 4) {
+        hulkWheelInst.setMatrixAt(hwIdx, dummy.matrix);
+        hwIdx++;
+      }
+    }
+
+    // Physics collider (static box)
+    const hb = new CANNON.Body({ mass: 0 });
+    hb.addShape(new CANNON.Box(new CANNON.Vec3(0.9, rolled ? 0.9 : 0.5, 1.75)));
+    hb.position.set(hx, bodyY, hz);
+    hb.quaternion.setFromEuler(tiltX, yaw, tiltZ);
+    world.addBody(hb);
+
+    hulkPositions.push({ x: hx, z: hz });
+    hulkIdx++;
+  }
+
+  hulkBodyInst.count = hulkIdx;
+  hulkCabinInst.count = hulkIdx;
+  hulkWheelInst.count = hwIdx;
+  if (hulkIdx > 0 && hulkBodyInst.instanceColor) hulkBodyInst.instanceColor.needsUpdate = true;
+  if (hulkIdx > 0 && hulkCabinInst.instanceColor) hulkCabinInst.instanceColor.needsUpdate = true;
+  scene.add(hulkBodyInst);
+  scene.add(hulkCabinInst);
+  scene.add(hulkWheelInst);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ROAD BARRICADES (Post-Apocalyptic)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  // Detect intersection zones
+  const intZones = [];
+  for (let a = 0; a < allRoads.length; a++) {
+    for (let b = a + 1; b < allRoads.length; b++) {
+      for (let ia = 0; ia < allRoads[a].length; ia += 5) {
+        const pa = allRoads[a][ia];
+        for (let ib = 0; ib < allRoads[b].length; ib += 5) {
+          const pb = allRoads[b][ib];
+          if (Math.hypot(pa.x - pb.x, pa.z - pb.z) < 8) {
+            const mx = (pa.x + pb.x) / 2, mz = (pa.z + pb.z) / 2;
+            let dup = false;
+            for (const iz of intZones) if (Math.hypot(mx - iz.x, mz - iz.z) < 15) { dup = true; break; }
+            if (!dup) intZones.push({ x: mx, z: mz });
+          }
+        }
+      }
+    }
+  }
+
+  const barrierGeo = new THREE.BoxGeometry(0.5, 0.8, 2.5);
+  const barrierMat = new THREE.MeshStandardMaterial({ color: 0x808078, roughness: 0.85, metalness: 0.05 });
+  const metalSheetGeo = new THREE.BoxGeometry(0.05, 1.0, 2.0);
+  const metalSheetMat = new THREE.MeshStandardMaterial({ color: 0x6a5a4a, roughness: 0.8, metalness: 0.3 });
+
+  const barricadeCount = Math.min(3, intZones.length);
+  for (let bi = 0; bi < barricadeCount; bi++) {
+    const iz = intZones[bi];
+    const bh = getTerrainHeight(iz.x, iz.z);
+    const bAngle = Math.random() * Math.PI;
+
+    for (let j = 0; j < 2 + Math.floor(Math.random() * 2); j++) {
+      const offset = (j - 1) * 2.8;
+      const bx = iz.x + Math.cos(bAngle) * offset;
+      const bz = iz.z + Math.sin(bAngle) * offset;
+      const by = getTerrainHeight(bx, bz);
+
+      const barrier = new THREE.Mesh(barrierGeo, barrierMat);
+      barrier.position.set(bx, by + 0.4, bz);
+      barrier.rotation.y = bAngle + (Math.random() - 0.5) * 0.3;
+      barrier.castShadow = true; barrier.receiveShadow = true;
+      scene.add(barrier);
+
+      // Add corrugated metal sheet on some
+      if (Math.random() < 0.5) {
+        const sheet = new THREE.Mesh(metalSheetGeo, metalSheetMat);
+        sheet.position.set(bx + Math.cos(bAngle + Math.PI/2) * 0.3, by + 0.6, bz + Math.sin(bAngle + Math.PI/2) * 0.3);
+        sheet.rotation.y = bAngle + (Math.random() - 0.5) * 0.5;
+        sheet.rotation.z = (Math.random() - 0.5) * 0.2;
+        sheet.castShadow = true;
+        scene.add(sheet);
+      }
+
+      // Physics collider
+      const bb = new CANNON.Body({ mass: 0 });
+      bb.addShape(new CANNON.Box(new CANNON.Vec3(0.25, 0.4, 1.25)));
+      bb.position.set(bx, by + 0.4, bz);
+      bb.quaternion.setFromEuler(0, bAngle, 0);
+      world.addBody(bb);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DEBRIS / RUBBLE PILES (Post-Apocalyptic)
+// ═══════════════════════════════════════════════════════════════════════
+{
+  const RUBBLE_MAX = 50;
+  let rubbleGeo = new THREE.BoxGeometry(1, 1, 1);
+  const rubbleMat = new THREE.MeshStandardMaterial({ color: 0x6a5a48, roughness: 0.92, metalness: 0.05 });
+  const rubbleInst = new THREE.InstancedMesh(rubbleGeo, rubbleMat, RUBBLE_MAX);
+  rubbleInst.castShadow = true; rubbleInst.receiveShadow = true;
+  let rubbleIdx = 0;
+
+  // Place 4 debris piles near buildings (use buildingPositions from the structure scope)
+  // We'll scan near known structure areas (road-adjacent)
+  for (let pi = 0; pi < 5 && rubbleIdx < RUBBLE_MAX; pi++) {
+    // Pick a random spot near roads (where buildings tend to be)
+    const road = allRoads[Math.floor(Math.random() * allRoads.length)];
+    const ri = Math.floor(Math.random() * road.length);
+    const rp = road[ri];
+    const angle = Math.random() * Math.PI * 2;
+    const dist = ROAD_WIDTH + 8 + Math.random() * 12;
+    const cx = rp.x + Math.cos(angle) * dist;
+    const cz = rp.z + Math.sin(angle) * dist;
+    if (isOnRoad(cx, cz, 3)) continue;
+    const ch = getTerrainHeight(cx, cz);
+
+    // Place 5-8 rubble pieces in a cluster
+    const pieceCount = 5 + Math.floor(Math.random() * 4);
+    for (let r = 0; r < pieceCount && rubbleIdx < RUBBLE_MAX; r++) {
+      const rx = cx + (Math.random() - 0.5) * 3;
+      const rz = cz + (Math.random() - 0.5) * 3;
+      const rh = getTerrainHeight(rx, rz);
+      const rs = 0.15 + Math.random() * 0.5;
+      dummy.position.set(rx, rh + rs * 0.3, rz);
+      dummy.scale.set(rs * (0.5 + Math.random()), rs * (0.3 + Math.random() * 0.5), rs * (0.5 + Math.random()));
+      dummy.rotation.set(Math.random() * 1.0, Math.random() * Math.PI * 2, Math.random() * 1.0);
+      dummy.updateMatrix();
+      rubbleInst.setMatrixAt(rubbleIdx, dummy.matrix);
+      rubbleInst.setColorAt(rubbleIdx, new THREE.Color().setHSL(
+        0.06 + Math.random() * 0.06, 0.1 + Math.random() * 0.15, 0.25 + Math.random() * 0.15
+      ));
+      rubbleIdx++;
+    }
+  }
+
+  rubbleInst.count = rubbleIdx;
+  if (rubbleIdx > 0 && rubbleInst.instanceColor) rubbleInst.instanceColor.needsUpdate = true;
+  scene.add(rubbleInst);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2585,11 +2866,11 @@ function updateDust(dt){
 // ═══════════════════════════════════════════════════════════════════════
 // Per-wheel surface blend factor: 0.0 = off-road (grass/dirt), 1.0 = on-road (asphalt)
 const wheelSurfaceBlend = [0.5, 0.5, 0.5, 0.5]; // start at 0.5 — will converge quickly
-const SURFACE_TRANSITION_SPEED = 2.0; // blend over ~0.5s (1/0.5 = 2.0 per second)
+const SURFACE_TRANSITION_SPEED = 1.4; // blend over ~0.7s — smoother surface transitions (was 2.0)
 
 // Grip parameters per surface
 const GRIP_ROAD_FRONT = 3.5, GRIP_ROAD_REAR = 2.8;
-const GRIP_OFFROAD_FRONT = 1.5, GRIP_OFFROAD_REAR = 1.2;
+const GRIP_OFFROAD_FRONT = 1.6, GRIP_OFFROAD_REAR = 1.3; // slightly higher offroad grip for momentum preservation
 const SUSP_STIFF_ROAD = 35, SUSP_STIFF_OFFROAD = 25;
 const ROLL_INF_ROAD = 0.08, ROLL_INF_OFFROAD = 0.2;
 
@@ -2939,6 +3220,9 @@ const MAX_ENGINE=3200, MAX_BRAKE=140, HANDBRAKE_F=80, MAX_STEER=0.42;
 let currentSteer=0, cameraMode='chase';
 let smoothedEngineForce = 0; // smooths out jitter
 let wasAirborne = false, landingDriftTimer = 0;
+let landingSlideFactor = 0;     // 1.0 on landing, decays to 0 over ~1.5s — controls grip reduction
+let airborneTime = 0;           // track how long car has been airborne
+let preLandingSpeed = 0;        // speed before landing — used to preserve momentum
 
 function toggleCamera(){
   cameraMode=cameraMode==='chase'?'orbit':'chase';
@@ -3009,10 +3293,544 @@ function updateHUD(speed){
   rpmBar.style.width=Math.min(100,(kmh%30)/30*100+(kmh<2?15:30))+'%';
 }
 function updateShadowCam(){
-  dirLight.position.set(chassisBody.position.x+80,chassisBody.position.y+120,chassisBody.position.z+60);
+  const sunDir = getSunPosition(gameTime);
+  const sunDist = 120;
+  dirLight.position.set(
+    chassisBody.position.x + sunDir.x * sunDist,
+    chassisBody.position.y + Math.max(sunDir.y, 0.1) * sunDist,
+    chassisBody.position.z + sunDir.z * sunDist
+  );
   dirLight.target.position.set(chassisBody.position.x,chassisBody.position.y,chassisBody.position.z);
   dirLight.target.updateMatrixWorld();
 }
+// ═══════════════════════════════════════════════════════════════════════
+// DAY/NIGHT CYCLE SYSTEM
+
+// Game time: 0-24 hours. 1 real minute = 1 game hour => full day = 24 real minutes
+let gameTime = 12.0; // start at noon
+window.gameTime = gameTime; // expose for testing
+const TIME_SCALE = 1.0 / 60.0; // 1 real second = 1/60 game hour
+
+const timeDisplayEl = document.getElementById('time-display');
+
+// Sky color keyframes: [hour, topColor, horizonColor]
+const skyKeyframes = [
+  { t: 0,  top: new THREE.Color(0x050510), hz: new THREE.Color(0x0a0a1a) },  // midnight
+  { t: 4,  top: new THREE.Color(0x050510), hz: new THREE.Color(0x0a0a1a) },  // late night
+  { t: 5,  top: new THREE.Color(0x1a1a4a), hz: new THREE.Color(0xff6633) },  // dawn start
+  { t: 6,  top: new THREE.Color(0x1a2a5a), hz: new THREE.Color(0xff7744) },  // dawn mid
+  { t: 7,  top: new THREE.Color(0x3366aa), hz: new THREE.Color(0xffaa55) },  // dawn end
+  { t: 9,  top: new THREE.Color(0x4488cc), hz: new THREE.Color(0xccbb88) },  // morning
+  { t: 12, top: new THREE.Color(0x5577aa), hz: new THREE.Color(0xc4a880) },  // noon (dusty post-apoc)
+  { t: 14, top: new THREE.Color(0x5577aa), hz: new THREE.Color(0xc4a880) },  // early afternoon
+  { t: 17, top: new THREE.Color(0x4466aa), hz: new THREE.Color(0xddaa66) },  // afternoon
+  { t: 18, top: new THREE.Color(0x3a2a5a), hz: new THREE.Color(0xff5533) },  // sunset start
+  { t: 19, top: new THREE.Color(0x2a1a4a), hz: new THREE.Color(0xff4422) },  // sunset peak
+  { t: 20, top: new THREE.Color(0x0a0a20), hz: new THREE.Color(0x1a0a1a) },  // dusk end
+  { t: 21, top: new THREE.Color(0x050510), hz: new THREE.Color(0x0a0a1a) },  // night
+  { t: 24, top: new THREE.Color(0x050510), hz: new THREE.Color(0x0a0a1a) },  // midnight wrap
+];
+
+function lerpSkyColors(time) {
+  // Find the two keyframes surrounding current time
+  let i0 = 0, i1 = 1;
+  for (let i = 0; i < skyKeyframes.length - 1; i++) {
+    if (time >= skyKeyframes[i].t && time < skyKeyframes[i + 1].t) {
+      i0 = i; i1 = i + 1; break;
+    }
+  }
+  const kf0 = skyKeyframes[i0], kf1 = skyKeyframes[i1];
+  const range = kf1.t - kf0.t;
+  const t = range > 0 ? (time - kf0.t) / range : 0;
+  return {
+    top: kf0.top.clone().lerp(kf1.top, t),
+    hz: kf0.hz.clone().lerp(kf1.hz, t),
+  };
+}
+
+// Sun position calculation
+function getSunPosition(time) {
+  // Sun rises at 6, peaks at 12, sets at 18
+  // angle: 0 at sunrise (east), PI at sunset (west)
+  const sunAngle = ((time - 6) / 12) * Math.PI; // 0 at 6:00, PI at 18:00
+  const sunY = Math.sin(sunAngle); // peaks at 1.0 at noon
+  const sunX = -Math.cos(sunAngle); // -1 at east (sunrise), +1 at west (sunset)
+  const sunZ = 0.3; // slight z offset for more interesting shadows
+  return new THREE.Vector3(sunX, sunY, sunZ).normalize();
+}
+
+// Sun light color based on altitude
+function getSunColor(altitude) {
+  // altitude: 0 = horizon, 1 = zenith
+  if (altitude <= 0) return new THREE.Color(0x000000);
+  if (altitude < 0.15) {
+    // Deep sunrise/sunset: fiery red-orange
+    const t = altitude / 0.15;
+    return new THREE.Color(0xff3300).lerp(new THREE.Color(0xff8844), t);
+  }
+  if (altitude < 0.4) {
+    // Golden hour transition
+    const t = (altitude - 0.15) / 0.25;
+    return new THREE.Color(0xff8844).lerp(new THREE.Color(0xffeedd), t);
+  }
+  // High sun: warm white-yellow
+  const t = Math.min(1, (altitude - 0.4) / 0.6);
+  return new THREE.Color(0xffeedd).lerp(new THREE.Color(0xfff8e8), t);
+}
+
+// ── Star Field ──
+const STAR_COUNT = 800;
+const starGeo = new THREE.BufferGeometry();
+const starPositions = new Float32Array(STAR_COUNT * 3);
+const starBaseSizes = new Float32Array(STAR_COUNT);
+const starSizes = new Float32Array(STAR_COUNT);
+const starTwinklePhase = new Float32Array(STAR_COUNT);
+const starTwinkleSpeed = new Float32Array(STAR_COUNT);
+
+for (let i = 0; i < STAR_COUNT; i++) {
+  // Distribute on upper hemisphere of a large sphere
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(Math.random() * 0.85 + 0.15); // mostly above horizon
+  const r = 480;
+  starPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+  starPositions[i * 3 + 1] = r * Math.cos(phi); // always positive (above)
+  starPositions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+  starBaseSizes[i] = 0.5 + Math.random() * 2.0;
+  starSizes[i] = 0;
+  starTwinklePhase[i] = Math.random() * Math.PI * 2;
+  starTwinkleSpeed[i] = 1.5 + Math.random() * 3.0;
+}
+
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+
+const starMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: {
+    opacity: { value: 0.0 },
+  },
+  vertexShader: `
+    attribute float size;
+    varying float vSize;
+    void main() {
+      vSize = size;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * (300.0 / -mv.z);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    uniform float opacity;
+    varying float vSize;
+    void main() {
+      float d = length(gl_PointCoord - vec2(0.5));
+      if (d > 0.5) discard;
+      float alpha = smoothstep(0.5, 0.0, d) * opacity;
+      gl_FragColor = vec4(0.9, 0.92, 1.0, alpha * (vSize > 0.0 ? 1.0 : 0.0));
+    }
+  `
+});
+const starField = new THREE.Points(starGeo, starMat);
+starField.renderOrder = -1;
+scene.add(starField);
+
+// ── Moon ──
+const moonGeo = new THREE.SphereGeometry(8, 16, 16);
+const moonMat = new THREE.MeshBasicMaterial({
+  color: 0xddeeff,
+  transparent: true,
+  opacity: 0.0,
+});
+const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+moonMesh.position.set(0, 200, 0); // will be updated
+scene.add(moonMesh);
+
+// ── Moon glow (additive sprite) ──
+const moonGlowGeo = new THREE.SphereGeometry(14, 16, 16);
+const moonGlowMat = new THREE.MeshBasicMaterial({
+  color: 0x8899bb,
+  transparent: true,
+  opacity: 0.0,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+});
+const moonGlowMesh = new THREE.Mesh(moonGlowGeo, moonGlowMat);
+scene.add(moonGlowMesh);
+
+// ── Day/Night Update Function ──
+function updateDayNightCycle(dt) {
+  // Advance time
+  gameTime += dt * TIME_SCALE;
+  if (gameTime >= 24) gameTime -= 24;
+  if (gameTime < 0) gameTime += 24;
+
+  // Sync with window for test access
+  if (typeof window.gameTime === 'number' && Math.abs(window.gameTime - gameTime) > 0.01) {
+    gameTime = window.gameTime;
+  }
+  window.gameTime = gameTime;
+
+  // ── HUD Time Display ──
+  const hours = Math.floor(gameTime);
+  const minutes = Math.floor((gameTime - hours) * 60);
+  timeDisplayEl.textContent = String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+
+  // ── Sun Position ──
+  const sunPos = getSunPosition(gameTime);
+  const sunAltitude = sunPos.y; // -1 to 1, positive = above horizon
+
+  // Update sky shader sun direction
+  skyMat.uniforms.sunDir.value.copy(sunPos);
+
+  // ── Directional Light (Sun) ──
+  const sunDist = 150;
+  const sunWorldPos = sunPos.clone().multiplyScalar(sunDist);
+  // Offset relative to player for shadow quality
+  // (updateShadowCam will re-position, but we set base direction here)
+
+  if (sunAltitude > 0) {
+    dirLight.intensity = Math.min(2.0, sunAltitude * 3.0);
+    dirLight.color.copy(getSunColor(sunAltitude));
+    dirLight.visible = true;
+  } else {
+    dirLight.intensity = 0;
+    dirLight.visible = false;
+  }
+
+  // ── Fill Light ──
+  if (sunAltitude > 0) {
+    fillLight.intensity = Math.min(0.4, sunAltitude * 0.8);
+    fillLight.color.copy(getSunColor(Math.max(0, sunAltitude * 0.8)));
+  } else {
+    fillLight.intensity = 0;
+  }
+
+  // ── Sky Colors ──
+  const skyColors = lerpSkyColors(gameTime);
+  skyMat.uniforms.topColor.value.copy(skyColors.top);
+  skyMat.uniforms.horizonColor.value.copy(skyColors.hz);
+
+  // Add permanent dusty haze to horizon (post-apocalyptic atmosphere)
+  const hazeColor = new THREE.Color(0x8a7560);
+  skyMat.uniforms.horizonColor.value.lerp(hazeColor, 0.08);
+
+  // Animate bottomColor (ground/below horizon)
+  if (sunAltitude > 0.1) {
+    skyMat.uniforms.bottomColor.value.set(0x8ab578); // green-ish ground day
+  } else if (sunAltitude > -0.1) {
+    const t = (sunAltitude + 0.1) / 0.2;
+    skyMat.uniforms.bottomColor.value.set(0x1a1a20).lerp(new THREE.Color(0x8ab578), t);
+  } else {
+    skyMat.uniforms.bottomColor.value.set(0x0a0a10);
+  }
+
+  // ── Ambient Light ──
+  if (sunAltitude > 0.1) {
+    // Day
+    const dayT = Math.min(1, (sunAltitude - 0.1) / 0.5);
+    ambLight.color.set(0x404860).lerp(new THREE.Color(0x808080), dayT);
+    ambLight.intensity = 0.3 + dayT * 0.2;
+  } else if (sunAltitude > -0.1) {
+    // Sunrise/sunset transition
+    const t = (sunAltitude + 0.1) / 0.2; // 0 at -0.1, 1 at +0.1
+    ambLight.color.set(0x1a1a3a).lerp(new THREE.Color(0x553322), t);
+    ambLight.intensity = 0.15 + t * 0.15;
+  } else {
+    // Night
+    ambLight.color.set(0x1a1a3a);
+    ambLight.intensity = 0.15;
+  }
+
+  // ── Hemisphere Light ──
+  if (sunAltitude > 0) {
+    const t = Math.min(1, sunAltitude * 2);
+    hemiLight.color.set(0x1a1a3a).lerp(new THREE.Color(0x8ec8f0), t);
+    hemiLight.groundColor.set(0x1a1a2a).lerp(new THREE.Color(0x4a7d3a), t);
+    hemiLight.intensity = 0.3 + t * 0.7;
+  } else {
+    hemiLight.color.set(0x1a1a3a);
+    hemiLight.groundColor.set(0x1a1a2a);
+    hemiLight.intensity = 0.3;
+  }
+
+  // ── Fog ──
+  scene.fog.color.copy(skyColors.hz);
+  // Denser fog at night, lighter during day
+  const baseFogDensity = 0.0016;
+  if (sunAltitude > 0.1) {
+    scene.fog.density = baseFogDensity;
+  } else if (sunAltitude > -0.1) {
+    const t = (sunAltitude + 0.1) / 0.2;
+    scene.fog.density = baseFogDensity + (1 - t) * 0.001;
+  } else {
+    scene.fog.density = baseFogDensity + 0.001;
+  }
+
+  // ── Renderer exposure ──
+  if (sunAltitude > 0.3) {
+    renderer.toneMappingExposure = 1.3;
+  } else if (sunAltitude > 0) {
+    const t = sunAltitude / 0.3;
+    renderer.toneMappingExposure = 0.8 + t * 0.5;
+  } else if (sunAltitude > -0.1) {
+    const t = (sunAltitude + 0.1) / 0.1;
+    renderer.toneMappingExposure = 0.5 + t * 0.3;
+  } else {
+    renderer.toneMappingExposure = 0.5;
+  }
+
+  // ── Lamp Posts (on at night/dusk/dawn) ──
+  // Lamps should be on when gameTime < 6 or gameTime > 18
+  let lampFactor = 0; // 0 = off (day), 1 = full (night)
+  if (gameTime < 5.5) {
+    lampFactor = 1;
+  } else if (gameTime < 7) {
+    lampFactor = 1 - (gameTime - 5.5) / 1.5; // fade out at dawn
+  } else if (gameTime > 19) {
+    lampFactor = 1;
+  } else if (gameTime > 17.5) {
+    lampFactor = (gameTime - 17.5) / 1.5; // fade in at dusk
+  }
+
+  // Animate lamp light intensity
+  for (let i = 0; i < lampLights.length; i++) {
+    lampLights[i].intensity = 15 * lampFactor;
+  }
+
+  // Animate lantern emissive
+  lanternMat.emissiveIntensity = 0.8 * lampFactor;
+  lanternMat.emissive.set(lampFactor > 0.1 ? 0xffaa44 : 0x000000);
+
+  // Animate ground glow opacity
+  glowMat.opacity = 0.12 * lampFactor;
+
+  // ── Stars ──
+  let starOpacity = 0;
+  if (sunAltitude < -0.05) {
+    starOpacity = Math.min(1, (-sunAltitude - 0.05) / 0.2);
+  }
+  starMat.uniforms.opacity.value = starOpacity;
+
+  // Twinkle effect
+  if (starOpacity > 0) {
+    const time = performance.now() * 0.001;
+    for (let i = 0; i < STAR_COUNT; i++) {
+      const twinkle = 0.6 + 0.4 * Math.sin(time * starTwinkleSpeed[i] + starTwinklePhase[i]);
+      starSizes[i] = starBaseSizes[i] * twinkle * starOpacity;
+    }
+    starGeo.attributes.size.needsUpdate = true;
+  } else if (starSizes[0] > 0) {
+    // Zero out sizes when not visible to avoid rendering
+    starSizes.fill(0);
+    starGeo.attributes.size.needsUpdate = true;
+  }
+
+  // ── Moon ──
+  // Moon is opposite the sun
+  const moonPos = getSunPosition(gameTime).multiplyScalar(-1);
+  moonPos.y = Math.abs(moonPos.y) * 0.7 + 0.3; // keep moon above horizon at night
+  moonPos.normalize();
+  const moonDist = 400;
+  moonMesh.position.copy(moonPos.clone().multiplyScalar(moonDist));
+  moonGlowMesh.position.copy(moonMesh.position);
+
+  let moonOpacity = 0;
+  if (sunAltitude < 0) {
+    moonOpacity = Math.min(1, -sunAltitude * 3);
+  }
+  moonMat.opacity = moonOpacity * 0.9;
+  moonGlowMat.opacity = moonOpacity * 0.15;
+
+  // ── Cloud tinting ──
+  clouds.forEach(c => {
+    if (sunAltitude > 0.1) {
+      c.mesh.material.color.set(0xffffff);
+      c.mesh.material.opacity = 0.25 + Math.random() * 0.01;
+    } else if (sunAltitude > -0.05) {
+      // Sunrise/sunset: orange-tinted clouds
+      const t = (sunAltitude + 0.05) / 0.15;
+      const cloudColor = new THREE.Color(0xff8844).lerp(new THREE.Color(0xffffff), t);
+      c.mesh.material.color.copy(cloudColor);
+      c.mesh.material.opacity = 0.3;
+    } else {
+      // Night: very dark clouds
+      c.mesh.material.color.set(0x222233);
+      c.mesh.material.opacity = 0.08;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// POST-PROCESSING PIPELINE
+
+// --- EffectComposer setup ---
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+// --- Bloom Pass (UnrealBloomPass) ---
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.4,   // strength
+  0.6,   // radius
+  0.85   // threshold
+);
+composer.addPass(bloomPass);
+
+// --- Color Grading Pass (Post-Apocalyptic) ---
+const ColorGradingShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    saturation: { value: 0.85 },
+    warmth: { value: 0.15 },
+    contrast: { value: 1.1 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float saturation;
+    uniform float warmth;
+    uniform float contrast;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      vec3 color = texel.rgb;
+
+      // --- Desaturation (post-apocalyptic muted colors) ---
+      float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+      color = mix(vec3(luminance), color, saturation);
+
+      // --- Warm tint (amber/brown dust) ---
+      vec3 warmTint = vec3(1.08, 0.95, 0.82);
+      color = mix(color, color * warmTint, warmth);
+
+      // --- Contrast boost ---
+      color = (color - 0.5) * contrast + 0.5;
+
+      // --- Shadow tinting (dark blue-brown instead of pure black) ---
+      vec3 shadowTint = vec3(0.06, 0.04, 0.08);
+      float shadowFactor = 1.0 - smoothstep(0.0, 0.35, luminance);
+      color = mix(color, color + shadowTint, shadowFactor * 0.5);
+
+      // Clamp to valid range
+      color = clamp(color, 0.0, 1.0);
+
+      gl_FragColor = vec4(color, texel.a);
+    }
+  `
+};
+const colorGradingPass = new ShaderPass(ColorGradingShader);
+composer.addPass(colorGradingPass);
+
+// --- Vignette Pass ---
+const VignetteShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    intensity: { value: 0.3 },
+    smoothness: { value: 0.45 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float intensity;
+    uniform float smoothness;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      vec3 color = texel.rgb;
+
+      // Distance from center (0 at center, ~1 at corners)
+      vec2 uv = vUv * 2.0 - 1.0;
+      float dist = length(uv);
+
+      // Smooth vignette falloff
+      float vignette = 1.0 - smoothstep(1.0 - smoothness, 1.0 + smoothness * 0.5, dist * (1.0 + intensity));
+
+      color *= vignette;
+
+      gl_FragColor = vec4(color, texel.a);
+    }
+  `
+};
+const vignettePass = new ShaderPass(VignetteShader);
+composer.addPass(vignettePass);
+
+// --- Film Grain + Speed Lines Combined Pass ---
+const FilmGrainSpeedShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    time: { value: 0.0 },
+    grainIntensity: { value: 0.03 },
+    speedFactor: { value: 0.0 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float time;
+    uniform float grainIntensity;
+    uniform float speedFactor;
+    varying vec2 vUv;
+
+    // Simple pseudo-random hash
+    float hash(vec2 p) {
+      p = fract(p * vec2(443.8975, 397.2973));
+      p += dot(p, p.yx + 19.19);
+      return fract(p.x * p.y);
+    }
+
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      vec3 color = texel.rgb;
+
+      // --- Film Grain ---
+      float grain = hash(vUv * 1000.0 + time * 100.0) * 2.0 - 1.0;
+      color += grain * grainIntensity;
+
+      // --- Radial Speed Lines (when going fast) ---
+      if (speedFactor > 0.01) {
+        vec2 center = vUv - 0.5;
+        float dist = length(center);
+        float angle = atan(center.y, center.x);
+
+        // Radial streak pattern
+        float streaks = hash(vec2(angle * 20.0, floor(time * 8.0))) * 0.5 + 0.5;
+        streaks = pow(streaks, 3.0);
+
+        // Only affect edges, not center
+        float edgeMask = smoothstep(0.15, 0.7, dist);
+
+        // Subtle darkening at edges along radial lines
+        float blur = streaks * edgeMask * speedFactor * 0.15;
+        color = mix(color, color * 0.7, blur);
+      }
+
+      color = clamp(color, 0.0, 1.0);
+      gl_FragColor = vec4(color, texel.a);
+    }
+  `
+};
+const filmGrainSpeedPass = new ShaderPass(FilmGrainSpeedShader);
+composer.addPass(filmGrainSpeedPass);
 
 // ═══════════════════════════════════════════════════════════════════════
 // GAME LOOP
@@ -3063,19 +3881,39 @@ function animate(){
   chassisBody.quaternion.vmult(rightDir,rightDir);
   const lateralSpeed=Math.abs(chassisBody.velocity.dot(rightDir));
 
-  // ── Landing drift: detect airborne → grounded transition with lateral velocity ──
+  // ── Landing drift: detect airborne → grounded transition ──
+  // MOMENTUM PRESERVATION: any landing from significant air triggers a slide state
+  // so the car doesn't brick-wall stop on touchdown.
   const wheelsGrounded = vehicle.wheelInfos.filter(w=>w.raycastResult.body).length;
   const isAirborne = wheelsGrounded === 0;
-  if (isAirborne) wasAirborne = true;
-  if (wasAirborne && !isAirborne && lateralSpeed > 1.5) {
-    // Just landed sideways - give a drift window
-    landingDriftTimer = 1.2; // seconds of reduced friction
+  if (isAirborne) {
+    wasAirborne = true;
+    airborneTime += dt;
+    preLandingSpeed = speed; // continuously track speed while airborne
+  }
+  if (wasAirborne && !isAirborne) {
+    // Just landed — always give a slide window if we had meaningful speed or air time
+    const hadMomentum = preLandingSpeed > 4 || airborneTime > 0.3;
+    if (hadMomentum) {
+      // Longer slide for bigger jumps / faster landings
+      const slideIntensity = Math.min(1.0, Math.max(0.5, preLandingSpeed / 25 + airborneTime * 0.5));
+      landingSlideFactor = slideIntensity; // starts high, decays smoothly
+      landingDriftTimer = 1.5 + airborneTime * 0.5; // 1.5-3s depending on air time
+    }
     wasAirborne = false;
+    airborneTime = 0;
   } else if (!isAirborne) {
     wasAirborne = false;
+    airborneTime = 0;
   }
-  if (landingDriftTimer > 0) landingDriftTimer -= dt;
-  const landingDrift = landingDriftTimer > 0;
+  // Smooth decay of landing slide factor
+  if (landingDriftTimer > 0) {
+    landingDriftTimer -= dt;
+    landingSlideFactor *= Math.max(0, 1 - dt * 1.2); // smooth exponential decay
+  } else {
+    landingSlideFactor = 0;
+  }
+  const landingDrift = landingDriftTimer > 0 && landingSlideFactor > 0.05;
 
   const isDrifting = lateralSpeed > 2.5 || handbrake || landingDrift;
 
@@ -3117,21 +3955,31 @@ function animate(){
     vehicle.wheelInfos[w]._surfaceBaseGrip = baseGrip;
   }
 
+  // ── Counter-steer detection for drift sustain ──
+  // If the car is rotating one way and the player steers the opposite way, that's counter-steering
+  const angVelY = chassisBody.angularVelocity.y;
+  const isCounterSteering = (angVelY > 0.3 && currentSteer < -0.05) || (angVelY < -0.3 && currentSteer > 0.05);
+
   // ── Tire friction — modulated by surface grip ──
   if (handbrake) {
-    // Front loses some grip but still steers; rear slides freely
-    vehicle.wheelInfos[0].frictionSlip = vehicle.wheelInfos[0]._surfaceBaseGrip * 0.72;
-    vehicle.wheelInfos[1].frictionSlip = vehicle.wheelInfos[1]._surfaceBaseGrip * 0.72;
-    vehicle.wheelInfos[2].frictionSlip = vehicle.wheelInfos[2]._surfaceBaseGrip * 0.25;
-    vehicle.wheelInfos[3].frictionSlip = vehicle.wheelInfos[3]._surfaceBaseGrip * 0.25;
+    // AGGRESSIVE handbrake: rear wheels lose grip drastically for easy drift initiation
+    // Front retains most grip for steering authority during drift
+    vehicle.wheelInfos[0].frictionSlip = vehicle.wheelInfos[0]._surfaceBaseGrip * 0.78;
+    vehicle.wheelInfos[1].frictionSlip = vehicle.wheelInfos[1]._surfaceBaseGrip * 0.78;
+    // Rear: nearly zero grip — much more aggressive than before (was 0.25)
+    vehicle.wheelInfos[2].frictionSlip = vehicle.wheelInfos[2]._surfaceBaseGrip * 0.12;
+    vehicle.wheelInfos[3].frictionSlip = vehicle.wheelInfos[3]._surfaceBaseGrip * 0.12;
     vehicle.setBrake(0, 0); vehicle.setBrake(0, 1);
     vehicle.setBrake(HANDBRAKE_F, 2); vehicle.setBrake(HANDBRAKE_F, 3);
   } else if (landingDrift) {
-    // Landing sideways — reduced friction scaled by surface
-    vehicle.wheelInfos[0].frictionSlip = vehicle.wheelInfos[0]._surfaceBaseGrip * 0.63;
-    vehicle.wheelInfos[1].frictionSlip = vehicle.wheelInfos[1]._surfaceBaseGrip * 0.63;
-    vehicle.wheelInfos[2].frictionSlip = vehicle.wheelInfos[2]._surfaceBaseGrip * 0.32;
-    vehicle.wheelInfos[3].frictionSlip = vehicle.wheelInfos[3]._surfaceBaseGrip * 0.32;
+    // Landing slide — grip gradually returns as landingSlideFactor decays
+    // This prevents the brick-wall stop on landing
+    const slideGripReduction = landingSlideFactor * 0.65; // at peak: 65% grip reduction on rear
+    const frontSlideReduction = landingSlideFactor * 0.35; // front is less affected
+    vehicle.wheelInfos[0].frictionSlip = vehicle.wheelInfos[0]._surfaceBaseGrip * (1 - frontSlideReduction);
+    vehicle.wheelInfos[1].frictionSlip = vehicle.wheelInfos[1]._surfaceBaseGrip * (1 - frontSlideReduction);
+    vehicle.wheelInfos[2].frictionSlip = vehicle.wheelInfos[2]._surfaceBaseGrip * (1 - slideGripReduction);
+    vehicle.wheelInfos[3].frictionSlip = vehicle.wheelInfos[3]._surfaceBaseGrip * (1 - slideGripReduction);
     const nb = (brake && forwardSpeed > 1.5) ? MAX_BRAKE : 0;
     for (let i = 0; i < 4; i++) vehicle.setBrake(nb, i);
   } else {
@@ -3141,21 +3989,44 @@ function animate(){
     // Rear: reduce grip under power at speed for natural oversteer
     let rearMult = 1.0;
     if (accel && speed > 8) rearMult = Math.max(0.5, 1.0 - speed * 0.008);
-    if (lateralSpeed > 3 && accel) rearMult = Math.min(rearMult, 0.55);
+    // Drift sustain: when car is sliding and throttle applied, keep rear loose
+    if (lateralSpeed > 3 && accel) rearMult = Math.min(rearMult, 0.45); // was 0.55 — more loose
+    // Counter-steer sustain: if player is counter-steering during a slide, reward with sustained drift
+    if (isCounterSteering && lateralSpeed > 2 && accel) rearMult = Math.min(rearMult, 0.35);
     vehicle.wheelInfos[2].frictionSlip = vehicle.wheelInfos[2]._surfaceBaseGrip * rearMult;
     vehicle.wheelInfos[3].frictionSlip = vehicle.wheelInfos[3]._surfaceBaseGrip * rearMult;
     const nb = (brake && forwardSpeed > 1.5) ? MAX_BRAKE : 0;
     for (let i = 0; i < 4; i++) vehicle.setBrake(nb, i);
   }
 
-  // ── Drift stabilization ──
-  const angVelY = chassisBody.angularVelocity.y;
-  if (Math.abs(angVelY) > 2.5) {
-    chassisBody.angularVelocity.y = Math.sign(angVelY) * 2.5;
+  // ── Drift stabilization — tuned for sustained drifts ──
+  // angVelY already declared above for counter-steer detection
+  // Higher angular velocity cap allows fuller rotation during drifts (was 2.5)
+  const angVelCap = (isDrifting || handbrake) ? 3.8 : 3.0;
+  if (Math.abs(angVelY) > angVelCap) {
+    chassisBody.angularVelocity.y = Math.sign(angVelY) * angVelCap;
   }
-  chassisBody.angularDamping = lateralSpeed > 3 ? 0.6 : 0.35;
-  if (Math.abs(angVelY) > 2.0 && lateralSpeed > 2) {
-    chassisBody.angularVelocity.y += -angVelY * 0.08;
+  // Angular damping: LOWER during drift/handbrake to allow sustained rotation (was 0.6)
+  // Higher during straight driving for stability
+  if (handbrake || (isDrifting && lateralSpeed > 3)) {
+    chassisBody.angularDamping = 0.25; // free rotation for drifts
+  } else if (lateralSpeed > 3) {
+    chassisBody.angularDamping = 0.45; // moderate — recovering from slide
+  } else {
+    chassisBody.angularDamping = 0.35; // normal driving
+  }
+  // Gentle yaw damping only when NOT in a controlled drift state
+  // Counter-steering or handbraking means the player is in control — don't fight them
+  if (Math.abs(angVelY) > 2.5 && lateralSpeed > 2 && !handbrake && !isCounterSteering) {
+    chassisBody.angularVelocity.y += -angVelY * 0.05; // softer damping (was 0.08)
+  }
+
+  // ── Drift speed preservation: throttle during drift maintains momentum ──
+  // When drifting with throttle, apply a gentle forward push to counteract friction losses
+  if (isDrifting && accel && speed > 3 && !isAirborne) {
+    const driftBoost = Math.min(400, lateralSpeed * 60); // proportional to drift angle
+    const boostForce = new CANNON.Vec3(fwdDir.x * driftBoost, 0, fwdDir.z * driftBoost);
+    chassisBody.applyForce(boostForce, chassisBody.position);
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -3306,7 +4177,7 @@ function animate(){
   }
 
   // ── Wind Turbine Blades ──
-  windTurbineBlades.forEach(g => { g.rotation.z += 0.8 * dt; });
+  windTurbineBlades.forEach(g => { g.rotation.z += (g.userData.broken ? 0.08 : 0.8) * dt; });
 
   // ── Clouds ──
   clouds.forEach(c=>{
@@ -3323,10 +4194,35 @@ function animate(){
   updateShadowCam();updateHUD(speed);updateAudio(speed,accel);
   updateSurfaceSounds(speed, lateralSpeed, avgSurfaceBlend, isDrifting, brakingHard);
   updateLampLights(camera.position);
-  renderer.render(scene,camera);
+  updateDayNightCycle(dt);
+
+  // ── Post-Processing Uniform Updates ──
+  const elapsedTime = clock.elapsedTime;
+
+  // Vignette: increase with damage (base 0.3, max 0.8 when badly hurt)
+  const avgHealth = getAverageHealth();
+  const damageRatio = 1.0 - avgHealth / 100.0;
+  vignettePass.uniforms.intensity.value = 0.3 + damageRatio * 0.5;
+
+  // Film grain time
+  filmGrainSpeedPass.uniforms.time.value = elapsedTime;
+
+  // Speed lines: activate above 100 km/h, ramp up to max at ~200 km/h
+  const kmhSpeed = speed * 3.6;
+  const speedLinesFactor = Math.max(0, Math.min(1.0, (kmhSpeed - 100) / 100));
+  filmGrainSpeedPass.uniforms.speedFactor.value = speedLinesFactor;
+
+  // Render via composer instead of direct renderer
+  composer.render();
 }
 
-window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+window.addEventListener('resize',()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  composer.setSize(window.innerWidth,window.innerHeight);
+  bloomPass.resolution.set(window.innerWidth,window.innerHeight);
+});
 animate();
 </script>
 </body>
